@@ -790,11 +790,74 @@ def export_asm_data():
     return 
 def import_data():
     return 
+def export_pal_data():
+    asmpalfile = ''
+    asmpalfile = tk.filedialog.asksaveasfilename(title='Save MSX2 palette assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
+    if asmpalfile == '':
+        return 
+    outdata = []
+    outdata.append('; Palette data made with MSX2 Spriter\n')
+    outdata.append(';  Write in sequence to R#16!')
+    # 16 colors
+    #outdata.append('; Transparent color')
+    #outdata.append(' DB  $00, $00')
+    i = 0
+    while i < 16:
+        # byte 1 = '0RRR0BBB'
+        # byte 2 = '00000GGG'
+        # RED:
+        if i != 0:
+            ob1 = "{0:b}".format(int(intpal[i][:-2])) 
+        else:
+            ob1 = '000'
+        if len(ob1) == 1:
+            ob1 = '00' + ob1
+        elif len(ob1) == 2:
+            ob1 = '0' + ob1 
+        # BLUE:
+        if i != 0:
+            ob2 = int(intpal[i][2:])
+            ob2 = "{0:b}".format(ob2)
+        else:
+            ob2 = '000'
+        if len(ob2) == 1:
+            ob2 = '00' + ob2
+        elif len(ob2) == 2:
+            ob2 = '0' + ob2
+        # GREEN:
+        if i != 0:
+            ob3 = "{0:b}".format(int(intpal[i][1:-1]))
+        else:
+            ob3 = '000'
+        if len(ob3) == 1:
+            ob3 = '00' + ob3
+        elif len(ob3) == 2:
+            ob3 = '0' + ob3 
+        b1 = '0' + ob1 + '0' + ob2 
+        b2 = '00000' + ob3
+        ob1 = "{:02x}".format(int(b1,2))
+        ob2 = "{:02x}".format(int(b2,2))
+        if i % 4 == 0:
+            outdata.append("\n DB ")
+        outdata.append(" ${}, ${},".format(ob1,ob2))
+        i += 1
+    # Disgusting, but manually erase the commas
+    outdata[6] = outdata[6][:-1]
+    outdata[11] = outdata[11][:-1]
+    outdata[16] = outdata[16][:-1]
+    outdata = ''.join(outdata)[:-1]
+    f = open(asmpalfile, 'w')
+    for s in outdata:
+        f.write(s)
+    f.close()
+    #print(outdata)
+    return 
 
+tk.Button(win, text='Save file', command=save_as).grid(row=6, column=14, columnspan=3)
+tk.Button(win, text='Load file', command=load_as).grid(row=7, column=14, columnspan=3)
+tk.Button(win, text='Export SPR', command=export_asm_data).grid(row=8, column=14, columnspan=3)
+tk.Button(win, text='Export PAL', command=export_pal_data).grid(row=9, column=14, columnspan=3)
 
-tk.Button(win, text='Save file...', command=save_as).grid(row=6, column=14, columnspan=3)
-tk.Button(win, text='Load file...', command=load_as).grid(row=7, column=14, columnspan=3)
-tk.Button(win, text='Export as...', command=export_asm_data).grid(row=8, column=14, columnspan=3)
 #tk.Button(win, text='Import data', command=import_data).grid(row=9, column=14, columnspan=3)
 
 def loadm2s():
