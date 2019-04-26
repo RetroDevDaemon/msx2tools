@@ -39,6 +39,11 @@ The color data is included as bytes above the sprite mask data so an entire set 
 
 To export the universal palette, use the **Export PAL** button. As above, it will export assembler data byte format in sequence to be loaded into register #16. 
 
+If you are using this with a compiler such as sjasm, you might want to include a line such as the following at the top of the exported .z80 file and compile it to be included as a raw binary:
+
+` output sprites.bin`
+
+
 ### MSX2 Mode-2 Sprite Limitations
 
 Keep in mind the following restrictions:
