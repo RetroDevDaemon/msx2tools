@@ -29,8 +29,7 @@ The tool uses a text-based format that just stores the raw data as __\*.m2s__ (M
 
 To use the sprites in assembly language programs, use the Export As button. It will export assembler data byte format which should be compatible with almost all z80-language compilers, e.g.
 
-`; Mask 0
- DB  $00, $00, $00, $02, $06, $04, $0a, $1f
+ `DB  $00, $00, $00, $02, $06, $04, $0a, $1f
  DB  $2c, $0d, $2b, $3f, $07, $00, $00, $00
  DB  $00, $00, $50, $50, $08, $90, $70, $70
  DB  $60, $70, $f0, $e0, $00, $00, $00, $00`
@@ -42,7 +41,7 @@ The color data is included as bytes above the sprite mask data so an entire set 
 ### MSX2 Mode-2 Sprite Limitations
 
 Keep in mind the following restrictions:
-1. Each _individual mask_ can only have one color per row, but a total of 16 colors (one for each row, including transparent).
-2. When two masks are overlaid, the overlapping pixels have their palette values OR-ed (e.g. palette number 1 overlaid with palette number 2 will produce palette number 3 (0001 | 0010 = 0011). Refer to this link for more information:
-https://www.msx.org/wiki/The_OR_Color
+1. Each _individual mask_ can only have one color per row, but a total of 16 colors (one for each row, including transparent).<br>
+2. When two masks are overlaid, the overlapping pixels have their palette values OR-ed (e.g. palette number 1 overlaid with palette number 2 will produce palette number 3 (0001 | 0010 = 0011). Refer to this link for more information:<br>
+https://www.msx.org/wiki/The_OR_Color<br>
 3. In sprite mode 2, 8 sprite masks can be displayed on a single scanline, which means with overlaid sprites that restriction is reduced to an effective 4.
