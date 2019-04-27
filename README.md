@@ -1,6 +1,13 @@
-# MSX2 Spriter v1.0
+# MSX2 Spriter v1.01
 
 Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites.
+
+### Release notes:
+
+
+1.01: Fixed issue with high-order mask not having CC bit set. (Apologies!)<br>
+1.00: Initial release.
+
 
 ## Usage
 You must have a fairly recent verson of Python installed in order to use this app. It was developed on Python 3.7.1 but should run on any Python installation that has Tkinter included (which is most of the recent ones). It does not use any additional libraries. It has been fully tested on both Windows 10 and Ubuntu Linux.
