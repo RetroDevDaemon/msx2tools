@@ -662,7 +662,11 @@ def export_asm_data():
                 # convert maskdata[i][(y*16)+x] to hex
                 md = maskdata[i][(y*16)+x]
                 if md > 0:
-                    outb = '{:02x}'.format(md)
+                    if i % 2 == 0:
+                        outb = '{:02x}'.format(md)
+                    else:
+                        md += 64
+                        outb = '{:02x}'.format(md)
                 x += 1
             y += 1
             if outb == '':
@@ -683,7 +687,11 @@ def export_asm_data():
                 # convert maskdata[i][(y*16)+x] to hex
                 md = maskdata[i][(y*16)+x]
                 if md > 0:
-                    outb = '{:02x}'.format(md)
+                    if i % 2 == 0:
+                        outb = '{:02x}'.format(md)
+                    else:
+                        md += 64
+                        outb = '{:02x}'.format(md)
                 x += 1
             y += 1
             if outb == '':
