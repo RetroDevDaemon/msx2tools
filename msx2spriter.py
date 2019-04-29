@@ -5,7 +5,8 @@
 #
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.0: First pass
+# v1.02: Added menu bar functions and new/save/load
+#         error checking
 #
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite mode 2 graphics for use with compilers.
@@ -238,7 +239,7 @@ def applyColorToSel():
         paintcol = single_intcol_to_hex(currentColor)
         find_and_replace_pixels(oldcol, paintcol)
         refresh_display(True)
-    return
+    #return
 
 
 # Changes all color of type x to type y 
@@ -246,7 +247,7 @@ def find_and_replace_pixels(oldcolor, newcolor):
     for n in pixels:
         if drawCanvas.itemcget(n, 'fill') == oldcolor:
             drawCanvas.itemconfig(n, fill=newcolor)
-    return
+    #return
 
 # Changes the palette back to the default and re-paints image
 def resetSelectedColor():
@@ -260,7 +261,7 @@ def resetSelectedColor():
         updatePaletteDisplay()
         find_and_replace_pixels(oldcol, paintcol)
     refresh_display(True)
-    return
+    #return
 
 # Add palette modifier functions to the canvas.
 # and their labels
@@ -294,7 +295,7 @@ def repaint_row(row):
             if pixels_mask2[(row*16)+i] != 0:
                 pixels_mask2[(row*16)+i] = currentPalNo    
         i += 1
-    return
+    #return
 
 # Actually paints the pixel and changes the pal number in the mask array
 def color_pixel(ob):
@@ -312,7 +313,7 @@ def color_pixel(ob):
     maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
     maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
     refresh_display(False)
-    return
+    #return
 
 def erase_pixel(ob):
     global currentColor
@@ -325,7 +326,7 @@ def erase_pixel(ob):
     #print(oldc)
     currentPalNo = oldp
     currentColor = oldc[:-1]
-    return 
+    #return 
 
 pixelSize = 16
 spriteSize = 16
@@ -346,7 +347,7 @@ def update_orlayer():
             topaint = single_intcol_to_hex(intval)
         drawCanvas.itemconfig(pixels[i], fill=topaint)
         i += 1
-    return
+    #return
 
 # Just layer 2 enabled
 def update_layermask_2():
@@ -361,7 +362,7 @@ def update_layermask_2():
             topaint = single_intcol_to_hex(intval)
         drawCanvas.itemconfig(pixels[i], fill=topaint)
         i += 1
-    return 
+    #return 
 
 # Just layer 1 enabled
 def update_layermask_1():
@@ -376,7 +377,7 @@ def update_layermask_1():
             topaint = single_intcol_to_hex(intval)
         drawCanvas.itemconfig(pixels[i], fill=topaint)
         i += 1
-    return 
+    #return 
 
 # Add sub-canvas for drawing, and palette value arrays
 drawCanvas = tk.Canvas(win, background='white', width=pixelSize*spriteSize, height=pixelSize*spriteSize)
@@ -386,17 +387,27 @@ pixels = []
 # the mask arrays are actual PALETTE values 0-15.
 pixels_mask1 = []
 pixels_mask2 = []
-i = 0
-while i < spriteSize:
-    j = 0
-    while j < spriteSize:
-        #create_rectangle's
-        pixels.append(drawCanvas.create_rectangle(j*pixelSize, i*pixelSize, (j+1)*pixelSize, (i+1)*pixelSize, outline='black', fill='grey'))
-        pixels_mask1.append(0)
-        pixels_mask2.append(0)
-        j += 1
-    i += 1
+def reset_pixels_display():
+    global pixels 
+    global pixels_mask1 
+    global pixels_mask2 
+    global pixelSize 
+    global spriteSize 
+    pixels = [] 
+    pixels_mask1 = []
+    pixels_mask2 = []
+    i = 0
+    while i < spriteSize:
+        j = 0
+        while j < spriteSize:
+            #create_rectangle's
+            pixels.append(drawCanvas.create_rectangle(j*pixelSize, i*pixelSize, (j+1)*pixelSize, (i+1)*pixelSize, outline='black', fill='grey'))
+            pixels_mask1.append(0)
+            pixels_mask2.append(0)
+            j += 1
+        i += 1
  #
+reset_pixels_display()
 
 # Bind events
 drawCanvas.bind("<Button-1>", color_pixel)
@@ -443,21 +454,26 @@ s1.grid(row=15, column=4, columnspan=3)
 s0 = tk.Checkbutton(win, text='Show 0', variable=show_m1, command=refresh_display)
 s0.grid(row=15, column=1, columnspan=3)
 
-# TODO s:
-
 icon_selected = 0
 
+# set all 32 pages of mask data...
 maskdata = []
 templatepx = []
-i = 0
-while i < (spriteSize*spriteSize): #256
-    templatepx.append(0)
-    i += 1
-i = 0
-while i < 32:
-    temp = templatepx.copy()
-    maskdata.append(temp)
-    i += 1
+def reset_mask_data():
+    global maskdata
+    global templatepx
+    maskdata = []
+    templatepx = []
+    i = 0
+    while i < (spriteSize*spriteSize): #256
+        templatepx.append(0)
+        i += 1
+    i = 0
+    while i < 32:
+        temp = templatepx.copy()
+        maskdata.append(temp)
+        i += 1
+reset_mask_data()
 #=maskdata[32][256]
 page_ofs = 0
 def select_from_icon(obj):
@@ -498,7 +514,7 @@ def select_from_icon(obj):
         pixels_mask2 = maskdata[7+page_ofs].copy()
     update_label_txt()
     refresh_display(False)
-    return 
+    #return 
 
 iconCanvas = tk.Canvas(win,background='grey',width=128+2,height=128+2)
 l0 = tk.Label(win, text='0 - 1')
@@ -532,7 +548,7 @@ def update_label_txt():
     l2.config(text=t)
     t = '{} - {}'.format(str(page_ofs+6), str(page_ofs+7))
     l3.config(text=t)
-    return 
+    #return 
 
 smallpixels1 = []
 smallpixels2 = []
@@ -579,7 +595,7 @@ def update_icon_window(win_no):
         elif win_no == 3:
             iconCanvas.itemconfig(smallpixels4[i], fill=topaint)
         i += 1
-    return
+    #return
     
 # 2. add pagination to sprite view panel
 def page_back():
@@ -599,7 +615,7 @@ def page_back():
     pixels_mask2 = maskdata[(icon_selected*2)+page_ofs+1].copy()
     update_label_txt()
     refresh_display(True)
-    return 
+    #return 
 def page_forward():
     global page_ofs
     global pixels_mask1
@@ -615,7 +631,7 @@ def page_forward():
     pixels_mask2 = maskdata[(icon_selected*2)+page_ofs+1].copy()
     update_label_txt()
     refresh_display(True)
-    return 
+    #return 
 tk.Button(win, text="<", command=page_back).grid(row=11, column=11, columnspan=1)
 tk.Button(win, text=">", command=page_forward).grid(row=11, column=12, columnspan=1)
 
@@ -629,14 +645,14 @@ def save_as():
     if filename == '':
         return 
     savem2s()
-    return
+    #return
 def load_as():
     global filename 
     filename = tk.filedialog.askopenfilename(title='Load MSX2 Spriter file', filetypes=( ('MSX2 Spriter file', '*.m2s'),('All files', '*.*') ))
     if filename == '':
         return 
     loadm2s()
-    return 
+    #return 
 
 ## Z80 ASSEMBLY EXPORT - THE GOOD SHIT ##    
 asmfile = ''
@@ -789,13 +805,20 @@ def export_asm_data():
         outdata.append(curline)
         i += 1
     #print(outdata)
-    f = open(asmfile, 'w')
-    for s in outdata:
-        f.write(s)
-        f.write('\n')
-    f.close()
-    #
-    return 
+    try:
+        f = open(asmfile, 'w')
+        for s in outdata:
+            f.write(s)
+            f.write('\n')
+        messagebox.showinfo("Save OK", message="Save successful.")
+    except IOError:
+        messagebox.showerror("Export failed", message="I/O error exporting file. Check drive and permissions and try again.")
+    except:
+        messagebox.showerror("Export failed", message="Unknown error exporting file. This might be a bug!")
+    finally:
+        f.close()
+        
+    #return 
 def import_data():
     return 
 def export_pal_data():
@@ -859,69 +882,132 @@ def export_pal_data():
         f.write(s)
     f.close()
     #print(outdata)
-    return 
+    #return 
 
-tk.Button(win, text='Save file', command=save_as).grid(row=6, column=14, columnspan=3)
-tk.Button(win, text='Load file', command=load_as).grid(row=7, column=14, columnspan=3)
-tk.Button(win, text='Export SPR', command=export_asm_data).grid(row=8, column=14, columnspan=3)
-tk.Button(win, text='Export PAL', command=export_pal_data).grid(row=9, column=14, columnspan=3)
+#tk.Button(win, text='Save file', command=save_as).grid(row=6, column=14, columnspan=3)
+#tk.Button(win, text='Load file', command=load_as).grid(row=7, column=14, columnspan=3)
+#tk.Button(win, text='Export SPR', command=export_asm_data).grid(row=8, column=14, columnspan=3)
+#tk.Button(win, text='Export PAL', command=export_pal_data).grid(row=9, column=14, columnspan=3)
 
 #tk.Button(win, text='Import data', command=import_data).grid(row=9, column=14, columnspan=3)
 
+import tkinter.messagebox as messagebox
+
 def loadm2s():
-    f = open(filename, 'r')
-    data = f.readline()
-    # reset palette data
-    global palette_display
-    global currentColor
-    palette_vals = data.split(',')
-    i = 0
-    while i < 16:
-        palette_display[i].myVal = palette_vals[i]
-        currentColor = i 
-        i += 1
-    resetPalette(palette_vals)
-    currentColor = 'trans'
-    # load in mf'in maskdata
-    j = 0
-    while j < 32:
-        data = f.readline().split(',')
-        data.pop()
-        data_int = []
-        i = 0 
-        while i < (spriteSize*spriteSize):
-            data_int.append(int(data[i]))
-            maskdata[j][i] = data_int[i]
+    global filename
+    try:
+        f = open(filename, 'r')
+        data = f.readline()
+        # reset palette data
+        global palette_display
+        global currentColor
+        palette_vals = data.split(',')
+        i = 0
+        while i < 16:
+            palette_display[i].myVal = palette_vals[i]
+            currentColor = i 
             i += 1
-        if j == (page_ofs + icon_selected + 1):
-            global pixels_mask1
-            global pixels_mask2
-            pixels_mask1 = maskdata[j-1].copy()
-            pixels_mask2 = maskdata[j].copy()
-        j += 1
-    refresh_display(True)
-    return 
+        resetPalette(palette_vals)
+        currentColor = 'trans'
+        # load in mf'in maskdata
+        j = 0
+        while j < 32:
+            data = f.readline().split(',')
+            data.pop()
+            data_int = []
+            i = 0 
+            while i < (spriteSize*spriteSize):
+                data_int.append(int(data[i]))
+                maskdata[j][i] = data_int[i]
+                i += 1
+            if j == (page_ofs + icon_selected + 1):
+                global pixels_mask1
+                global pixels_mask2
+                pixels_mask1 = maskdata[j-1].copy()
+                pixels_mask2 = maskdata[j].copy()
+            j += 1
+        refresh_display(True)
+    except IOError:
+        messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
+    except:
+        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
+    finally:
+        f.close()
 
 def resetPalette(newpal):
     global intpal 
     intpal = newpal 
     convert_int_pal_to_hex(intpal)
     updatePaletteDisplay()
-    return 
+    #return 
 
 def savem2s():
+    global filename
     p = []
     for n in palette_display:
         p.append(n.myVal)
-    f = open(filename, 'w')
-    for item in p: 
-        f.write('%s,' % item)
-    for n in maskdata:
-        f.write('\n')
-        for item in n:
-            f.write('%s,'%item)
-    f.close()
-    return
+    try:
+        f = open(filename, 'w')
+        for item in p: 
+            f.write('%s,' % item)
+        for n in maskdata:
+            f.write('\n')
+            for item in n:
+                f.write('%s,'%item)
+        messagebox.showinfo("Save OK", message="Save successful.")
+    except IOError:
+        messagebox.showerror("I/O error", message="Output error saving file. Check drives and permissions and try again.")
+    except:
+        messagebox.showerror("Unexpected error", message="Unknown error saving file. This might be a bug!!")
+    finally:
+        f.close()
+
+# define menus
+def client_exit():
+    result = messagebox.askquestion("Quit", "Save changes before quit?", icon='warning')
+    if result == 'yes':
+        save_normal()
+        exit()
+    else:
+        exit()
+
+def new_file():
+    # ask if ok, if not, open save_normal dialog
+    result = messagebox.askquestion("New file", "Save changes before creating new file?", icon='warning')
+    if result == 'yes':
+        save_normal()
+    else:
+        global intpal 
+        intpal = defaultIntegerPalette.copy()
+        convert_int_pal_to_hex(intpal)
+        updatePaletteDisplay()
+        reset_pixels_display()
+        reset_mask_data()
+        refresh_display()
+        #return
+
+def save_normal():
+    global filename
+    if filename == '':
+        save_as()
+    else:
+        savem2s()
+    #return
+
+menuBar = tk.Menu(app)
+fileMenu = tk.Menu(menuBar, tearoff=0)
+fileMenu.add_command(label="New", command=new_file)
+fileMenu.add_command(label="Save", command=save_normal)
+fileMenu.add_command(label="Save As .M2S...", command=save_as)
+fileMenu.add_command(label="Load .M2S...", command=load_as)
+fileMenu.add_separator()
+fileMenu.add_command(label="Export z80 sprite data...", command=export_asm_data)
+fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data)
+fileMenu.add_separator()
+fileMenu.add_command(label="Quit", command=client_exit)
+menuBar.add_cascade(label="File", menu=fileMenu)
+app.config(menu=menuBar)
 
 # Run the app
+app.protocol("WM_DELETE_WINDOW", client_exit)
 app.mainloop()
