@@ -5,7 +5,7 @@ Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprite
 ### Release notes:
 
 
-1.02: Moved file options to menu bar, added New file functionality
+1.02: Moved file options to menu bar, added New file functionality<br>
 1.01: Fixed issue with high-order mask not having CC bit set. (Apologies!)<br>
 1.00: Initial release.
 
