@@ -20,7 +20,33 @@ import sys
 import math
 
 #TODO FIX ME
-patternMode = True
+patternMode = False
+
+## GLOBALS - MUST BE REFD IN INIT DEF
+r0 = None 
+r1 = None 
+s0 = None
+s1 = None 
+l0 = None 
+l1 = None 
+l2 = None 
+l3 = None 
+smallpixels1 = []
+smallpixels2 = []
+smallpixels3 = []
+smallpixels4 = []
+palette_display = []
+smallpatternpx = []
+intpal = [] 
+pixelSize = 16
+spriteSize = 16
+icon_selected = 0
+pattern_y_ofs = 0
+pattern_x_ofs = 0
+pattern_page = 0
+page_ofs = 0
+iconwidth = 128
+iconcanvascolumn = 8
 
 # MSX2 default 16-color palette, in integer strings
 defaultIntegerPalette = [
@@ -29,7 +55,8 @@ defaultIntegerPalette = [
     '711', '733', '661', '664',
     '141', '625', '555', '777'
 ]
-intpal = defaultIntegerPalette.copy()
+##
+
 # Each above integer must be divided by 7 then converted to hex.
 displayPalette = []
 
@@ -69,12 +96,8 @@ def convert_int_pal_to_hex(integerPalette):
 # To convert HTML color back to 3-bit RGB values
 def convert_hex_pal_to_binary():
     return 0
-# Run the pal conversion once
-convert_int_pal_to_hex(intpal)
 
-# Set up the default window frame
-win = tk.Frame(master=app, width=800, height=600)
-win.grid(row=16, columnspan=16)
+
 
 # some globals
 numSel = 0
@@ -194,15 +217,18 @@ def unclick_all():
 scale = 30
 
 # Display the palette and add it to the canvas.
-palette_display = []
-i = 0
-while i < 16:
-    palette_display.append(PaletteButton(win, width=scale, height=scale, background=displayPalette[i]))
-    palette_display[i].grid(row=1, column=i+1)
-    palette_display[i].setVal(intpal[i])
-    if i == 0:
-        palette_display[i].myVal = 'trans'
-    i += 1
+
+def add_palette_display():
+    global palette_display
+    palette_display = []
+    i = 0
+    while i < 16:
+        palette_display.append(PaletteButton(win, width=scale, height=scale, background=displayPalette[i]))
+        palette_display[i].grid(row=1, column=i+1)
+        palette_display[i].setVal(intpal[i])
+        if i == 0:
+            palette_display[i].myVal = 'trans'
+        i += 1
 
 # Refreshes the palette colors
 def updatePaletteDisplay():
@@ -266,23 +292,28 @@ def resetSelectedColor():
     refresh_display(True)
     #return
 
-# Add palette modifier functions to the canvas.
-# and their labels
-tk.Label(win, text='Color R:').grid(row=2, column=2, columnspan=2)
-tk.Label(win, text='G:').grid(row=2, column=4, columnspan=2)
-tk.Label(win, text='B:').grid(row=2, column=6, columnspan=2)
-# and their buttons.
-tk.Button(win, text='Apply', command=applyColorToSel).grid(row=2, column=9, columnspan=2)
-tk.Button(win, text='Reset', command=resetSelectedColor).grid(row=2, column=11, columnspan=2)
 pal_mod = []
-i = 0
-j = 0
-while j < 6:
-    e = tk.Entry(win, width=2)
-    pal_mod.append(e)
-    pal_mod[i].grid(row=2, column=j+3, columnspan=2)
-    j += 2
-    i += 1
+
+def add_labels_andpalmod():
+    global win 
+    global pal_mod
+    # Add palette modifier functions to the canvas.
+    # and their labels
+    tk.Label(win, text='Color R:').grid(row=2, column=2, columnspan=2)
+    tk.Label(win, text='G:').grid(row=2, column=4, columnspan=2)
+    tk.Label(win, text='B:').grid(row=2, column=6, columnspan=2)
+    # and their buttons.
+    tk.Button(win, text='Apply', command=applyColorToSel).grid(row=2, column=9, columnspan=2)
+    tk.Button(win, text='Reset', command=resetSelectedColor).grid(row=2, column=11, columnspan=2)
+    pal_mod = []
+    i = 0
+    j = 0
+    while j < 6:
+        e = tk.Entry(win, width=2)
+        pal_mod.append(e)
+        pal_mod[i].grid(row=2, column=j+3, columnspan=2)
+        j += 2
+        i += 1
  #
 
 # Only 1 color per row in sprite mode 2!
@@ -336,14 +367,11 @@ def erase_pixel(ob):
     currentColor = oldc[:-1]
     #return 
 
-pixelSize = 16
-spriteSize = 16
-if patternMode == True:
-    pixelSize = 32
-    spriteSize = 8
-
 # Both layers enabled?
 def update_orlayer():
+    global palette_display
+    global pixels_mask1 
+    global pixels_mask2 
     orpixels = pixels_mask1.copy()
     i = 0
     while i < (spriteSize*spriteSize):
@@ -390,9 +418,20 @@ def update_layermask_1():
         i += 1
     #return 
 
-# Add sub-canvas for drawing, and palette value arrays
-drawCanvas = tk.Canvas(win, background='white', width=pixelSize*spriteSize, height=pixelSize*spriteSize)
-drawCanvas.grid(row=3, column=0, columnspan=10, rowspan=10)
+drawCanvas = None
+def init_draw_canvas():
+    global drawCanvas
+    global spriteSize
+    global pixelSize 
+    if drawCanvas != None: 
+        drawCanvas.delete("all")
+        drawCanvas.grid(row=3, column=0, columnspan=10, rowspan=10)
+    else: 
+    #drawCanvas = None 
+    # Add sub-canvas for drawing, and palette value arrays
+        drawCanvas = tk.Canvas(win, background='white', width=pixelSize*spriteSize, height=pixelSize*spriteSize)
+        drawCanvas.grid(row=3, column=0, columnspan=10, rowspan=10)
+
 # populate with pixel grid
 pixels = []
 # the mask arrays are actual PALETTE values 0-15.
@@ -418,13 +457,6 @@ def reset_pixels_display():
             j += 1
         i += 1
  #
-reset_pixels_display()
-
-# Bind events
-drawCanvas.bind("<Button-1>", color_pixel)
-drawCanvas.bind("<B1-Motion>", color_pixel)
-drawCanvas.bind("<Button-3>", erase_pixel)
-drawCanvas.bind("<B3-Motion>", erase_pixel)
 
 # Radial bools have to be defined as tk variables
 show_m1 = tk.BooleanVar()
@@ -454,19 +486,7 @@ def refresh_display(allicons=False):
             update_icon_window(i)
             i += 1
  #
-
-if patternMode == False:
-    # add radials to swap between mask 1 and mask 2
-    r1 = tk.Radiobutton(win, text='Mask 1', variable=mask, value=2, command=refresh_display)
-    r1.grid(row=14, column=4, columnspan=3)
-    r0 = tk.Radiobutton(win, text='Mask 0', variable=mask, value=1, command=refresh_display)
-    r0.grid(row=14, column=1, columnspan=3)
-    s1 = tk.Checkbutton(win, text='Show 1', variable=show_m2, command=refresh_display)
-    s1.grid(row=15, column=4, columnspan=3)
-    s0 = tk.Checkbutton(win, text='Show 0', variable=show_m1, command=refresh_display)
-    s0.grid(row=15, column=1, columnspan=3)
-
-icon_selected = 0
+##
 
 # set all 32 pages of mask data...
 maskdata = []
@@ -485,7 +505,8 @@ def reset_mask_data():
         temp = templatepx.copy()
         maskdata.append(temp)
         i += 1
-reset_mask_data()
+
+##
 patterndata = []
 def reset_pattern_data():
     global patterndata 
@@ -501,13 +522,8 @@ def reset_pattern_data():
         temp = templatepx.copy()
         patterndata.append(temp)
         i += 1
-reset_pattern_data()
+##        
 
-#=maskdata[32][256]
-pattern_y_ofs = 0
-pattern_x_ofs = 0
-pattern_page = 0
-page_ofs = 0
 def select_from_icon(obj):
     global page_ofs
     global icon_selected
@@ -557,33 +573,34 @@ def select_from_icon(obj):
         sel_ptn = (sel_ptn*32) + math.floor(obj.x/32) + pattern_x_ofs 
         icon_selected = sel_ptn 
         pixels_mask1 = patterndata[sel_ptn].copy()
+        l0.configure(text='Pattern {}\nX: {} Y: {}'.format(sel_ptn, (math.floor(obj.x/32) + pattern_x_ofs), (math.floor(obj.y/32) + pattern_y_ofs) ))
         #print(sel_ptn)
     refresh_display(False)
-    #return 
-iconwidth = 128
-iconcanvascolumn = 8
-if patternMode == True:
-    iconwidth = 256
-    iconcanvascolumn = 10
-iconCanvas = tk.Canvas(win,background='grey',width=iconwidth+2,height=128+2)
-iconCanvas.grid(row=3, column=iconcanvascolumn, columnspan=8, rowspan=8)
-iconCanvas.bind("<Button-1>", select_from_icon)
-if patternMode == False:
-    l0 = tk.Label(win, text='0 - 1')
-    l0.grid(row=3, column=10, columnspan=2)
-    l1 = tk.Label(win, text='2 - 3')
-    l1.grid(row=3, column=12, columnspan=2)
-    l2 = tk.Label(win, text='4 - 5')
-    l2.grid(row=10, column=10, columnspan=2)
-    l3 = tk.Label(win, text='6 - 7')
-    l3.grid(row=10, column=12, columnspan=2)
-else: 
-    l0 = tk.Label(win, text='Pattern 0\nX: 0 Y: 0')
-    l0.grid(row=12, column=12, columnspan=2)#, columnspan=2, rowspan=2)
-    l1 = tk.Label(win, text="Table 1 / 3")
-    l1.grid(row=13, column=12, columnspan=2)
+
+
+iconCanvas = None 
+def init_icon_canvases():
+    global iconcanvascolumn
+    global iconCanvas
+    if iconCanvas != None: 
+        iconCanvas.delete("all")
+        iconCanvas.configure(width=iconwidth+2,height=128+2)
+        iconCanvas.grid(row=3, column=iconcanvascolumn, columnspan=8, rowspan=8)
+    else:
+        #iconCanvas = None 
+        iconCanvas = tk.Canvas(win,background='grey',width=iconwidth+2,height=128+2)
+        iconCanvas.grid(row=3, column=iconcanvascolumn, columnspan=8, rowspan=8)
+        iconCanvas.bind("<Button-1>", select_from_icon)
 
 def update_label_txt():
+    global r0 
+    global r1 
+    global s0 
+    global s1
+    global l0 
+    global l1
+    global l2
+    global l3
     if patternMode == False:
         global icon_selected
         global page_ofs 
@@ -606,65 +623,13 @@ def update_label_txt():
         l3.config(text=t)
     #return 
 smalsize = 4
-if patternMode == False:
-    smallpixels1 = []
-    smallpixels2 = []
-    smallpixels3 = []
-    smallpixels4 = []
-    i = 0
-    while i < 16:
-        j = 0 
-        while j < 16:
-            smallpixels1.append(iconCanvas.create_rectangle((j*smalsize)+2, (i*smalsize)+2, ((j+1)*smalsize)+2, ((i+1)*smalsize)+2, fill='grey', outline=""))
-            smallpixels2.append(iconCanvas.create_rectangle((j*smalsize)+66, (i*smalsize)+2, ((j+1)*smalsize)+66, ((i+1)*smalsize)+2, fill='grey', outline=""))
-            smallpixels3.append(iconCanvas.create_rectangle((j*smalsize)+2, (i*smalsize)+66, ((j+1)*smalsize)+2, ((i+1)*smalsize)+66, fill='grey', outline=""))
-            smallpixels4.append(iconCanvas.create_rectangle((j*smalsize)+66, (i*smalsize)+66, ((j+1)*smalsize)+66, ((i+1)*smalsize)+66, fill='grey', outline=""))
-            j += 1
-        i += 1
-
-smallpatternpx = []
-i = 0
-while i < (8*4):
-    t = []
-    smallpatternpx.append(t)
-    i+=1
-
-if patternMode == True:
-    i = 0
-    while i < 4:
-        j = 0
-        while j < 8:
-            y = 0
-            while y < spriteSize:
-                x = 0
-                while x < spriteSize:
-                    x1 = (j * (smalsize*spriteSize)) + (x*smalsize) + 2
-                    x2 = (j * (smalsize*spriteSize)) + (x*smalsize) + smalsize + 2
-                    y1 = (i * (smalsize*spriteSize)) + (y*smalsize) + 2
-                    y2 = (i * (smalsize*spriteSize)) + (y*smalsize) + smalsize + 2
-                    smallpatternpx[(i*8)+j].append(iconCanvas.create_rectangle(x1, y1, x2, y2, fill='grey', outline=""))
-                    x+=1
-                y+=1
-            j += 1
-        i += 1
-
-if patternMode == False:
-    iconCanvas.create_line(64+2, 0+2, 64+2, 128+2)
-    iconCanvas.create_line(0+2, 64+2, 128+2, 64+2)
-if patternMode == True:
-    iconCanvas.create_line(64+2, 0+2, 64+2, 128+2)
-    iconCanvas.create_line(0+2, 64+2, 256+2, 64+2)
-    iconCanvas.create_line(32+2, 0+2, 32+2, 128+2)
-    iconCanvas.create_line(96+2, 0+2, 96+2, 128+2)
-    iconCanvas.create_line(0+2, 32+2, 256+2, 32+2)
-    iconCanvas.create_line(0+2, 96+2, 256+2, 96+2)
-    iconCanvas.create_line(128+2, 0+2, 128+2, 128+2)
-    iconCanvas.create_line(192+2, 0+2, 192+2, 128+2)
-    iconCanvas.create_line(160+2, 0+2, 160+2, 128+2)
-    iconCanvas.create_line(224+2, 0+2, 224+2, 128+2)
 
 def update_icon_window(win_no):
     global icon_selected
+    global smallpixels1
+    global smallpixels2
+    global smallpixels3
+    global smallpixels4
     if patternMode == False:
         # Both layers!
         global page_ofs 
@@ -747,13 +712,13 @@ def page_forward():
     update_label_txt()
     refresh_display(True)
     #return 
-if patternMode == False:
-    tk.Button(win, text="<", command=page_back).grid(row=11, column=11, columnspan=1)
-    tk.Button(win, text=">", command=page_forward).grid(row=11, column=12, columnspan=1)
-
+##    
+# if patternMode == False:
+#     tk.Button(win, text="<", command=page_back).grid(row=11, column=11, columnspan=1)
+#     tk.Button(win, text=">", command=page_forward).grid(row=11, column=12, columnspan=1)
+##
 # 3. export and import palette and sprites as DBs
 from tkinter import filedialog
-filename = ''
 
 def save_as():
     global filename 
@@ -771,7 +736,8 @@ def load_as():
     #return 
 
 ## Z80 ASSEMBLY EXPORT - THE GOOD SHIT ##    
-asmfile = ''
+#filename = ''
+#asmfile = ''
 def export_asm_data():
     global asmfile 
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 sprite assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
@@ -1089,18 +1055,28 @@ def client_exit():
 
 def new_file():
     # ask if ok, if not, open save_normal dialog
+    global patternMode 
+    patternMode = False 
     result = messagebox.askquestion("New file", "Save changes before creating new file?", icon='warning')
     if result == 'yes':
         save_normal()
-    else:
-        global intpal 
-        intpal = defaultIntegerPalette.copy()
-        convert_int_pal_to_hex(intpal)
-        updatePaletteDisplay()
-        reset_pixels_display()
-        reset_mask_data()
-        refresh_display()
+    initialize_new(patternMode)
+        #global intpal 
+        #intpal = defaultIntegerPalette.copy()
+        #convert_int_pal_to_hex(intpal)
+        #updatePaletteDisplay()
+        #reset_pixels_display()
+        #reset_mask_data()
+        #refresh_display()
         #return
+
+#import os
+
+def new_pattern_file():
+    #os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
+    global patternMode 
+    patternMode = True 
+    initialize_new(patternMode)
 
 def save_normal():
     global filename
@@ -1110,11 +1086,10 @@ def save_normal():
         savem2s()
     #return
 
-
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label="New sprite file", command=new_file)
-#fileMenu.add_command(label="New pattern file", command=new_pattern_file)
+fileMenu.add_command(label="New pattern file", command=new_pattern_file)
 fileMenu.add_command(label="Save", command=save_normal)
 fileMenu.add_command(label="Save As .M2S...", command=save_as)
 fileMenu.add_command(label="Load .M2S...", command=load_as)
@@ -1124,8 +1099,215 @@ fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data
 fileMenu.add_separator()
 fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
-app.config(menu=menuBar)
+app.config(menu=menuBar) 
 
+win = None
+bl = None 
+br = None 
+bu = None 
+bd = None
+
+def initialize_new(patternMode):
+    global intpal 
+    intpal = defaultIntegerPalette.copy()
+    convert_int_pal_to_hex(intpal)
+    global palette_display
+    global pixelSize 
+    global spriteSize
+    global icon_selected
+    global pattern_x_ofs
+    global pattern_y_ofs
+    global pattern_page 
+    global page_ofs 
+    global iconwidth 
+    global iconcanvascolumn 
+    global win 
+    global iconCanvas
+    global drawCanvas
+    global smallpixels1
+    global smallpixels2
+    global smallpixels3
+    global smallpixels4
+    global r0 
+    global r1 
+    global s0 
+    global s1
+    global l0 
+    global l1
+    global l2
+    global l3
+    global bu
+    global bd 
+    global bl 
+    global br 
+    global smallpatternpx
+    #if(win):
+    #    win.destroy()
+    # Set up the default window frame
+    if win == None:
+        win = tk.Frame(master=app, width=800, height=600)
+        win.grid(row=16, columnspan=16)
+    
+
+    if patternMode == True:
+        pixelSize = 32
+        spriteSize = 8
+    else: 
+        pixelSize = 16
+        spriteSize = 16
+
+    if patternMode == True:
+        iconwidth = 256
+        iconcanvascolumn = 10
+    else:
+        iconwidth = 128
+        iconcanvascolumn = 8
+
+    init_draw_canvas()
+    init_icon_canvases()
+    add_palette_display()
+    reset_pixels_display()
+    add_labels_andpalmod()
+
+    if r1:
+        r1.destroy()
+    if r0:
+        r0.destroy()
+    if s1:
+        s1.destroy()
+    if s0:
+        s0.destroy()
+
+    if patternMode == False:
+        # add radials to swap between mask 1 and mask 2
+        r1 = tk.Radiobutton(win, text='Mask 1', variable=mask, value=2, command=refresh_display)
+        r1.grid(row=14, column=4, columnspan=3)
+        r0 = tk.Radiobutton(win, text='Mask 0', variable=mask, value=1, command=refresh_display)
+        r0.grid(row=14, column=1, columnspan=3)
+        s1 = tk.Checkbutton(win, text='Show 1', variable=show_m2, command=refresh_display)
+        s1.grid(row=15, column=4, columnspan=3)
+        s0 = tk.Checkbutton(win, text='Show 0', variable=show_m1, command=refresh_display)
+        s0.grid(row=15, column=1, columnspan=3)
+        
+    if patternMode == False:
+        if l0:
+            l0.destroy()
+        if l1:
+            l1.destroy()
+        if l2:
+            l2.destroy()
+        if l3:
+            l3.destroy()
+        l0 = tk.Label(win, text='0 - 1')
+        l0.grid(row=3, column=10, columnspan=2)
+        l1 = tk.Label(win, text='2 - 3')
+        l1.grid(row=3, column=12, columnspan=2)
+        l2 = tk.Label(win, text='4 - 5')
+        l2.grid(row=10, column=10, columnspan=2)
+        l3 = tk.Label(win, text='6 - 7')
+        l3.grid(row=10, column=12, columnspan=2)
+    else:
+        if l0:
+            l0.destroy() 
+        l0 = tk.Label(win, text='Pattern 0\nX: 0 Y: 0')
+        l0.grid(row=12, column=12, columnspan=2)#, columnspan=2, rowspan=2)
+        if l1:
+            l1.destroy()
+        l1 = tk.Label(win, text="Table 1 / 3")
+        l1.grid(row=13, column=12, columnspan=2)
+        if l2:
+            l2.destroy()
+        if l3:
+            l3.destroy() 
+
+    if patternMode == False:
+        smallpixels1 = []
+        smallpixels2 = []
+        smallpixels3 = []
+        smallpixels4 = []
+        i = 0
+        while i < 16:
+            j = 0 
+            while j < 16:
+                smallpixels1.append(iconCanvas.create_rectangle((j*smalsize)+2, (i*smalsize)+2, ((j+1)*smalsize)+2, ((i+1)*smalsize)+2, fill='grey', outline=""))
+                smallpixels2.append(iconCanvas.create_rectangle((j*smalsize)+66, (i*smalsize)+2, ((j+1)*smalsize)+66, ((i+1)*smalsize)+2, fill='grey', outline=""))
+                smallpixels3.append(iconCanvas.create_rectangle((j*smalsize)+2, (i*smalsize)+66, ((j+1)*smalsize)+2, ((i+1)*smalsize)+66, fill='grey', outline=""))
+                smallpixels4.append(iconCanvas.create_rectangle((j*smalsize)+66, (i*smalsize)+66, ((j+1)*smalsize)+66, ((i+1)*smalsize)+66, fill='grey', outline=""))
+                j += 1
+            i += 1
+
+    smallpatternpx = []
+    i = 0
+    while i < (8*4):
+        t = []
+        smallpatternpx.append(t)
+        i+=1
+
+    if patternMode == True:
+        i = 0
+        while i < 4:
+            j = 0
+            while j < 8:
+                y = 0
+                while y < spriteSize:
+                    x = 0
+                    while x < spriteSize:
+                        x1 = (j * (smalsize*spriteSize)) + (x*smalsize) + 2
+                        x2 = (j * (smalsize*spriteSize)) + (x*smalsize) + smalsize + 2
+                        y1 = (i * (smalsize*spriteSize)) + (y*smalsize) + 2
+                        y2 = (i * (smalsize*spriteSize)) + (y*smalsize) + smalsize + 2
+                        smallpatternpx[(i*8)+j].append(iconCanvas.create_rectangle(x1, y1, x2, y2, fill='grey', outline=""))
+                        x+=1
+                    y+=1
+                j += 1
+            i += 1
+
+    if patternMode == False:
+        iconCanvas.create_line(64+2, 0+2, 64+2, 128+2)
+        iconCanvas.create_line(0+2, 64+2, 128+2, 64+2)
+    if patternMode == True:
+        iconCanvas.create_line(64+2, 0+2, 64+2, 128+2)
+        iconCanvas.create_line(0+2, 64+2, 256+2, 64+2)
+        iconCanvas.create_line(32+2, 0+2, 32+2, 128+2)
+        iconCanvas.create_line(96+2, 0+2, 96+2, 128+2)
+        iconCanvas.create_line(0+2, 32+2, 256+2, 32+2)
+        iconCanvas.create_line(0+2, 96+2, 256+2, 96+2)
+        iconCanvas.create_line(128+2, 0+2, 128+2, 128+2)
+        iconCanvas.create_line(192+2, 0+2, 192+2, 128+2)
+        iconCanvas.create_line(160+2, 0+2, 160+2, 128+2)
+        iconCanvas.create_line(224+2, 0+2, 224+2, 128+2)
+    if bl:
+        bl.destroy()
+    if br:
+        br.destroy()
+    if patternMode == False:
+        bl = tk.Button(win, text="<", command=page_back)
+        bl.grid(row=11, column=11, columnspan=1)
+        br = tk.Button(win, text=">", command=page_forward)
+        br.grid(row=11, column=12, columnspan=1)
+    else:
+        bl = tk.Button(win, text="<", command=page_back)
+        bl.grid(row=11, column=12, columnspan=1)
+        br = tk.Button(win, text=">", command=page_forward)
+        br.grid(row=11, column=13, columnspan=1)
+    
+    global filename 
+    global asmfile 
+    filename = ''
+    asmfile = ''
+    # Bind events
+    drawCanvas.bind("<Button-1>", color_pixel)
+    drawCanvas.bind("<B1-Motion>", color_pixel)
+    drawCanvas.bind("<Button-3>", erase_pixel)
+    drawCanvas.bind("<B3-Motion>", erase_pixel)
+        
+    reset_mask_data()
+    reset_pattern_data()
+
+    return
+
+initialize_new(False)
 # Run the app
+app.resizable(False, False)
 app.protocol("WM_DELETE_WINDOW", client_exit)
 app.mainloop()
