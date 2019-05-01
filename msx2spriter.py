@@ -17,7 +17,10 @@
 # Imports 
 import tkinter as tk
 import sys 
-import math 
+import math
+
+#TODO FIX ME
+patternMode = True
 
 # MSX2 default 16-color palette, in integer strings
 defaultIntegerPalette = [
@@ -286,14 +289,14 @@ while j < 6:
 def repaint_row(row):
     global currentColor
     i = 0
-    while i < 16:
+    while i < spriteSize:
         # TODO update 'grey' to transparent variable
         if mask.get() == 1:
-            if pixels_mask1[(row*16)+i] != 0: 
-                pixels_mask1[(row*16)+i] = currentPalNo
+            if pixels_mask1[(row*spriteSize)+i] != 0: 
+                pixels_mask1[(row*spriteSize)+i] = currentPalNo
         if mask.get() == 2:
-            if pixels_mask2[(row*16)+i] != 0:
-                pixels_mask2[(row*16)+i] = currentPalNo    
+            if pixels_mask2[(row*spriteSize)+i] != 0:
+                pixels_mask2[(row*spriteSize)+i] = currentPalNo    
         i += 1
     #return
 
@@ -303,15 +306,20 @@ def color_pixel(ob):
     y_px = math.floor(ob.y/pixelSize)
     if ob.x < 0 or ob.x >= (spriteSize*pixelSize) or ob.y < 0 or ob.y >= (spriteSize*pixelSize):
         return 
-    if mask.get() == 1:
-        pixels_mask1[(y_px*spriteSize)+x_px] = currentPalNo
-    if mask.get() == 2:
-        pixels_mask2[(y_px*spriteSize)+x_px] = currentPalNo
-    # TODO update this to trans
-    if currentColor != 'trans':
-        repaint_row(y_px)
-    maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
-    maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    if patternMode == False:
+        if mask.get() == 1:
+            pixels_mask1[(y_px*spriteSize)+x_px] = currentPalNo
+        if mask.get() == 2:
+            pixels_mask2[(y_px*spriteSize)+x_px] = currentPalNo
+        # TODO update this to trans
+        if currentColor != 'trans':
+            repaint_row(y_px)
+        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    else:
+        pixels_mask1[(y_px*spriteSize)+x_px] = currentPalNo 
+        patterndata[icon_selected] = pixels_mask1.copy()
+        #a = 0
     refresh_display(False)
     #return
 
@@ -330,6 +338,9 @@ def erase_pixel(ob):
 
 pixelSize = 16
 spriteSize = 16
+if patternMode == True:
+    pixelSize = 32
+    spriteSize = 8
 
 # Both layers enabled?
 def update_orlayer():
@@ -444,15 +455,16 @@ def refresh_display(allicons=False):
             i += 1
  #
 
-# add radials to swap between mask 1 and mask 2
-r1 = tk.Radiobutton(win, text='Mask 1', variable=mask, value=2, command=refresh_display)
-r1.grid(row=14, column=4, columnspan=3)
-r0 = tk.Radiobutton(win, text='Mask 0', variable=mask, value=1, command=refresh_display)
-r0.grid(row=14, column=1, columnspan=3)
-s1 = tk.Checkbutton(win, text='Show 1', variable=show_m2, command=refresh_display)
-s1.grid(row=15, column=4, columnspan=3)
-s0 = tk.Checkbutton(win, text='Show 0', variable=show_m1, command=refresh_display)
-s0.grid(row=15, column=1, columnspan=3)
+if patternMode == False:
+    # add radials to swap between mask 1 and mask 2
+    r1 = tk.Radiobutton(win, text='Mask 1', variable=mask, value=2, command=refresh_display)
+    r1.grid(row=14, column=4, columnspan=3)
+    r0 = tk.Radiobutton(win, text='Mask 0', variable=mask, value=1, command=refresh_display)
+    r0.grid(row=14, column=1, columnspan=3)
+    s1 = tk.Checkbutton(win, text='Show 1', variable=show_m2, command=refresh_display)
+    s1.grid(row=15, column=4, columnspan=3)
+    s0 = tk.Checkbutton(win, text='Show 0', variable=show_m1, command=refresh_display)
+    s0.grid(row=15, column=1, columnspan=3)
 
 icon_selected = 0
 
@@ -474,7 +486,27 @@ def reset_mask_data():
         maskdata.append(temp)
         i += 1
 reset_mask_data()
+patterndata = []
+def reset_pattern_data():
+    global patterndata 
+    global templatepx 
+    patterndata = []
+    templatepx = []
+    i = 0 
+    while i < (spriteSize*spriteSize): #64
+        templatepx.append(0)
+        i += 1
+    i = 0
+    while i < 768:
+        temp = templatepx.copy()
+        patterndata.append(temp)
+        i += 1
+reset_pattern_data()
+
 #=maskdata[32][256]
+pattern_y_ofs = 0
+pattern_x_ofs = 0
+pattern_page = 0
 page_ofs = 0
 def select_from_icon(obj):
     global page_ofs
@@ -482,119 +514,202 @@ def select_from_icon(obj):
     global pixels_mask1
     global pixels_mask2
     # first, copy current pixel mask into maskdata[].
-    if icon_selected == 0:
-        maskdata[0+page_ofs] = pixels_mask1.copy()
-        maskdata[1+page_ofs] = pixels_mask2.copy()
-    elif icon_selected == 1:
-        maskdata[2+page_ofs] = pixels_mask1.copy()
-        maskdata[3+page_ofs] = pixels_mask2.copy()
-    elif icon_selected == 2:
-        maskdata[4+page_ofs] = pixels_mask1.copy()
-        maskdata[5+page_ofs] = pixels_mask2.copy()
-    elif icon_selected == 3:
-        maskdata[6+page_ofs] = pixels_mask1.copy()
-        maskdata[7+page_ofs] = pixels_mask2.copy()
+    if patternMode == False:
+        if icon_selected == 0:
+            maskdata[0+page_ofs] = pixels_mask1.copy()
+            maskdata[1+page_ofs] = pixels_mask2.copy()
+        elif icon_selected == 1:
+            maskdata[2+page_ofs] = pixels_mask1.copy()
+            maskdata[3+page_ofs] = pixels_mask2.copy()
+        elif icon_selected == 2:
+            maskdata[4+page_ofs] = pixels_mask1.copy()
+            maskdata[5+page_ofs] = pixels_mask2.copy()
+        elif icon_selected == 3:
+            maskdata[6+page_ofs] = pixels_mask1.copy()
+            maskdata[7+page_ofs] = pixels_mask2.copy()
     # now, copy maskdata back to drawn pixel mask.
-    if (obj.x < 64) and (obj.y < 64):
-        # selection top left 
-        icon_selected = 0
-        pixels_mask1 = maskdata[0+page_ofs].copy()
-        pixels_mask2 = maskdata[1+page_ofs].copy()
-    elif (obj.x > 64) and (obj.y < 64):
-        icon_selected = 1
-        pixels_mask1 = maskdata[2+page_ofs].copy()
-        pixels_mask2 = maskdata[3+page_ofs].copy()
-    elif (obj.x < 64) and (obj.y > 64):
-        icon_selected = 2
-        pixels_mask1 = maskdata[4+page_ofs].copy()
-        pixels_mask2 = maskdata[5+page_ofs].copy()
-    elif (obj.x > 64) and (obj.y > 64):
-        icon_selected = 3
-        pixels_mask1 = maskdata[6+page_ofs].copy()
-        pixels_mask2 = maskdata[7+page_ofs].copy()
-    update_label_txt()
+        if (obj.x < 64) and (obj.y < 64):
+            # selection top left 
+            icon_selected = 0
+            pixels_mask1 = maskdata[0+page_ofs].copy()
+            pixels_mask2 = maskdata[1+page_ofs].copy()
+        elif (obj.x > 64) and (obj.y < 64):
+            icon_selected = 1
+            pixels_mask1 = maskdata[2+page_ofs].copy()
+            pixels_mask2 = maskdata[3+page_ofs].copy()
+        elif (obj.x < 64) and (obj.y > 64):
+            icon_selected = 2
+            pixels_mask1 = maskdata[4+page_ofs].copy()
+            pixels_mask2 = maskdata[5+page_ofs].copy()
+        elif (obj.x > 64) and (obj.y > 64):
+            icon_selected = 3
+            pixels_mask1 = maskdata[6+page_ofs].copy()
+            pixels_mask2 = maskdata[7+page_ofs].copy()
+        update_label_txt()
+    else:
+        # PATTERN MODE!
+        # copy current mask (pixels_mask1) into patterndata
+        # then check position
+        ## and set pixels_mask1 as patterndata[x].copy
+        # use obj.x and obj.y 
+        patterndata[icon_selected] = pixels_mask1.copy()
+        sel_ptn = math.floor(obj.y/32) + pattern_y_ofs 
+        sel_ptn = (sel_ptn*32) + math.floor(obj.x/32) + pattern_x_ofs 
+        icon_selected = sel_ptn 
+        pixels_mask1 = patterndata[sel_ptn].copy()
+        #print(sel_ptn)
     refresh_display(False)
     #return 
-
-iconCanvas = tk.Canvas(win,background='grey',width=128+2,height=128+2)
-l0 = tk.Label(win, text='0 - 1')
-l0.grid(row=3, column=10, columnspan=2)
-l1 = tk.Label(win, text='2 - 3')
-l1.grid(row=3, column=12, columnspan=2)
-iconCanvas.grid(row=3, column=10, columnspan=4, rowspan=8)
-l2 = tk.Label(win, text='4 - 5')
-l2.grid(row=10, column=10, columnspan=2)
-l3 = tk.Label(win, text='6 - 7')
-l3.grid(row=10, column=12, columnspan=2)
+iconwidth = 128
+iconcanvascolumn = 8
+if patternMode == True:
+    iconwidth = 256
+    iconcanvascolumn = 10
+iconCanvas = tk.Canvas(win,background='grey',width=iconwidth+2,height=128+2)
+iconCanvas.grid(row=3, column=iconcanvascolumn, columnspan=8, rowspan=8)
 iconCanvas.bind("<Button-1>", select_from_icon)
+if patternMode == False:
+    l0 = tk.Label(win, text='0 - 1')
+    l0.grid(row=3, column=10, columnspan=2)
+    l1 = tk.Label(win, text='2 - 3')
+    l1.grid(row=3, column=12, columnspan=2)
+    l2 = tk.Label(win, text='4 - 5')
+    l2.grid(row=10, column=10, columnspan=2)
+    l3 = tk.Label(win, text='6 - 7')
+    l3.grid(row=10, column=12, columnspan=2)
+else: 
+    l0 = tk.Label(win, text='Pattern 0\nX: 0 Y: 0')
+    l0.grid(row=12, column=12, columnspan=2)#, columnspan=2, rowspan=2)
+    l1 = tk.Label(win, text="Table 1 / 3")
+    l1.grid(row=13, column=12, columnspan=2)
 
 def update_label_txt():
-    global icon_selected
-    global page_ofs 
-    t = 'Mask {}'.format(str((icon_selected*2)+page_ofs))
-    r0.config(text=t)
-    t = 'Mask {}'.format(str((icon_selected*2)+1+page_ofs))
-    r1.config(text=t)
-    t = 'Show {}'.format(str((icon_selected*2)+page_ofs))
-    s0.config(text=t)
-    t = 'Show {}'.format(str((icon_selected*2)+1+page_ofs))
-    s1.config(text=t)
-    # also l0-l3
-    t = '{} - {}'.format(str(page_ofs+0), str(page_ofs+1))
-    l0.config(text=t)
-    t = '{} - {}'.format(str(page_ofs+2), str(page_ofs+3))
-    l1.config(text=t)
-    t = '{} - {}'.format(str(page_ofs+4), str(page_ofs+5))
-    l2.config(text=t)
-    t = '{} - {}'.format(str(page_ofs+6), str(page_ofs+7))
-    l3.config(text=t)
+    if patternMode == False:
+        global icon_selected
+        global page_ofs 
+        t = 'Mask {}'.format(str((icon_selected*2)+page_ofs))
+        r0.config(text=t)
+        t = 'Mask {}'.format(str((icon_selected*2)+1+page_ofs))
+        r1.config(text=t)
+        t = 'Show {}'.format(str((icon_selected*2)+page_ofs))
+        s0.config(text=t)
+        t = 'Show {}'.format(str((icon_selected*2)+1+page_ofs))
+        s1.config(text=t)
+        # also l0-l3
+        t = '{} - {}'.format(str(page_ofs+0), str(page_ofs+1))
+        l0.config(text=t)
+        t = '{} - {}'.format(str(page_ofs+2), str(page_ofs+3))
+        l1.config(text=t)
+        t = '{} - {}'.format(str(page_ofs+4), str(page_ofs+5))
+        l2.config(text=t)
+        t = '{} - {}'.format(str(page_ofs+6), str(page_ofs+7))
+        l3.config(text=t)
     #return 
-
-smallpixels1 = []
-smallpixels2 = []
-smallpixels3 = []
-smallpixels4 = []
 smalsize = 4
-i = 0
-while i < 16:
-    j = 0 
-    while j < 16:
-        smallpixels1.append(iconCanvas.create_rectangle((j*smalsize)+2, (i*smalsize)+2, ((j+1)*smalsize)+2, ((i+1)*smalsize)+2, fill='grey', outline=""))
-        smallpixels2.append(iconCanvas.create_rectangle((j*smalsize)+66, (i*smalsize)+2, ((j+1)*smalsize)+66, ((i+1)*smalsize)+2, fill='grey', outline=""))
-        smallpixels3.append(iconCanvas.create_rectangle((j*smalsize)+2, (i*smalsize)+66, ((j+1)*smalsize)+2, ((i+1)*smalsize)+66, fill='grey', outline=""))
-        smallpixels4.append(iconCanvas.create_rectangle((j*smalsize)+66, (i*smalsize)+66, ((j+1)*smalsize)+66, ((i+1)*smalsize)+66, fill='grey', outline=""))
-        j += 1
-    i += 1
-iconCanvas.create_line(64+2, 0+2, 64+2, 128+2)
-iconCanvas.create_line(0+2, 64+2, 128+2, 64+2)
+if patternMode == False:
+    smallpixels1 = []
+    smallpixels2 = []
+    smallpixels3 = []
+    smallpixels4 = []
+    i = 0
+    while i < 16:
+        j = 0 
+        while j < 16:
+            smallpixels1.append(iconCanvas.create_rectangle((j*smalsize)+2, (i*smalsize)+2, ((j+1)*smalsize)+2, ((i+1)*smalsize)+2, fill='grey', outline=""))
+            smallpixels2.append(iconCanvas.create_rectangle((j*smalsize)+66, (i*smalsize)+2, ((j+1)*smalsize)+66, ((i+1)*smalsize)+2, fill='grey', outline=""))
+            smallpixels3.append(iconCanvas.create_rectangle((j*smalsize)+2, (i*smalsize)+66, ((j+1)*smalsize)+2, ((i+1)*smalsize)+66, fill='grey', outline=""))
+            smallpixels4.append(iconCanvas.create_rectangle((j*smalsize)+66, (i*smalsize)+66, ((j+1)*smalsize)+66, ((i+1)*smalsize)+66, fill='grey', outline=""))
+            j += 1
+        i += 1
 
+smallpatternpx = []
+i = 0
+while i < (8*4):
+    t = []
+    smallpatternpx.append(t)
+    i+=1
+
+if patternMode == True:
+    i = 0
+    while i < 4:
+        j = 0
+        while j < 8:
+            y = 0
+            while y < spriteSize:
+                x = 0
+                while x < spriteSize:
+                    x1 = (j * (smalsize*spriteSize)) + (x*smalsize) + 2
+                    x2 = (j * (smalsize*spriteSize)) + (x*smalsize) + smalsize + 2
+                    y1 = (i * (smalsize*spriteSize)) + (y*smalsize) + 2
+                    y2 = (i * (smalsize*spriteSize)) + (y*smalsize) + smalsize + 2
+                    smallpatternpx[(i*8)+j].append(iconCanvas.create_rectangle(x1, y1, x2, y2, fill='grey', outline=""))
+                    x+=1
+                y+=1
+            j += 1
+        i += 1
+
+if patternMode == False:
+    iconCanvas.create_line(64+2, 0+2, 64+2, 128+2)
+    iconCanvas.create_line(0+2, 64+2, 128+2, 64+2)
+if patternMode == True:
+    iconCanvas.create_line(64+2, 0+2, 64+2, 128+2)
+    iconCanvas.create_line(0+2, 64+2, 256+2, 64+2)
+    iconCanvas.create_line(32+2, 0+2, 32+2, 128+2)
+    iconCanvas.create_line(96+2, 0+2, 96+2, 128+2)
+    iconCanvas.create_line(0+2, 32+2, 256+2, 32+2)
+    iconCanvas.create_line(0+2, 96+2, 256+2, 96+2)
+    iconCanvas.create_line(128+2, 0+2, 128+2, 128+2)
+    iconCanvas.create_line(192+2, 0+2, 192+2, 128+2)
+    iconCanvas.create_line(160+2, 0+2, 160+2, 128+2)
+    iconCanvas.create_line(224+2, 0+2, 224+2, 128+2)
 
 def update_icon_window(win_no):
-    # Both layers!
     global icon_selected
-    global page_ofs 
-    orpixels = maskdata[(win_no*2)+page_ofs].copy() 
-    or2pixels = maskdata[(win_no*2)+page_ofs+1].copy()
-    i = 0
-    while i < (spriteSize*spriteSize):
-        if orpixels[i] != 0 and or2pixels[i] != 0:
-            orpixels[i] = orpixels[i] | or2pixels[i] 
-        elif orpixels[i] == 0 and or2pixels[i] != 0:
-            orpixels[i] = or2pixels[i] 
-        topaint = 'grey'
-        cur_px = orpixels[i]
-        if palette_display[cur_px].myVal != 'trans':
+    if patternMode == False:
+        # Both layers!
+        global page_ofs 
+        orpixels = maskdata[(win_no*2)+page_ofs].copy() 
+        or2pixels = maskdata[(win_no*2)+page_ofs+1].copy()
+        i = 0
+        while i < (spriteSize*spriteSize):
+            if orpixels[i] != 0 and or2pixels[i] != 0:
+                orpixels[i] = orpixels[i] | or2pixels[i] 
+            elif orpixels[i] == 0 and or2pixels[i] != 0:
+                orpixels[i] = or2pixels[i] 
+            topaint = 'grey'
+            cur_px = orpixels[i]
+            if palette_display[cur_px].myVal != 'trans':
+                intval = palette_display[cur_px].myVal
+                topaint = single_intcol_to_hex(intval)
+            if win_no == 0:
+                iconCanvas.itemconfig(smallpixels1[i], fill=topaint)
+            elif win_no == 1:
+                iconCanvas.itemconfig(smallpixels2[i], fill=topaint)
+            elif win_no == 2:
+                iconCanvas.itemconfig(smallpixels3[i], fill=topaint)
+            elif win_no == 3:
+                iconCanvas.itemconfig(smallpixels4[i], fill=topaint)
+            i += 1
+    else:
+        # PATTERN MODE DRAWS!
+        # need to reduce icon_selected by offsets.
+        global pattern_y_ofs 
+        global pattern_x_ofs 
+        disp_icon = icon_selected 
+        if icon_selected > 31:
+            disp_icon = icon_selected - 32 + 8
+        if icon_selected > (31+32):
+            disp_icon = icon_selected - 64 + 16
+        if icon_selected > (31+(32*2)):
+            disp_icon = icon_selected - (32*3) + (8*3)
+        i = 0
+        while i < spriteSize*spriteSize:
+            cur_px = pixels_mask1[i]
             intval = palette_display[cur_px].myVal
             topaint = single_intcol_to_hex(intval)
-        if win_no == 0:
-            iconCanvas.itemconfig(smallpixels1[i], fill=topaint)
-        elif win_no == 1:
-            iconCanvas.itemconfig(smallpixels2[i], fill=topaint)
-        elif win_no == 2:
-            iconCanvas.itemconfig(smallpixels3[i], fill=topaint)
-        elif win_no == 3:
-            iconCanvas.itemconfig(smallpixels4[i], fill=topaint)
-        i += 1
+            iconCanvas.itemconfig(smallpatternpx[disp_icon+pattern_x_ofs][i], fill=topaint)
+            i += 1
+        return 
     #return
     
 # 2. add pagination to sprite view panel
@@ -632,8 +747,9 @@ def page_forward():
     update_label_txt()
     refresh_display(True)
     #return 
-tk.Button(win, text="<", command=page_back).grid(row=11, column=11, columnspan=1)
-tk.Button(win, text=">", command=page_forward).grid(row=11, column=12, columnspan=1)
+if patternMode == False:
+    tk.Button(win, text="<", command=page_back).grid(row=11, column=11, columnspan=1)
+    tk.Button(win, text=">", command=page_forward).grid(row=11, column=12, columnspan=1)
 
 # 3. export and import palette and sprites as DBs
 from tkinter import filedialog
@@ -994,9 +1110,11 @@ def save_normal():
         savem2s()
     #return
 
+
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
-fileMenu.add_command(label="New", command=new_file)
+fileMenu.add_command(label="New sprite file", command=new_file)
+#fileMenu.add_command(label="New pattern file", command=new_pattern_file)
 fileMenu.add_command(label="Save", command=save_normal)
 fileMenu.add_command(label="Save As .M2S...", command=save_as)
 fileMenu.add_command(label="Load .M2S...", command=load_as)
