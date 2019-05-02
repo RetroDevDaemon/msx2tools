@@ -503,6 +503,7 @@ show_m2.set(True)
 
 # Universally updates all 256 pixels
 def refresh_display(allicons=False):
+    global patternMode 
     transparent = 'grey'
     i = 0
     while i < (spriteSize*spriteSize):
@@ -516,12 +517,33 @@ def refresh_display(allicons=False):
         update_layermask_2()
     if allicons == False:
         global icon_selected
-        update_icon_window(icon_selected)
+        global patternMode 
+        if patternMode == False:
+            update_icon_window(icon_selected)
+        else:
+            update_icon_window()
     else:
-        i = 0
-        while i < 4:
-            update_icon_window(i)
-            i += 1
+        #global patternMode
+        if patternMode == False:
+            i = 0
+            while i < 4:
+                update_icon_window(i)
+                i += 1
+        else:
+            # i = 0
+            # while i < (256*3):
+            #     if i <= 31:
+            #         disp_icon = i - pattern_x_ofs 
+            #     if i > 31:
+            #         disp_icon = i - 32 + 8 - pattern_x_ofs
+            #     if i > (31+32):
+            #         disp_icon = i - 64 + 16 - pattern_x_ofs
+            #     if i > (31+(32*2)):
+            #         disp_icon = i - (32*3) + (8*3) - pattern_x_ofs
+            #     if disp_icon < 31:
+            #         update_icon_window(disp_icon)
+            #     i += 1
+            #update_pattern_icons()
  #
 ##
 
@@ -661,7 +683,7 @@ def update_label_txt():
     #return 
 smalsize = 4
 
-def update_icon_window(win_no):
+def update_icon_window(win_no=None):
     global icon_selected
     global smallpixels1
     global smallpixels2
@@ -697,25 +719,47 @@ def update_icon_window(win_no):
         # need to reduce icon_selected by offsets.
         global pattern_y_ofs 
         global pattern_x_ofs 
-        disp_icon = icon_selected 
+        #osel = icon_selected 
+        #if win_no != None:
+        #    icon_selected = win_no
+        if icon_selected <= 31:
+            disp_icon = icon_selected - pattern_x_ofs 
         if icon_selected > 31:
-            disp_icon = icon_selected - 32 + 8
+            disp_icon = icon_selected - 32 + 8 - pattern_x_ofs
         if icon_selected > (31+32):
-            disp_icon = icon_selected - 64 + 16
+            disp_icon = icon_selected - 64 + 16 - pattern_x_ofs
         if icon_selected > (31+(32*2)):
-            disp_icon = icon_selected - (32*3) + (8*3)
+            disp_icon = icon_selected - (32*3) + (8*3) - pattern_x_ofs
+        #disp_icon = win_no
         i = 0
         while i < spriteSize*spriteSize:
-            cur_px = pixels_mask1[i]
-            #if cur_px == None:
-            #    cur_px = 0 # stupid fix
+            #cur_px = pixels_mask1[i]
+            cur_px = patterndata[icon_selected][i]
             intval = palette_display[cur_px].myVal
             topaint = single_intcol_to_hex(intval)
-            iconCanvas.itemconfig(smallpatternpx[disp_icon+pattern_x_ofs][i], fill=topaint)
+            iconCanvas.itemconfig(smallpatternpx[disp_icon][i], fill=topaint)
             i += 1
+        #icon_selected = osel
         return 
     #return
-    
+
+def update_pattern_icons():
+    # use this to only refresh the icon view when turning pages
+    i = 0
+    while i < (8):
+        # i is smallpatternpx icon number
+        p = 0
+        while p < (spriteSize*spriteSize):
+            # fill each p in i with patterndata
+            #cp = patterndata[i+(pattern_x_ofs*4)+(pattern_y_ofs*32)][p]
+            #cp = 
+            intval = palette_display[cp].myVal 
+            topaint = single_intcol_to_hex(intval)
+            iconCanvas.itemconfig(smallpatternpx[i][p], fill=topaint)
+            p+=1
+        i+=1
+    return     
+
 # 2. add pagination to sprite view panel
 def page_back():
     global page_ofs
@@ -1158,6 +1202,19 @@ br = None
 bu = None 
 bd = None
 
+def pattern_move_back():
+    global pattern_x_ofs
+    if pattern_x_ofs > 0:
+        pattern_x_ofs -= 1
+    refresh_display(True)
+    return
+def pattern_move_fwd():
+    global pattern_x_ofs
+    if pattern_x_ofs < (32-8):
+        pattern_x_ofs += 1
+    refresh_display(True)
+    return
+
 def initialize_new(patternMode):
     global intpal 
     intpal = defaultIntegerPalette.copy()
@@ -1341,9 +1398,9 @@ def initialize_new(patternMode):
         br = tk.Button(win, text=">", command=page_forward)
         br.grid(row=11, column=12, columnspan=1)
     else:
-        bl = tk.Button(win, text="<", command=page_back)
+        bl = tk.Button(win, text="<", command=pattern_move_back)
         bl.grid(row=11, column=12, columnspan=1)
-        br = tk.Button(win, text=">", command=page_forward)
+        br = tk.Button(win, text=">", command=pattern_move_fwd)
         br.grid(row=11, column=13, columnspan=1)
     
     global filename 
