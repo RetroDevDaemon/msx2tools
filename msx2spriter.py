@@ -522,6 +522,7 @@ def refresh_display(allicons=False):
             update_icon_window(icon_selected)
         else:
             update_icon_window()
+            
     else:
         #global patternMode
         if patternMode == False:
@@ -530,20 +531,7 @@ def refresh_display(allicons=False):
                 update_icon_window(i)
                 i += 1
         else:
-            # i = 0
-            # while i < (256*3):
-            #     if i <= 31:
-            #         disp_icon = i - pattern_x_ofs 
-            #     if i > 31:
-            #         disp_icon = i - 32 + 8 - pattern_x_ofs
-            #     if i > (31+32):
-            #         disp_icon = i - 64 + 16 - pattern_x_ofs
-            #     if i > (31+(32*2)):
-            #         disp_icon = i - (32*3) + (8*3) - pattern_x_ofs
-            #     if disp_icon < 31:
-            #         update_icon_window(disp_icon)
-            #     i += 1
-            #update_pattern_icons()
+           update_pattern_icons()
  #
 ##
 
@@ -583,11 +571,14 @@ def reset_pattern_data():
         i += 1
 ##        
 
+pattern_icon_selected = 0
+
 def select_from_icon(obj):
     global page_ofs
     global icon_selected
     global pixels_mask1
     global pixels_mask2
+    global pattern_icon_selected
     # first, copy current pixel mask into maskdata[].
     if patternMode == False:
         if icon_selected == 0:
@@ -632,8 +623,8 @@ def select_from_icon(obj):
         sel_ptn = (sel_ptn*32) + math.floor(obj.x/32) + pattern_x_ofs 
         icon_selected = sel_ptn 
         pixels_mask1 = patterndata[sel_ptn].copy()
+        pattern_icon_selected = math.floor(obj.x/32) + (math.floor(obj.y/32)*8)
         l0.configure(text='Pattern {}\nX: {} Y: {}'.format(sel_ptn, (math.floor(obj.x/32) + pattern_x_ofs), (math.floor(obj.y/32) + pattern_y_ofs) ))
-        #print(sel_ptn)
     refresh_display(False)
 
 
@@ -719,45 +710,47 @@ def update_icon_window(win_no=None):
         # need to reduce icon_selected by offsets.
         global pattern_y_ofs 
         global pattern_x_ofs 
-        #osel = icon_selected 
-        #if win_no != None:
-        #    icon_selected = win_no
-        if icon_selected <= 31:
-            disp_icon = icon_selected - pattern_x_ofs 
-        if icon_selected > 31:
-            disp_icon = icon_selected - 32 + 8 - pattern_x_ofs
-        if icon_selected > (31+32):
-            disp_icon = icon_selected - 64 + 16 - pattern_x_ofs
-        if icon_selected > (31+(32*2)):
-            disp_icon = icon_selected - (32*3) + (8*3) - pattern_x_ofs
-        #disp_icon = win_no
+        global pattern_icon_selected
         i = 0
         while i < spriteSize*spriteSize:
-            #cur_px = pixels_mask1[i]
             cur_px = patterndata[icon_selected][i]
             intval = palette_display[cur_px].myVal
             topaint = single_intcol_to_hex(intval)
-            iconCanvas.itemconfig(smallpatternpx[disp_icon][i], fill=topaint)
+            iconCanvas.itemconfig(smallpatternpx[pattern_icon_selected][i], fill=topaint)
             i += 1
-        #icon_selected = osel
         return 
     #return
 
 def update_pattern_icons():
     # use this to only refresh the icon view when turning pages
+    # loop 1: patterndata = 0-31
+    # render smallpatternpx 0-7 with data 0-7+xoffset
     i = 0
-    while i < (8):
-        # i is smallpatternpx icon number
+    while i < 8:
         p = 0
         while p < (spriteSize*spriteSize):
-            # fill each p in i with patterndata
-            #cp = patterndata[i+(pattern_x_ofs*4)+(pattern_y_ofs*32)][p]
-            #cp = 
-            intval = palette_display[cp].myVal 
+            px = patterndata[i+pattern_x_ofs+(pattern_y_ofs*32)][p]
+            intval = palette_display[px].myVal
             topaint = single_intcol_to_hex(intval)
             iconCanvas.itemconfig(smallpatternpx[i][p], fill=topaint)
-            p+=1
+            #row 2?
+            px = patterndata[i+pattern_x_ofs+(pattern_y_ofs*32)+32][p]
+            intval = palette_display[px].myVal
+            topaint = single_intcol_to_hex(intval)
+            iconCanvas.itemconfig(smallpatternpx[i+8][p], fill=topaint)
+            #row 3
+            px = patterndata[i+pattern_x_ofs+(pattern_y_ofs*32)+64][p]
+            intval = palette_display[px].myVal
+            topaint = single_intcol_to_hex(intval)
+            iconCanvas.itemconfig(smallpatternpx[i+16][p], fill=topaint)
+            #row 4
+            px = patterndata[i+pattern_x_ofs+(pattern_y_ofs*32)+(32*3)][p]
+            intval = palette_display[px].myVal
+            topaint = single_intcol_to_hex(intval)
+            iconCanvas.itemconfig(smallpatternpx[i+24][p], fill=topaint)
+            p += 1
         i+=1
+    
     return     
 
 # 2. add pagination to sprite view panel
@@ -795,36 +788,175 @@ def page_forward():
     update_label_txt()
     refresh_display(True)
     #return 
-##    
-# if patternMode == False:
-#     tk.Button(win, text="<", command=page_back).grid(row=11, column=11, columnspan=1)
-#     tk.Button(win, text=">", command=page_forward).grid(row=11, column=12, columnspan=1)
-##
-# 3. export and import palette and sprites as DBs
+
 from tkinter import filedialog
+
+def save_pattern_as():
+    global patternMode
+    patternMode = True 
+    save_as()
+def save_sprite_as():
+    global patternMode
+    patternMode = False 
+    save_as()
 
 def save_as():
     global filename 
     global patternMode
     if patternMode == True:
-        messagebox.showwarning("Error","Saving not supported for tile mode.")
-        return 
-    filename = tk.filedialog.asksaveasfilename(title='Save MSX2 Spriter file', filetypes=( ('MSX2 Spriter file', '*.m2s'),('All files', '*.*') ))
+        #messagebox.showwarning("Error","Saving not supported for tile mode.")
+        filename = tk.filedialog.asksaveasfilename(title='Save MSX2 Spriter file', filetypes=( ('MSX2 Spriter pattern file', '*.m2p'),('All files', '*.*') ))
+        #return 
+    else:
+        filename = tk.filedialog.asksaveasfilename(title='Save MSX2 Spriter file', filetypes=( ('MSX2 Spriter sprite file', '*.m2s'),('All files', '*.*') ))
     if filename == '':
         return 
-    savem2s()
+    if patternMode == True:
+        savem2p()
+    else:
+        savem2s()
     #return
-def load_as():
+def load_as(reset=False):
     global filename 
+    global patternMode 
+    if patternMode == True:
+        messagebox.showwarning("Error","Loading for M2P not supported yet")
+        return 
     filename = tk.filedialog.askopenfilename(title='Load MSX2 Spriter file', filetypes=( ('MSX2 Spriter file', '*.m2s'),('All files', '*.*') ))
     if filename == '':
         return 
+    if reset == True:
+        initialize_new(patternMode, True)
     loadm2s()
+def load_pattern_as():
+    global patternMode
+    patternMode = True
+    load_as()
     #return 
+def load_sprite_as():
+    global patternMode
+    reset = False
+    if patternMode != False:
+        patternMode = False
+        reset = True 
+    load_as(reset)
 
-## Z80 ASSEMBLY EXPORT - THE GOOD SHIT ##    
-#filename = ''
-#asmfile = ''
+## Z80 ASSEMBLY EXPORT - THE GOOD SHIT ##   
+def export_asm_pattern():
+    global asmfile 
+    asmfile = ''
+    asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 pattern assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
+    if asmfile == '':
+        return 
+    outdata = []
+    outdata_c = []
+    colors_array = []
+    outdata.append("; Made with MSX2 Spriter")
+    outdata.append(";")
+    outdata.append("; Pattern generator data")
+    outdata.append("; VDP location default @ $0000")
+    #
+    # append ' ; Pattern table x
+    pl = 0
+    while pl < 3:
+        outdata.append(";;;;;;;;;;;;;;;;;;")
+        outdata.append("; Pattern table {}".format(pl+1))
+        # determine palette values for color 0 and color 1
+        tl = 0
+        while tl < 256:
+            rl = 0
+            #outdata.append (" DB  ")
+            rowout = []
+            rowout.append(" DB  ")
+            thisbyteout = ''
+            while rl < 8:
+                #c1 = None 
+                c2 = None 
+                c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                cl = 1 
+                while cl < 8:
+                    if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
+                        c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
+                    if c2 != None:
+                        cl = 8
+                    cl += 1 #col loop
+                if c2 == None:
+                    c2 = 0
+                ## now convert to binary
+                c1b = format(c1, '04b')
+                c2b = format(c2, '04b')
+                colors_array.append('{}{}'.format(c2b, c1b))
+                #now colors_array has color byte
+                reformatrow = []
+                clp = 0 
+                while clp < 8:
+                    if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
+                        #is this pixel color 0?
+                        reformatrow.append('0')
+                    elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
+                        reformatrow.append('1')
+                    clp += 1
+                thisbyteout = ''.join(reformatrow)
+                thisbyteout = '$' + format(int(thisbyteout,2), '02x') + ', '
+                rowout.append(thisbyteout)
+                rl += 1 #row loop
+            rowout = ''.join(rowout)[:-2] + ' ; {}'.format(tl)
+            outdata.append(rowout)
+            tl += 1 #tile loop
+        pl += 1 #pattern loop
+    outdata_c.append("; Made with MSX2 Spriter")
+    outdata_c.append(";")
+    outdata_c.append("; Pattern colors table")
+    outdata_c.append("; VDP Location default @ $2000")
+    pl = 0
+    while pl < 3:
+        outdata_c.append(";;;;;;;;;;;;;;;;;")
+        outdata_c.append("; Table {} colors".format(pl+1))
+        tl = 0
+        while tl < 256:
+            rl = 0
+            rowout = []
+            rowout.append(" DB  ")
+            thisbyteout = ''
+            while rl < 8:
+                thisbyteout = colors_array[0]
+                thisbyteout = '$' + format(int(thisbyteout,2), '02x') + ', '
+                colors_array.pop(0)
+                rowout.append(thisbyteout)
+                rl += 1 # row loop
+            rowout = ''.join(rowout)[:-2] + ' ; {}'.format(tl)
+            outdata_c.append(rowout)
+            tl += 1 #tile loop
+        pl += 1 #pattern loop
+    f_c = None
+    try:
+        cfile = ''
+        if asmfile[-4:] != '.z80':
+            asmfile = asmfile + '.z80'
+            cfile = asmfile + '_colors.z80'
+        else: 
+            cfile = asmfile[:-4] + '_colors.z80'
+        f = open(asmfile, 'w')
+        for s in outdata:
+            f.write(s)
+            f.write('\n')
+        f_c = open(cfile, 'w')
+        for s in outdata_c:
+            f_c.write(s)
+            f_c.write('\n')
+        messagebox.showinfo("Save OK", message="Save successful.")
+    except IOError:
+        messagebox.showerror("Export failed", message="I/O error exporting file. Check drive and permissions and try again.")
+    except:
+        messagebox.showerror("Export failed", message="Unknown error exporting file. This might be a bug!")
+    finally:
+        if f != None:
+            f.close()
+        if f_c != None:
+            f_c.close()
+
+    return  
+
 def export_asm_data():
     global patternMode
     if patternMode == True:
@@ -832,6 +964,7 @@ def export_asm_data():
         return 
     
     global asmfile 
+    asmfile = ''
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 sprite assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
     if asmfile == '':
         return 
@@ -863,7 +996,6 @@ def export_asm_data():
                 curline.append(' $00,')
             else:
                 curline.append(' ${},'.format(outb))
-        #print(curline)
         curline = ''.join(curline)[:-1]
         outdata.append(curline)
         # bottom
@@ -888,7 +1020,6 @@ def export_asm_data():
                 curline.append(' $00,')
             else:
                 curline.append(' ${},'.format(outb))
-        #print(curline)
         curline = ''.join(curline)[:-1]
         outdata.append(curline)
 
@@ -916,7 +1047,6 @@ def export_asm_data():
             curline.append(' ${},'.format(curbin))
         curline = ''.join(curline)[:-1]
         outdata.append(curline)
-        #print(curline)
         # bottom left
         y = 8
         curline = []
@@ -935,7 +1065,6 @@ def export_asm_data():
             curbin = "{:02x}".format(curbin)
             curline.append(' ${},'.format(curbin))
         curline = ''.join(curline)[:-1]
-        #print(curline)
         outdata.append(curline)
         # top right
         y = 0
@@ -955,7 +1084,6 @@ def export_asm_data():
             curbin = "{:02x}".format(curbin)
             curline.append(' ${},'.format(curbin))
         curline = ''.join(curline)[:-1]
-        #print(curline)
         outdata.append(curline)
         # bottom right
         y = 8
@@ -975,10 +1103,9 @@ def export_asm_data():
             curbin = "{:02x}".format(curbin)
             curline.append(' ${},'.format(curbin))
         curline = ''.join(curline)[:-1]
-        #print(curline)
         outdata.append(curline)
         i += 1
-    #print(outdata)
+
     try:
         f = open(asmfile, 'w')
         for s in outdata:
@@ -990,11 +1117,10 @@ def export_asm_data():
     except:
         messagebox.showerror("Export failed", message="Unknown error exporting file. This might be a bug!")
     finally:
-        f.close()
+        if f != None:
+            f.close()
         
-    #return 
-def import_data():
-    return 
+
 def export_pal_data():
     asmpalfile = ''
     asmpalfile = tk.filedialog.asksaveasfilename(title='Save MSX2 palette assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
@@ -1004,8 +1130,6 @@ def export_pal_data():
     outdata.append('; Palette data made with MSX2 Spriter\n')
     outdata.append(';  Write in sequence to R#16!')
     # 16 colors
-    #outdata.append('; Transparent color')
-    #outdata.append(' DB  $00, $00')
     i = 0
     while i < 16:
         # byte 1 = '0RRR0BBB'
@@ -1116,6 +1240,11 @@ def resetPalette(newpal):
     updatePaletteDisplay()
     #return 
 
+def savem2p():
+    # save as MSX2 Spriter pattern file
+    
+    return
+
 def savem2s():
     global filename
     p = []
@@ -1169,12 +1298,17 @@ def new_pattern_file():
     patternMode = True 
     initialize_new(patternMode)
 
+def save_normal_sprite():
+    global patternMode 
+    patternMode = False 
+    save_normal()
+def save_normal_pattern():
+    global patternMode 
+    patternMode = True
+    save_normal()
+
 def save_normal():
     global filename
-    global patternMode
-    if patternMode == True:
-        messagebox.showwarning("Error","Saving not supported for tile mode.")
-        return 
     if filename == '':
         save_as()
     else:
@@ -1185,9 +1319,10 @@ menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label="New sprite file", command=new_file)
 fileMenu.add_command(label="New pattern file", command=new_pattern_file)
-fileMenu.add_command(label="Save", command=save_normal)
-fileMenu.add_command(label="Save As .M2S...", command=save_as)
-fileMenu.add_command(label="Load .M2S...", command=load_as)
+fileMenu.add_command(label="Save", command=save_normal_sprite)
+fileMenu.add_command(label="Save As .M2S...", command=save_sprite_as)
+fileMenu.add_command(label="Load .M2S Sprite...", command=load_sprite_as)
+fileMenu.add_cascade(label='Load .M2P Pattern...', command=load_pattern_as)
 fileMenu.add_separator()
 fileMenu.add_command(label="Export z80 sprite data...", command=export_asm_data)
 fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data)
@@ -1214,8 +1349,22 @@ def pattern_move_fwd():
         pattern_x_ofs += 1
     refresh_display(True)
     return
+def pattern_move_up():
+    global pattern_y_ofs
+    if pattern_y_ofs > 0:
+        pattern_y_ofs -= 1
+    refresh_display(True)
+    l1.configure(text="Table {} / 3".format(math.floor(pattern_y_ofs/8)+1))
+    return 
+def pattern_move_down():
+    global pattern_y_ofs
+    if pattern_y_ofs < (8*3)-4:
+        pattern_y_ofs += 1
+    refresh_display(True)
+    l1.configure(text="Table {} / 3".format(math.floor(pattern_y_ofs/8)+1))
+    return 
 
-def initialize_new(patternMode):
+def initialize_new(patternMode, loading=False):
     global intpal 
     intpal = defaultIntegerPalette.copy()
     convert_int_pal_to_hex(intpal)
@@ -1249,14 +1398,12 @@ def initialize_new(patternMode):
     global bl 
     global br 
     global smallpatternpx
-    #if(win):
-    #    win.destroy()
+
     # Set up the default window frame
     if win == None:
         win = tk.Frame(master=app, width=800, height=600)
         win.grid(row=16, columnspan=16)
     
-
     if patternMode == True:
         show_m1.set(True)
         show_m2.set(False)
@@ -1392,6 +1539,10 @@ def initialize_new(patternMode):
         bl.destroy()
     if br:
         br.destroy()
+    if bu:
+        bu.destroy()
+    if bd:
+        bd.destroy()
     if patternMode == False:
         bl = tk.Button(win, text="<", command=page_back)
         bl.grid(row=11, column=11, columnspan=1)
@@ -1402,17 +1553,31 @@ def initialize_new(patternMode):
         bl.grid(row=11, column=12, columnspan=1)
         br = tk.Button(win, text=">", command=pattern_move_fwd)
         br.grid(row=11, column=13, columnspan=1)
+        bu = tk.Button(win, text="^", command=pattern_move_up) 
+        bu.grid(row=11, column=10)
+        bd = tk.Button(win, text="v", command=pattern_move_down)
+        bd.grid(row=12, column=10)
     
     global filename 
     global asmfile 
-    filename = ''
-    asmfile = ''
+    if loading==False:
+        filename = ''
+        asmfile = ''
     # Bind events
     drawCanvas.bind("<Button-1>", color_pixel)
     drawCanvas.bind("<B1-Motion>", color_pixel)
     drawCanvas.bind("<Button-3>", erase_pixel)
     drawCanvas.bind("<B3-Motion>", erase_pixel)
-        
+    
+    if patternMode == True:
+        fileMenu.entryconfigure(2, command=save_normal_pattern)
+        fileMenu.entryconfigure(3, label='Save As .M2P...', command=save_pattern_as)
+        fileMenu.entryconfigure(7, label='Export z80 pattern data...', command=export_asm_pattern)
+    else: 
+        fileMenu.entryconfigure(2, command=save_normal_sprite)
+        fileMenu.entryconfigure(3, label='Save As .M2S...', command=save_sprite_as)
+        fileMenu.entryconfigure(7, label='Export z80 sprite data...', command=export_asm_data)
+
     reset_mask_data()
     reset_pattern_data()
 
