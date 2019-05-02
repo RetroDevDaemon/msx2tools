@@ -348,12 +348,48 @@ def color_pixel(ob):
         maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
         maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
     else:
+        prevcol = pixels_mask1[(y_px*spriteSize)+x_px]
         pixels_mask1[(y_px*spriteSize)+x_px] = currentPalNo 
         patterndata[icon_selected] = pixels_mask1.copy()
+        repaint_pattern_row(y_px, prevcol)
         #a = 0
     refresh_display(False)
     #return
 
+def get_palno_from_rgb(rgb):
+    for c in intpal:
+        if c == rgb:
+            if intpal.index(c) != 0:
+                return intpal.index(c)
+    return None
+
+def repaint_pattern_row(yrow, prevcol):
+    #print(prevcol)
+    color1 = patterndata[icon_selected][(yrow*8)]
+    color2 = None
+    activecolor = get_palno_from_rgb(currentColor) #single_intcol_to_hex(currentColor)
+    threeflag = False 
+    i = 0
+    while i < 8:
+        thispx = patterndata[icon_selected][(yrow*8)+i]
+        if color2 == None:
+            if thispx != color1:
+                color2 = thispx 
+        if color2 != None and thispx != color1 and thispx != color2:
+            threeflag = True 
+        i += 1
+    if threeflag:
+        # now search the row for every instance of prevcol and overwrite it with activecolor by changing patterndata[icon_selected].
+        i = 0
+        while i < 8:
+            if patterndata[icon_selected][(yrow*8)+i] == prevcol:# and activecolor != None:
+                if activecolor == None:
+                    activecolor = 0
+                pixels_mask1[(yrow*8)+i] = activecolor
+                patterndata[icon_selected][(yrow*8)+i] = activecolor
+            i += 1
+    #refresh_display(False)
+    
 def erase_pixel(ob):
     global currentColor
     global currentPalNo 
@@ -362,10 +398,9 @@ def erase_pixel(ob):
     currentColor = 'trans'
     currentPalNo = 0
     color_pixel(ob)
-    #print(oldc)
     currentPalNo = oldp
     currentColor = oldc[:-1]
-    #return 
+    
 
 # Both layers enabled?
 def update_orlayer():
@@ -411,6 +446,8 @@ def update_layermask_1():
     while i < (spriteSize * spriteSize):
         topaint = 'grey'
         cur_px = pixels_mask1[i]
+        #if cur_px == None:
+        #    cur_px = 0 # to fix repaint
         if palette_display[cur_px].myVal != 'trans':
             intval = palette_display[cur_px].myVal
             topaint = single_intcol_to_hex(intval)
@@ -670,6 +707,8 @@ def update_icon_window(win_no):
         i = 0
         while i < spriteSize*spriteSize:
             cur_px = pixels_mask1[i]
+            #if cur_px == None:
+            #    cur_px = 0 # stupid fix
             intval = palette_display[cur_px].myVal
             topaint = single_intcol_to_hex(intval)
             iconCanvas.itemconfig(smallpatternpx[disp_icon+pattern_x_ofs][i], fill=topaint)
@@ -722,6 +761,10 @@ from tkinter import filedialog
 
 def save_as():
     global filename 
+    global patternMode
+    if patternMode == True:
+        messagebox.showwarning("Error","Saving not supported for tile mode.")
+        return 
     filename = tk.filedialog.asksaveasfilename(title='Save MSX2 Spriter file', filetypes=( ('MSX2 Spriter file', '*.m2s'),('All files', '*.*') ))
     if filename == '':
         return 
@@ -739,6 +782,11 @@ def load_as():
 #filename = ''
 #asmfile = ''
 def export_asm_data():
+    global patternMode
+    if patternMode == True:
+        messagebox.showwarning("Error","Saving not supported for tile mode.")
+        return 
+    
     global asmfile 
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 sprite assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
     if asmfile == '':
@@ -959,24 +1007,24 @@ def export_pal_data():
     outdata[11] = outdata[11][:-1]
     outdata[16] = outdata[16][:-1]
     outdata = ''.join(outdata)[:-1]
-    f = open(asmpalfile, 'w')
-    for s in outdata:
-        f.write(s)
-    f.close()
-    #print(outdata)
-    #return 
-
-#tk.Button(win, text='Save file', command=save_as).grid(row=6, column=14, columnspan=3)
-#tk.Button(win, text='Load file', command=load_as).grid(row=7, column=14, columnspan=3)
-#tk.Button(win, text='Export SPR', command=export_asm_data).grid(row=8, column=14, columnspan=3)
-#tk.Button(win, text='Export PAL', command=export_pal_data).grid(row=9, column=14, columnspan=3)
-
-#tk.Button(win, text='Import data', command=import_data).grid(row=9, column=14, columnspan=3)
+    f = None 
+    try:
+        f = open(asmpalfile, 'w')
+        for s in outdata:
+            f.write(s)
+        messagebox.showinfo("Save OK", message="Save successful.")
+    except IOError:
+        messagebox.showerror("Export failed", message="I/O error exporting file. Check drive and permissions and try again.")
+    except:
+        messagebox.showerror("Export failed", message="Unknown error exporting file. This might be a bug!")
+    finally:
+        f.close()
 
 import tkinter.messagebox as messagebox
 
 def loadm2s():
     global filename
+    f = None 
     try:
         f = open(filename, 'r')
         data = f.readline()
@@ -1014,7 +1062,8 @@ def loadm2s():
     except:
         messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
     finally:
-        f.close()
+        if(f):
+            f.close()
 
 def resetPalette(newpal):
     global intpal 
@@ -1026,6 +1075,7 @@ def resetPalette(newpal):
 def savem2s():
     global filename
     p = []
+    f = None 
     for n in palette_display:
         p.append(n.myVal)
     try:
@@ -1042,7 +1092,8 @@ def savem2s():
     except:
         messagebox.showerror("Unexpected error", message="Unknown error saving file. This might be a bug!!")
     finally:
-        f.close()
+        if(f):
+            f.close()
 
 # define menus
 def client_exit():
@@ -1056,30 +1107,30 @@ def client_exit():
 def new_file():
     # ask if ok, if not, open save_normal dialog
     global patternMode 
-    patternMode = False 
     result = messagebox.askquestion("New file", "Save changes before creating new file?", icon='warning')
     if result == 'yes':
         save_normal()
+    patternMode = False 
     initialize_new(patternMode)
-        #global intpal 
-        #intpal = defaultIntegerPalette.copy()
-        #convert_int_pal_to_hex(intpal)
-        #updatePaletteDisplay()
-        #reset_pixels_display()
-        #reset_mask_data()
-        #refresh_display()
-        #return
-
-#import os
 
 def new_pattern_file():
     #os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
     global patternMode 
+    result = messagebox.askquestion("New file", "Save changes before creating new file?", icon='warning')
+    if result == 'yes':
+        if patternMode == True:
+            messagebox.showwarning("Error", "Saving not supported for tile mode yet!")
+        else:
+            save_normal()
     patternMode = True 
     initialize_new(patternMode)
 
 def save_normal():
     global filename
+    global patternMode
+    if patternMode == True:
+        messagebox.showwarning("Error","Saving not supported for tile mode.")
+        return 
     if filename == '':
         save_as()
     else:
@@ -1150,9 +1201,13 @@ def initialize_new(patternMode):
     
 
     if patternMode == True:
+        show_m1.set(True)
+        show_m2.set(False)
         pixelSize = 32
         spriteSize = 8
     else: 
+        show_m1.set(True)
+        show_m2.set(True)
         pixelSize = 16
         spriteSize = 16
 
