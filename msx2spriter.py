@@ -711,13 +711,17 @@ def update_icon_window(win_no=None):
         global pattern_y_ofs 
         global pattern_x_ofs 
         global pattern_icon_selected
-        i = 0
-        while i < spriteSize*spriteSize:
-            cur_px = patterndata[icon_selected][i]
-            intval = palette_display[cur_px].myVal
-            topaint = single_intcol_to_hex(intval)
-            iconCanvas.itemconfig(smallpatternpx[pattern_icon_selected][i], fill=topaint)
-            i += 1
+        if (icon_selected >= (pattern_x_ofs+(pattern_y_ofs*32)) and icon_selected <= 7+(pattern_x_ofs+(pattern_y_ofs*32)))\
+            or (icon_selected >= (pattern_x_ofs+(pattern_y_ofs*32))+32 and icon_selected <= 7+(pattern_x_ofs+(pattern_y_ofs*32))+32)\
+            or (icon_selected >= (pattern_x_ofs+(pattern_y_ofs*32))+64 and icon_selected <= 7+(pattern_x_ofs+(pattern_y_ofs*32))+64)\
+            or (icon_selected >= (pattern_x_ofs+(pattern_y_ofs*32))+96 and icon_selected <= 7+(pattern_x_ofs+(pattern_y_ofs*32))+96):
+            i = 0
+            while i < spriteSize*spriteSize:
+                cur_px = patterndata[icon_selected][i]
+                intval = palette_display[cur_px].myVal
+                topaint = single_intcol_to_hex(intval)
+                iconCanvas.itemconfig(smallpatternpx[pattern_icon_selected][i], fill=topaint)
+                i += 1
         return 
     #return
 
@@ -804,13 +808,12 @@ def save_as():
     global filename 
     global patternMode
     if patternMode == True:
-        #messagebox.showwarning("Error","Saving not supported for tile mode.")
         filename = tk.filedialog.asksaveasfilename(title='Save MSX2 Spriter file', filetypes=( ('MSX2 Spriter pattern file', '*.m2p'),('All files', '*.*') ))
-        #return 
     else:
         filename = tk.filedialog.asksaveasfilename(title='Save MSX2 Spriter file', filetypes=( ('MSX2 Spriter sprite file', '*.m2s'),('All files', '*.*') ))
-    if filename == '':
+    if filename == '' or type(filename)==tuple:
         return 
+    print(filename)
     if patternMode == True:
         savem2p()
     else:
@@ -819,22 +822,34 @@ def save_as():
 def load_as(reset=False):
     global filename 
     global patternMode 
-    if patternMode == True:
-        messagebox.showwarning("Error","Loading for M2P not supported yet")
-        return 
-    filename = tk.filedialog.askopenfilename(title='Load MSX2 Spriter file', filetypes=( ('MSX2 Spriter file', '*.m2s'),('All files', '*.*') ))
-    if filename == '':
-        return 
     if reset == True:
         initialize_new(patternMode, True)
-    loadm2s()
+    if patternMode == False:
+        loadm2s()
+    else:
+        loadm2p()
 def load_pattern_as():
+    global filename 
     global patternMode
-    patternMode = True
-    load_as()
+    filename = tk.filedialog.askopenfilename(title='Load MSX2 Spriter file', filetypes=( ('MSX2 Spriter pattern file', '*.m2p'),('All files', '*.*') ))
+    if filename == '':
+        return 
+    if type(filename) == tuple:
+        return 
+    reset = False 
+    if patternMode != True:
+        patternMode = True
+        reset = True
+    load_as(reset)
     #return 
 def load_sprite_as():
+    global filename 
     global patternMode
+    filename = tk.filedialog.askopenfilename(title='Load MSX2 Spriter file', filetypes=( ('MSX2 Spriter sprite file', '*.m2s'),('All files', '*.*') ))
+    if filename == '':
+        return 
+    if type(filename) == tuple:
+        return
     reset = False
     if patternMode != False:
         patternMode = False
@@ -1190,8 +1205,58 @@ def export_pal_data():
 
 import tkinter.messagebox as messagebox
 
+def loadm2p():
+    global filename 
+    global spriteSize
+    spriteSize = 8
+    f = None 
+    try: 
+        f = open(filename, 'r')
+        data = f.readline()
+        global palette_display
+        global currentColor 
+        palette_vals = data.split(',')
+        i = 0
+        while i < 16:
+            palette_display[i].myVal = palette_vals[i]
+            currentColor = i 
+            i += 1
+        resetPalette(palette_vals)
+        currentColor = 'trans'
+        #patterndata
+        j = 0
+        while j < (3*256):
+            data = f.readline().split(',')
+            data.pop()
+            data_int=[]
+            i = 0
+            while i < (spriteSize*spriteSize):
+                data_int.append(int(data[i]))
+                patterndata[j][i] = data_int[i]
+                i += 1
+            global pixels_mask1
+            global icon_selected
+            pixels_mask1 = patterndata[0].copy()
+            icon_selected = 0
+            global pattern_x_ofs
+            global pattern_y_ofs
+            pattern_x_ofs = 0
+            pattern_y_ofs = 0
+            j += 1
+        refresh_display(True)
+    except IOError:
+        messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
+    except:
+        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
+    finally:
+        if(f):
+            f.close()
+
+
 def loadm2s():
     global filename
+    global spriteSize
+    spriteSize = 16
     f = None 
     try:
         f = open(filename, 'r')
@@ -1242,7 +1307,35 @@ def resetPalette(newpal):
 
 def savem2p():
     # save as MSX2 Spriter pattern file
-    
+    global filename 
+    if filename == '' or type(filename)==tuple:
+        return
+    p = []
+    f = None 
+    for n in palette_display:
+        p.append(n.myVal)
+    try:
+        f = open(filename, 'w')
+        for item in p: 
+            f.write('%s,' % item)
+        for n in patterndata:
+            f.write('\n')
+            for item in n:
+                f.write('%s,' % item)
+        messagebox.showinfo("Save OK", message="Save successful.")
+        global saved 
+        saved = True 
+    except IOError:
+        #global filename 
+        filename = ''
+        messagebox.showerror("I/O error", message="Output error saving file. Check drives and permissions and try again.")
+    except:
+        #global filename 
+        filename = ''
+        messagebox.showerror("Unexpected error", message="Unknown error saving file. This might be a bug!!")
+    finally:
+        if(f):
+            f.close()
     return
 
 def savem2s():
@@ -1260,7 +1353,11 @@ def savem2s():
             for item in n:
                 f.write('%s,'%item)
         messagebox.showinfo("Save OK", message="Save successful.")
+        global saved 
+        saved = True 
     except IOError:
+        #global filename 
+        filename = ''
         messagebox.showerror("I/O error", message="Output error saving file. Check drives and permissions and try again.")
     except:
         messagebox.showerror("Unexpected error", message="Unknown error saving file. This might be a bug!!")
@@ -1268,34 +1365,60 @@ def savem2s():
         if(f):
             f.close()
 
+saved = False
 # define menus
 def client_exit():
-    result = messagebox.askquestion("Quit", "Save changes before quit?", icon='warning')
+    result = messagebox.askquestion("Quit", "Save changes before quit?", icon='warning', type='yesnocancel')
     if result == 'yes':
+        global saved 
+        saved = False 
         save_normal()
+        if saved == True:
+            exit()
+        else:
+            global filename 
+            filename = ''
+            return 
+    elif result == 'no':
         exit()
-    else:
-        exit()
+    elif result == 'cancel':
+        return
 
 def new_file():
     # ask if ok, if not, open save_normal dialog
-    global patternMode 
+    global patternMode
+    global filename  
     result = messagebox.askquestion("New file", "Save changes before creating new file?", icon='warning')
     if result == 'yes':
-        save_normal()
+        global saved 
+        saved = False 
+        if patternMode == True:
+            save_normal_pattern()
+        else:
+            save_normal_sprite()
+        if saved==False:
+            filename = '' 
+            return 
     patternMode = False 
+    filename = ''
     initialize_new(patternMode)
 
 def new_pattern_file():
-    #os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
-    global patternMode 
+    global patternMode
+    global filename  
     result = messagebox.askquestion("New file", "Save changes before creating new file?", icon='warning')
     if result == 'yes':
+        global saved 
+        saved = False
         if patternMode == True:
-            messagebox.showwarning("Error", "Saving not supported for tile mode yet!")
+            save_normal_pattern()
         else:
-            save_normal()
-    patternMode = True 
+            save_normal_sprite()
+        if saved == False:
+            filename = '' 
+            return 
+    patternMode = True
+    filename = '' 
     initialize_new(patternMode)
 
 def save_normal_sprite():
@@ -1312,7 +1435,11 @@ def save_normal():
     if filename == '':
         save_as()
     else:
-        savem2s()
+        global patternMode 
+        if patternMode == False:
+            savem2s()
+        else:
+            savem2p()
     #return
 
 menuBar = tk.Menu(app)
@@ -1322,7 +1449,7 @@ fileMenu.add_command(label="New pattern file", command=new_pattern_file)
 fileMenu.add_command(label="Save", command=save_normal_sprite)
 fileMenu.add_command(label="Save As .M2S...", command=save_sprite_as)
 fileMenu.add_command(label="Load .M2S Sprite...", command=load_sprite_as)
-fileMenu.add_cascade(label='Load .M2P Pattern...', command=load_pattern_as)
+fileMenu.add_command(label="Load .M2P Pattern...", command=load_pattern_as)
 fileMenu.add_separator()
 fileMenu.add_command(label="Export z80 sprite data...", command=export_asm_data)
 fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data)
@@ -1339,27 +1466,35 @@ bd = None
 
 def pattern_move_back():
     global pattern_x_ofs
+    global pattern_icon_selected
     if pattern_x_ofs > 0:
+        pattern_icon_selected += 1
         pattern_x_ofs -= 1
     refresh_display(True)
     return
 def pattern_move_fwd():
     global pattern_x_ofs
+    global pattern_icon_selected
     if pattern_x_ofs < (32-8):
         pattern_x_ofs += 1
+        pattern_icon_selected -= 1
     refresh_display(True)
     return
 def pattern_move_up():
     global pattern_y_ofs
+    global pattern_icon_selected
     if pattern_y_ofs > 0:
         pattern_y_ofs -= 1
+        pattern_icon_selected += 8
     refresh_display(True)
     l1.configure(text="Table {} / 3".format(math.floor(pattern_y_ofs/8)+1))
     return 
 def pattern_move_down():
     global pattern_y_ofs
+    global pattern_icon_selected
     if pattern_y_ofs < (8*3)-4:
         pattern_y_ofs += 1
+        pattern_icon_selected -= 8
     refresh_display(True)
     l1.configure(text="Table {} / 3".format(math.floor(pattern_y_ofs/8)+1))
     return 
