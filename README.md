@@ -1,6 +1,6 @@
 # MSX2 Spriter v1.1
 
-Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites.
+Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites and pattern tables.
 
 ### Release notes:
 
