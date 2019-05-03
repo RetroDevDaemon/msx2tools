@@ -5,11 +5,10 @@
 #
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.02: Added menu bar functions and new/save/load
-#         error checking
+# v1.1: Added fully featured pattern mode
 #
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
-#  / sprite mode 2 graphics for use with compilers.
+#  / sprite M2 and pattern graphics for use with compilers.
 # Easy point-and-click interface.
 # 
 ##########################################################
@@ -19,7 +18,6 @@ import tkinter as tk
 import sys 
 import math
 
-#TODO FIX ME
 patternMode = False
 
 ## GLOBALS - MUST BE REFD IN INIT DEF
@@ -96,7 +94,6 @@ def convert_int_pal_to_hex(integerPalette):
 # To convert HTML color back to 3-bit RGB values
 def convert_hex_pal_to_binary():
     return 0
-
 
 
 # some globals
@@ -329,7 +326,6 @@ def repaint_row(row):
             if pixels_mask2[(row*spriteSize)+i] != 0:
                 pixels_mask2[(row*spriteSize)+i] = currentPalNo    
         i += 1
-    #return
 
 # Actually paints the pixel and changes the pal number in the mask array
 def color_pixel(ob):
@@ -354,7 +350,7 @@ def color_pixel(ob):
         repaint_pattern_row(y_px, prevcol)
         #a = 0
     refresh_display(False)
-    #return
+
 
 def get_palno_from_rgb(rgb):
     for c in intpal:
@@ -364,10 +360,9 @@ def get_palno_from_rgb(rgb):
     return None
 
 def repaint_pattern_row(yrow, prevcol):
-    #print(prevcol)
     color1 = patterndata[icon_selected][(yrow*8)]
     color2 = None
-    activecolor = get_palno_from_rgb(currentColor) #single_intcol_to_hex(currentColor)
+    activecolor = get_palno_from_rgb(currentColor) 
     threeflag = False 
     i = 0
     while i < 8:
@@ -388,7 +383,6 @@ def repaint_pattern_row(yrow, prevcol):
                 pixels_mask1[(yrow*8)+i] = activecolor
                 patterndata[icon_selected][(yrow*8)+i] = activecolor
             i += 1
-    #refresh_display(False)
     
 def erase_pixel(ob):
     global currentColor
@@ -446,8 +440,6 @@ def update_layermask_1():
     while i < (spriteSize * spriteSize):
         topaint = 'grey'
         cur_px = pixels_mask1[i]
-        #if cur_px == None:
-        #    cur_px = 0 # to fix repaint
         if palette_display[cur_px].myVal != 'trans':
             intval = palette_display[cur_px].myVal
             topaint = single_intcol_to_hex(intval)
@@ -464,7 +456,6 @@ def init_draw_canvas():
         drawCanvas.delete("all")
         drawCanvas.grid(row=3, column=0, columnspan=10, rowspan=10)
     else: 
-    #drawCanvas = None 
     # Add sub-canvas for drawing, and palette value arrays
         drawCanvas = tk.Canvas(win, background='white', width=pixelSize*spriteSize, height=pixelSize*spriteSize)
         drawCanvas.grid(row=3, column=0, columnspan=10, rowspan=10)
