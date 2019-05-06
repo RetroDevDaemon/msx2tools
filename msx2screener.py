@@ -50,13 +50,10 @@ i = 0
 while i < 3:
     j = 0
     blank = []
-    tile_data.append(blank)
+    #tile_data.append(blank)
     while j < 256:
         s = 0
-        tile_data[i].append(blank)
-        #while s < 64:
-        #    tile_data[i][j].append(blank) # 64 bits (8x8), 256 tiles, 3 pattern tables
-        #    s += 1
+        tile_data.append(blank)
         j += 1
     i += 1
 screenpixels = []
@@ -65,25 +62,16 @@ i = 0
 while i < 3:
     j = 0
     blank = []
-    #screenpixels.append(blank)
-    #tilepixels.append(blank) # tilepixels[]
+    tilepixels.append(blank)
     while j < 32:
         s = 0
-        #screenpixels[i].append(blank)
-        #tilepixels[i].append(blank)  #tilepixels[][]
         while s < 8:
             p = 0
-            #screenpixels[i][j].append(blank)
-            #tilepixels[i][j].append(blank)    # tilepixels[3][32][8] = tile 768
             while p < 8:
                 r = 0
-                #screenpixels[i][j][s].append(blank)
-                #tilepixels[i][j][s].append(blank)    # tilepixels[3][32][8][8] = tile 768, row 8
                 while r < 8:
                     screenpixels.append(blank)
-                    tilepixels.append(blank)
-                    #screenpixels[i][j][s][p].append(0)
-                    #tilepixels[i][j][s][p].append(0)    # tilepixels[3][32][8][8] = tile 768, row 8
+                    tilepixels[i].append(blank)
                     r += 1
                 p += 1
             s += 1
@@ -130,6 +118,22 @@ def select_tile(tilepalnum, xpos, ypos):
     xt = math.floor(xpos/(iconScale*8))
     yt = math.floor(ypos/(iconScale*8))
     print(str(tilepalnum)+' '+str(xt)+' '+str(yt))
+    DrawTileSelector(tilepalnum, xpos, ypos)
+
+tile_selector = None
+#i = 0
+#while i < 4:
+#    tile_selector.append(None)
+#    i += 1
+
+def DrawTileSelector(tilepal, x, y):
+    # redundant?
+    if tile_selector == None:
+        #i = 0
+        #while i < 4:
+        tilePalettes[tilepal].delete(tile_selector)
+        #    i += 1
+    tile_selector = tilePalettes[tilepal].create_rectangle(x, y, x+(tileSize*iconScale), y+(tileSize*iconScale), width=2, outline='white')
 
 
 def InitTilePalettes():
@@ -165,10 +169,10 @@ def InitTilePalettes():
                 while xp < 8:
                     yp = 0
                     while yp < 8: # assign to tilepixels
-                        tilepixels[i*xt*yt*xp*yp] = tilePalettes[i].create_rectangle( (xp*screenScale)+(xt*8*screenScale),\
-                             ((yp*screenScale)+(screenScale*8*yt),\
-                             ((xp*screenScale)+(xt*8*screenScale))+screenScale,\
-                             ((yp*screenScale)+(screenScale*8*yt))+screenScale), outline = '')
+                        tilepixels[i][(yt*32*64)+(xt*64)+(yp*8)+xp] = tilePalettes[i].create_rectangle( (xp*iconScale)+(xt*8*iconScale),\
+                             ((yp*iconScale)+(iconScale*8*yt),\
+                             ((xp*iconScale)+(xt*8*iconScale))+iconScale,\
+                             ((yp*iconScale)+(iconScale*8*yt))+iconScale), outline='')
                         yp += 1
                     xp += 1
                 yt += 1
@@ -212,7 +216,7 @@ def InitScreenWindow():
                 while xp < 8:
                     yp = 0
                     while yp < 8: #assign to screenpixels
-                        screenpixels[i*xt*yt*xp*yp] = screenCanvas.create_rectangle( (xp*screenScale)+(xt*8*screenScale),\
+                        screenpixels[(i*256*64)+(yt*32*64)+(xt*64)+(yp*8)+xp] = screenCanvas.create_rectangle( (xp*screenScale)+(xt*8*screenScale),\
                              ((yp*screenScale)+(screenScale*8*yt)+(i*screenScale*8*8),\
                              ((xp*screenScale)+(xt*8*screenScale))+screenScale,\
                              ((yp*screenScale)+(screenScale*8*yt))+(i*screenScale*8*8)+screenScale), outline='')
@@ -222,22 +226,40 @@ def InitScreenWindow():
             xt += 1
         i += 1
 
+def RedrawTileGrid():
+    i = 0
+    while i < 3:
+        x = 0
+        while x < 32:
+            tilePalettes[i].create_line(x*(tileSize*iconScale), 0, x*(tileSize*iconScale), (iconScale*tileSize*8), fill='grey')
+            x += 1
+        y = 0 
+        while y < 24:
+            tilePalettes[i].create_line(0, y*(tileSize*iconScale), (tileSize*iconScale*32), y*(tileSize*iconScale), fill='grey')
+            y += 1
+        i += 1
+
 def LoadTileIcons():
     i = 0
     while i < 3:
-        # pattern tables
-        s = 0
-        while s < 256:
-            # tiles
-            p = 0
-            while p < 64:
-                # individual pixels
-                #print(integerPalette[int(tile_data[i][s][p])])
-                screenCanvas.itemconfig(screenpixels[(i*(256*64))+(s+p)], fill='white')
-                p += 1
-            s += 1
+        xt = 0
+        while xt < 32:
+            yt = 0
+            while yt < 8:
+                xp = 0
+                while xp < 8:
+                    yp = 0
+                    while yp < 8: #assign to screenpixels
+                        paint = convertIntColorToHex(integerPalette[tile_data[(i*256)+(yt*32)+xt][(yp*8)+xp]])
+                        tilePalettes[i].itemconfig(tilepixels[i][(yt*32*64)+(xt*64)+(yp*8)+xp], fill=paint)
+                        yp += 1
+                    xp += 1
+                yt += 1
+            xt += 1
         i += 1
-    print(tile_data[0][1])
+    #print(tile_data[(2*256)+(227)])
+    RedrawTileGrid()
+
 
 def import_m2p():
     global m2pfilename 
@@ -268,18 +290,16 @@ def import_m2p():
                     tdat = data.split(',')
                     p = 0
                     while p < 64:
-                        #if tdat[p] == 'trans':
-                        #    tdat[p] = 0
                         tdat[p] = int(tdat[p])
                         p += 1
-                    tile_data[n][s] = tdat
+                    tile_data[(n*256)+s] = tdat
                     s += 1
                 n += 1
             LoadTileIcons()
         except IOError:
             messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-        #except:
-        #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
+        except:
+            messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
         finally:
             if(f):
                 f.close()

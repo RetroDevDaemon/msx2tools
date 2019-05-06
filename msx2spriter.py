@@ -138,6 +138,8 @@ def single_intcol_to_hex(col):
     ret += f
     return ret 
 
+# for screener, selectioncanvas will be a new class.
+# for spriter, is faster to just redraw.
 
 # Define the palette button class
 class PaletteButton(tk.Canvas):
@@ -572,6 +574,55 @@ def reset_pattern_data():
 ##        
 
 pattern_icon_selected = 0
+spr_selector=[]
+i = 0
+while i < 4:
+    spr_selector.append(None)
+    i += 1
+
+def draw_pattern_selector(icnum):
+    global spr_selector
+    if spr_selector[0] != None:
+        i = 0
+        while i < 4:
+            iconCanvas.delete(spr_selector[i])
+            i += 1
+    tw = math.floor(iconwidth/8)
+    xa = ((icnum % 8)) * tw + 2
+    #print(icon_selected%32)
+    ya = math.floor(icnum/8) * tw + 2
+    #if icnum >= 0 and icnum < 32:
+    if pattern_x_ofs > ((icon_selected % 32) - 8) and pattern_x_ofs < ((icon_selected % 32) + 1)\
+        and pattern_y_ofs > (math.floor(icon_selected/32) - 4) and pattern_y_ofs < (math.floor(icon_selected/32) + 1):
+        spr_selector[0] = iconCanvas.create_line(xa+2, ya+2, xa+2, ya+tw+2, width=2, fill='white')
+        spr_selector[1] = iconCanvas.create_line(xa+2, ya+2, xa+tw+2, ya+2, width=2, fill='white')
+        spr_selector[2] = iconCanvas.create_line(xa+tw+2, ya+2, xa+tw+2, ya+tw+2, width=2, fill='white')
+        spr_selector[3] = iconCanvas.create_line(xa+2, ya+tw+2, xa+tw+2, ya+tw+2, width=2, fill='white')
+
+def draw_sprite_selector(sprnum):
+    global spr_selector
+    if spr_selector[0] != None:
+        i = 0
+        while i < 4:
+            iconCanvas.delete(spr_selector[i])
+            i += 1
+    if sprnum == 0:
+        xa = 0
+        ya = 0
+    elif sprnum == 1:
+        xa = 64
+        ya = 0
+    elif sprnum == 2:
+        xa = 0
+        ya = 64
+    elif sprnum == 3:
+        xa = 64
+        ya = 64
+    spr_selector[0] = iconCanvas.create_line(xa+2, ya+2, xa+2, ya+64+2, width=2, fill='white')
+    spr_selector[1] = iconCanvas.create_line(xa+2, ya+2, xa+64+2, ya+2, width=2, fill='white')
+    spr_selector[2] = iconCanvas.create_line(xa+64+2, ya+2, xa+64+2, ya+64+2, width=2, fill='white')
+    spr_selector[3] = iconCanvas.create_line(xa+2, ya+64+2, xa+64+2, ya+64+2, width=2, fill='white')
+
 
 def select_from_icon(obj):
     global page_ofs
@@ -612,6 +663,7 @@ def select_from_icon(obj):
             pixels_mask1 = maskdata[6+page_ofs].copy()
             pixels_mask2 = maskdata[7+page_ofs].copy()
         update_label_txt()
+        draw_sprite_selector(icon_selected)
     else:
         # PATTERN MODE!
         # copy current mask (pixels_mask1) into patterndata
@@ -625,6 +677,7 @@ def select_from_icon(obj):
         pixels_mask1 = patterndata[sel_ptn].copy()
         pattern_icon_selected = math.floor(obj.x/32) + (math.floor(obj.y/32)*8)
         l0.configure(text='Pattern {}\nX: {} Y: {}'.format(sel_ptn, (math.floor(obj.x/32) + pattern_x_ofs), (math.floor(obj.y/32) + pattern_y_ofs) ))
+        #draw_pattern_selector(pattern_icon_selected)
     refresh_display(False)
 
 
@@ -722,8 +775,7 @@ def update_icon_window(win_no=None):
                 topaint = single_intcol_to_hex(intval)
                 iconCanvas.itemconfig(smallpatternpx[pattern_icon_selected][i], fill=topaint)
                 i += 1
-        return 
-    #return
+            draw_pattern_selector(pattern_icon_selected)
 
 def update_pattern_icons():
     # use this to only refresh the icon view when turning pages
@@ -754,8 +806,7 @@ def update_pattern_icons():
             iconCanvas.itemconfig(smallpatternpx[i+24][p], fill=topaint)
             p += 1
         i+=1
-    
-    return     
+    draw_pattern_selector(pattern_icon_selected)
 
 # 2. add pagination to sprite view panel
 def page_back():
@@ -813,7 +864,7 @@ def save_as():
         filename = tk.filedialog.asksaveasfilename(title='Save MSX2 Spriter file', filetypes=( ('MSX2 Spriter sprite file', '*.m2s'),('All files', '*.*') ))
     if filename == '' or type(filename)==tuple:
         return 
-    print(filename)
+    #print(filename)
     if patternMode == True:
         savem2p()
     else:
@@ -946,7 +997,7 @@ def export_asm_pattern():
     f_c = None
     try:
         cfile = ''
-        if asmfile[-4:] != '.z80':
+        if asmfile[-4:].upper() != '.Z80':
             asmfile = asmfile + '.z80'
             cfile = asmfile + '_colors.z80'
         else: 
@@ -1315,6 +1366,8 @@ def savem2p():
     for n in palette_display:
         p.append(n.myVal)
     try:
+        if filename[-4:].upper() != '.M2P':
+            filename = filename + '.m2p'
         f = open(filename, 'w')
         for item in p: 
             f.write('%s,' % item)
@@ -1345,6 +1398,8 @@ def savem2s():
     for n in palette_display:
         p.append(n.myVal)
     try:
+        if filename[-4:].upper() != '.M2S':
+            filename = filename + '.m2s'
         f = open(filename, 'w')
         for item in p: 
             f.write('%s,' % item)
