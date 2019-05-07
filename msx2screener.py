@@ -18,6 +18,7 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox 
 import math 
+import sys 
 
 # MSX2 default 16-color palette, in integer strings
 defaultIntegerPalette = [
@@ -46,6 +47,8 @@ while i < 3:
     tilePalettes.append(None)
     i += 1
 m2pfilename = ''
+z80filename = ''
+m2cfilename = ''
 tile_data = [] 
 i = 0 
 while i < 3:
@@ -97,11 +100,28 @@ def convertIntColorToHex(intstr):
     tempPalVals = ''.join(tempPalVals)
     return tempPalVals
 
+#nopattern_error = None
+displayed_nopat_warn = False
+screentiles = []
+i = 0
+while i < (256*3):
+    screentiles.append(0)
+    i += 1
+
 def draw_tile(obj):
     if loaded_tiles == False:
+        global displayed_nopat_warn
+        if displayed_nopat_warn == False:
+            displayed_nopat_warn = True 
+            nopattern_error = messagebox.showinfo("Error","No patterns loaded.\nLoad an M2P file first!", type='ok')
+            if nopattern_error == 'ok':
+                displayed_nopat_warn = False
         return 
     xt = math.floor(obj.x / (screenScale*8))
     yt = math.floor(obj.y / (screenScale*8))
+    # whatever tile number we are within our tab (tab doesn't matter), set that value 0-255 
+    # into screentiles[].
+    oyt = yt
     tab = 0
     if yt > 7:
         yt -= 8
@@ -109,9 +129,11 @@ def draw_tile(obj):
     if yt > 7:
         yt -= 8
         tab += 1
+
+    global selected_tile_num
+    screentiles[(oyt*32)+xt] = selected_tile_num[tab]
     if selected_tile_data[tab] == []:
         return
-    #screenpixels !
     if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height()\
         and selected_tile_data[tab] != None:
         xp = 0
@@ -123,7 +145,30 @@ def draw_tile(obj):
                 yp += 1
             xp += 1
         RedrawScreenGrid(0)
-    
+    global no_changes_made
+    no_changes_made = False
+
+def refresh_whole_screen():
+    i = 0
+    while i < 3:
+        xt = 0
+        while xt < 32:
+            yt = 0
+            while yt < 8:
+                tilepaint = screentiles[(i*256)+(yt*32)+xt] # tile_data is not divided into 3s!
+                tiletopaint = tile_data[tilepaint]
+                xp = 0
+                while xp < 8:
+                    yp = 0
+                    while yp < 8:
+                        paint = convertIntColorToHex(integerPalette[tiletopaint[(yp*8)+xp]])
+                        screenCanvas.itemconfig(screenpixels[(i*32*64*8)+(yt*32*64)+(xt*64)+(yp*8)+xp], fill=paint)
+                        yp += 1 #y pixel
+                    xp += 1 #x pixel
+                yt += 1
+            xt += 1 #tile
+        i += 1 #tab
+    RedrawScreenGrid(0)
 
 def erase_tile(obj):
     xt = math.floor(obj.x / (screenScale*8))
@@ -135,19 +180,23 @@ def select_tile0(obj):
 def select_tile1(obj):
     select_tile(1, obj.x, obj.y)
 def select_tile2(obj):
-    select_tile(2, obj.x, obj.y)
+    select_tile(2, obj.x, obj.y) 
 
 selected_tile_data = []
+selected_tile_num = []
 i = 0
 while i < 3:
     selected_tile_data.append(None)
+    selected_tile_num.append(None)
     i += 1
 
 def select_tile(tilepalnum, xpos, ypos):
     xt = math.floor(xpos/(iconScale*8))
     yt = math.floor(ypos/(iconScale*8))
     global selected_tile_data
+    global selected_tile_num
     selected_tile_data[tilepalnum] = tile_data[(tilepalnum*256)+(yt*32)+xt]
+    selected_tile_num[tilepalnum] = (yt*32)+xt 
     DrawTileSelector(tilepalnum, xt, yt)
 
 tile_selector = []
@@ -309,7 +358,6 @@ def LoadTileIcons():
                 yt += 1
             xt += 1
         i += 1
-    # TODO: This needs to erase previous grid first
     RedrawTileGrid()
 
 
@@ -372,12 +420,100 @@ def launch_app():
     # open 3x tile palettes
     InitTilePalettes() 
 
-def client_exit():
-    quit()
+no_changes_made = True 
 
+def client_exit():
+    global no_changes_made
+    if no_changes_made == True:
+        sys.exit()
+    else:
+        # ask to save!
+        sys.exit() 
+
+def new_screen():
+    # ask to save changes
+    # ask to change to new m2p
+      # if yes, import_m2p
+    # else clear screen data
+    return 
+def load_m2c():
+    # ask to change imported m2p
+    # if none is imported, show warning
+    global loaded_tiles
+    if loaded_tiles == False:
+        messagebox.showwarning("No patterns loaded", message='No pattern file imported!\nOpening import pattern dialog.', type='ok')
+        import_m2p()
+    if loaded_tiles == False:
+        return # because they cancelled.
+    global m2cfilename
+    m2cfilename = tk.filedialog.askopenfilename(title='Load MSX2 Screener file', filetypes=( ('MSX2 Screener screen file', '*.m2c'),('All files', '*.*') ))
+    f = None 
+    try:
+        f = open(m2cfilename, 'r')
+        indata = f.readline()
+        indata = indata.split(',')
+        indata.pop()
+        global screentiles
+        ## remove this?
+        i = 0
+        while i < (256*3):
+            screentiles[i] = int(indata[i])
+            i += 1
+        #screentiles = indata 
+        refresh_whole_screen()
+        #print(indata)
+    except IOError:
+        messagebox.showerror("Load failed", message="I/O error loading file. Check drive and permissions and try again.")
+    #except:
+    #    messagebox.showerror("Load failed", message="Unknown error loading file. This might be a bug!")
+    finally:
+        if f != None:
+            f.close()
+    # now that tiles are confirmed, open m2c dialog
+
+def save_m2c():
+    global m2cfilename
+    # save with global filename already set.
+    # it's just a csv of 768 values.
+    f = None
+    try:
+        f = open(m2cfilename, 'w')
+        for s in screentiles:
+            f.write(str(s) +',')
+        messagebox.showinfo("Save OK", message='Save successful!')
+    except IOError:
+        messagebox.showerror("Save failed", message="I/O error saving file. Check drive and permissions and try again.")
+    except:
+        messagebox.showerror("Save failed", message="Unknown error saving file. This might be a bug!")
+    finally:
+        if f != None:
+            f.close()
+
+def save_normal():
+    global m2cfilename
+    if m2cfilename == '':
+        save_as()
+    else:
+        save_m2c()
+
+def save_as():
+    global m2cfilename
+    m2cfilename = tk.filedialog.asksaveasfilename(title='Save MSX2 Screener file', filetypes=( ('MSX2 Screener screen file', '*.m2c'),('All files', '*.*') ))
+    if m2cfilename == '' or type(m2cfilename)==tuple:
+        return
+    if m2cfilename[-4:].upper() != '.M2C':
+        m2cfilename = m2cfilename + '.m2c'
+    save_m2c()
+    
 menuBar = tk.Menu(app)
-fileMenu = fileMenu = tk.Menu(menuBar, tearoff=0)
-fileMenu.add_command(label='Import .M2P patterns...', command=import_m2p)
+fileMenu = tk.Menu(menuBar, tearoff=0)
+fileMenu.add_command(label='New screen file', command=new_screen) #also ask to change m2p
+fileMenu.add_command(label="Save", command=save_normal)
+fileMenu.add_command(label="Save as .M2C file...", command=save_as)
+fileMenu.add_command(label="Load .M2C file...", command=load_m2c) #ask to change m2p
+fileMenu.add_separator()
+fileMenu.add_command(label='Import .M2P patterns...', command=import_m2p) #do not change m2c!
+fileMenu.add_separator()
 fileMenu.add_command(label='Quit', command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
 app.config(menu=menuBar) 

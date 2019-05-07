@@ -1429,13 +1429,13 @@ def client_exit():
         saved = False 
         save_normal()
         if saved == True:
-            exit()
+            sys.exit()
         else:
             global filename 
             filename = ''
             return 
     elif result == 'no':
-        exit()
+        sys.exit()
     elif result == 'cancel':
         return
 

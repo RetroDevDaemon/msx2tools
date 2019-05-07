@@ -1,0 +1,7 @@
+*.spec
+*.m2p
+*.m2s
+*.m2c
+__pycache__/
+build/
+dist/
