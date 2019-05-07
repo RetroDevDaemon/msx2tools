@@ -31,11 +31,12 @@ integerPalette = defaultIntegerPalette.copy()
 
 # TK Setup
 app = tk.Tk()
-app.title('MSX2 Spriter')
+app.title('MSX2 Screener')
 
 # Global def 
 win = None 
 screenCanvas = None 
+loaded_tiles = False
 screenScale = 2.5
 iconScale = 2
 tileSize = 8
@@ -50,7 +51,6 @@ i = 0
 while i < 3:
     j = 0
     blank = []
-    #tile_data.append(blank)
     while j < 256:
         s = 0
         tile_data.append(blank)
@@ -77,7 +77,7 @@ while i < 3:
             s += 1
         j += 1
     i += 1
-
+#######
 
 def convertIntColorToHex(intstr):
     tempPalVals = []
@@ -98,9 +98,32 @@ def convertIntColorToHex(intstr):
     return tempPalVals
 
 def draw_tile(obj):
+    if loaded_tiles == False:
+        return 
     xt = math.floor(obj.x / (screenScale*8))
     yt = math.floor(obj.y / (screenScale*8))
-    print(str(xt) + ' ' + str(yt))
+    tab = 0
+    if yt > 7:
+        yt -= 8
+        tab += 1
+    if yt > 7:
+        yt -= 8
+        tab += 1
+    if selected_tile_data[tab] == []:
+        return
+    #screenpixels !
+    if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height()\
+        and selected_tile_data[tab] != None:
+        xp = 0
+        while xp < 8:
+            yp = 0
+            while yp < 8:
+                paint = convertIntColorToHex(integerPalette[selected_tile_data[tab][(yp*8)+xp]])
+                screenCanvas.itemconfig(screenpixels[(tab*32*64*8)+(yt*32*64)+(xt*64)+(yp*8)+xp], fill=paint)
+                yp += 1
+            xp += 1
+        RedrawScreenGrid(0)
+    
 
 def erase_tile(obj):
     xt = math.floor(obj.x / (screenScale*8))
@@ -114,27 +137,46 @@ def select_tile1(obj):
 def select_tile2(obj):
     select_tile(2, obj.x, obj.y)
 
+selected_tile_data = []
+i = 0
+while i < 3:
+    selected_tile_data.append(None)
+    i += 1
+
 def select_tile(tilepalnum, xpos, ypos):
     xt = math.floor(xpos/(iconScale*8))
     yt = math.floor(ypos/(iconScale*8))
-    print(str(tilepalnum)+' '+str(xt)+' '+str(yt))
-    DrawTileSelector(tilepalnum, xpos, ypos)
+    global selected_tile_data
+    selected_tile_data[tilepalnum] = tile_data[(tilepalnum*256)+(yt*32)+xt]
+    DrawTileSelector(tilepalnum, xt, yt)
 
-tile_selector = None
-#i = 0
-#while i < 4:
-#    tile_selector.append(None)
-#    i += 1
+tile_selector = []
+i = 0
+while i < 3:
+    tile_selector.append(None)
+    i += 1
+
+def EraseTileSelectors():
+    global tile_selector
+    i = 0
+    while i < 3:
+        tilePalettes[i].delete(tile_selector[i])
+        i += 1
 
 def DrawTileSelector(tilepal, x, y):
-    # redundant?
-    if tile_selector == None:
-        #i = 0
-        #while i < 4:
-        tilePalettes[tilepal].delete(tile_selector)
-        #    i += 1
-    tile_selector = tilePalettes[tilepal].create_rectangle(x, y, x+(tileSize*iconScale), y+(tileSize*iconScale), width=2, outline='white')
+    global tile_selector
+    if tile_selector[tilepal] != None:
+        tilePalettes[tilepal].delete(tile_selector[tilepal])
+    tox = x * (tileSize*iconScale)
+    toy = y * (tileSize*iconScale)
+    tile_selector[tilepal] = tilePalettes[tilepal].create_rectangle(tox, toy, tox+(tileSize*iconScale), toy+(tileSize*iconScale), width=2, outline='white')
 
+tile_pal_grid = []
+i = 0
+while i < 3:
+    blank = []
+    tile_pal_grid.append(blank)
+    i += 1
 
 def InitTilePalettes():
     global tilePalettes
@@ -150,11 +192,11 @@ def InitTilePalettes():
         # then draw grid
         x = 0
         while x < 32:
-            tilePalettes[i].create_line(x*(tileSize*iconScale), 0, x*(tileSize*iconScale), (iconScale*tileSize*8), fill='grey')
+            tile_pal_grid[i].append(tilePalettes[i].create_line(x*(tileSize*iconScale), 0, x*(tileSize*iconScale), (iconScale*tileSize*8), fill='grey'))
             x += 1
         y = 0 
         while y < 24:
-            tilePalettes[i].create_line(0, y*(tileSize*iconScale), (tileSize*iconScale*32), y*(tileSize*iconScale), fill='grey')
+            tile_pal_grid[i].append(tilePalettes[i].create_line(0, y*(tileSize*iconScale), (tileSize*iconScale*32), y*(tileSize*iconScale), fill='grey'))
             y += 1
         i += 1
     # and bind clicks
@@ -182,6 +224,8 @@ def InitTilePalettes():
     tilePalettes[1].bind("<Button-1>", select_tile1)
     tilePalettes[2].bind("<Button-1>", select_tile2)
 
+screen_grid = []
+
 def InitScreenWindow():
     global screenCanvas
     # if the canvas doesn't exist, create it, fill with color 0 in hex
@@ -192,6 +236,8 @@ def InitScreenWindow():
         screenCanvas.bind("<B1-Motion>", draw_tile)
         screenCanvas.bind("<Button-3>", erase_tile)
         screenCanvas.bind("<B3-Motion>", erase_tile)
+        screenCanvas.bind("<ButtonRelease-1>", RedrawScreenGrid)
+        screenCanvas.bind("<ButtonRelease-3>", RedrawScreenGrid)
     # then clear it
     screenCanvas.delete("all")
     # set pos 
@@ -199,11 +245,14 @@ def InitScreenWindow():
     # and draw 32x24 grid
     x = 0
     while x < 32:
-        screenCanvas.create_line(x*(screenScale*tileSize), 0, x*(screenScale*tileSize), (tileSize*screenScale*24), fill='grey')
+        screen_grid.append(screenCanvas.create_line(x*(screenScale*tileSize), 0, x*(screenScale*tileSize), (tileSize*screenScale*24), fill='grey'))
         x += 1
     y = 0
     while y < 24:
-        screenCanvas.create_line(0, y*(screenScale*tileSize), (tileSize*screenScale*32), y*(screenScale*tileSize), fill='grey')
+        if y % 8 == 0:
+            screen_grid.append(screenCanvas.create_line(0, y*(screenScale*tileSize), (tileSize*screenScale*32), y*(screenScale*tileSize), fill='grey', width=2))    
+        else:
+            screen_grid.append(screenCanvas.create_line(0, y*(screenScale*tileSize), (tileSize*screenScale*32), y*(screenScale*tileSize), fill='grey'))
         y += 1
     # then populate it with 3x32x8x(8x8) pixels
     i = 0
@@ -226,18 +275,21 @@ def InitScreenWindow():
             xt += 1
         i += 1
 
+def RedrawScreenGrid(ob):
+    d = 0
+    while d < (32+24):
+        screenCanvas.tag_raise(screen_grid[d])
+        d += 1
+
 def RedrawTileGrid():
     i = 0
     while i < 3:
-        x = 0
-        while x < 32:
-            tilePalettes[i].create_line(x*(tileSize*iconScale), 0, x*(tileSize*iconScale), (iconScale*tileSize*8), fill='grey')
-            x += 1
-        y = 0 
-        while y < 24:
-            tilePalettes[i].create_line(0, y*(tileSize*iconScale), (tileSize*iconScale*32), y*(tileSize*iconScale), fill='grey')
-            y += 1
+        d = 0
+        while d < (32+24):
+            tilePalettes[i].tag_raise(tile_pal_grid[i][d])
+            d += 1
         i += 1
+    
 
 def LoadTileIcons():
     i = 0
@@ -257,7 +309,7 @@ def LoadTileIcons():
                 yt += 1
             xt += 1
         i += 1
-    #print(tile_data[(2*256)+(227)])
+    # TODO: This needs to erase previous grid first
     RedrawTileGrid()
 
 
@@ -294,8 +346,12 @@ def import_m2p():
                         p += 1
                     tile_data[(n*256)+s] = tdat
                     s += 1
+                selected_tile_data[n] = []
                 n += 1
+            EraseTileSelectors()
             LoadTileIcons()
+            global loaded_tiles
+            loaded_tiles = True 
         except IOError:
             messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
         except:
