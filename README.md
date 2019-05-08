@@ -1,16 +1,17 @@
-# MSX2 Spriter v1.1
+# MSX2 Spriter v1.2 / Screener v1.0
 
-Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites.
+Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts.
 
 ### Release notes:
 
+1.2: Added Screener tool, fixed various bugs, added visible selector<br>
 1.1: Added PATTERN mode! <br>
 1.02: Moved file options to menu bar, added New file functionality<br>
 1.01: Fixed issue with high-order mask not having CC bit set. (Apologies!)<br>
 1.00: Initial release.
 
 
-## Usage
+## Usage (Spriter tool):
 You must have a fairly recent verson of Python installed in order to use this app. It was developed on Python 3.7.1 but should run on any Python installation that has Tkinter included (which is most of the recent ones). It does not use any additional libraries. It has been fully tested on both Windows 10 and Ubuntu Linux.
 
 To start it, download (or copy) msx2spriter.py to any folder on a computer with Python installed and run:
@@ -67,6 +68,25 @@ If you are using this with a compiler such as sjasm, you might want to include a
 ` output sprites.bin`
 
 
+## Usage (Screener tool):
+As above, copy or download `msx2screener.py` locally to your computer. To make use of the screener tool, you need a pattern (M2P) file created with the Spriter tool. You execute it with:<br>
+
+`$ python3 ./msx2screener.py`<br>
+
+The window looks like this:<br>
+
+![ss2](m2s5.png)
+
+
+Instructions for **Screener tool**:<br>
+-You need to load in an M2P pattern file from the Spriter tool before painting a screen. (Sorry, no support for standard images yet!)<br>
+-Screen patterns are limited to one-third sections of the screen. Patterns 0-255 are for the top third, 256-511 for the middle, and 512-767 for the bottom.<br>
+-Click any of the patterns on each of the pattern windows to select a 'paintbrush' for that section of the screen. After doing this, painting is natural and fluid - you can drag your mouse between the screen's third-sections and continue painting with the selected neighboring pattern.<br>
+-Right click to set that tile to whatever is set to tile '0' in that section. <br>
+-You can freely change screen files and pattern files. Import a new M2P to change the current screen's pattern graphics, or load/create a new M2C and the tool will ask if you want to change your current pattern set.<br>
+-Exporting is nice and easy - 768 bytes, one per tile, each valued 0-255. Formatting is the same as described above.<br>
+
+
 ### MSX2 Mode-2 Sprite Limitations
 
 Keep in mind the following restrictions:
@@ -75,14 +95,19 @@ Keep in mind the following restrictions:
 https://www.msx.org/wiki/The_OR_Color<br>
 3. In sprite mode 2, 8 sprite masks can be displayed on a single scanline, which means with overlaid sprites that restriction is reduced to an effective 4.
 
+
 ### MSX2 GRAPHIC3 Pattern Limitations
 
 GRAPHIC3 background patterns are surprisingly lenient:<br>
 1. Each pattern can have 16 colors (the entire palette, transparent included).<br>
 2. Only two colors can co-exist on the same pixel row - this includes transparent (color 0).<br>
+3. Each third of the screen needs its own pattern table.
+
 
 ### Other Notes
 
 The code is extremely ugly. I am not a professional coder by any means and this is mostly for personal use. I'm releasing it publically so maybe someone else will get some use out of it. 
+
+Quality of life features (copy and paste, RMB functionality) are coming soon.
 
 Feel free to contribute, clean up, or give me a shout-out :)

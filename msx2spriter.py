@@ -5,8 +5,7 @@
 #
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.02: Added menu bar functions and new/save/load
-#         error checking
+# v1.2: Various bugfixes, added visible selector
 #
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite mode 2 graphics for use with compilers.
@@ -359,10 +358,11 @@ def color_pixel(ob):
     #return
 
 def get_palno_from_rgb(rgb):
-    for c in intpal:
-        if c == rgb:
-            if intpal.index(c) != 0:
-                return intpal.index(c)
+    i = 1
+    while i < 16:
+        if intpal[i] == rgb:
+            return i 
+        i += 1
     return None
 
 def repaint_pattern_row(yrow, prevcol):
@@ -370,6 +370,8 @@ def repaint_pattern_row(yrow, prevcol):
     color1 = patterndata[icon_selected][(yrow*8)]
     color2 = None
     activecolor = get_palno_from_rgb(currentColor) #single_intcol_to_hex(currentColor)
+    #print(activecolor)
+    #print(currentColor)
     threeflag = False 
     i = 0
     while i < 8:
@@ -912,7 +914,7 @@ def export_asm_pattern():
     global asmfile 
     asmfile = ''
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 pattern assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
-    if asmfile == '':
+    if asmfile == '' or type(asmfile) == tuple:
         return 
     if asmfile[-4:].upper() != '.Z80':
             asmfile = asmfile + '.z80'
@@ -1034,7 +1036,7 @@ def export_asm_data():
     global asmfile 
     asmfile = ''
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 sprite assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
-    if asmfile == '':
+    if asmfile == '' or type(asmfile) == tuple:
         return 
     if asmfile[-4:].upper() != '.Z80':
             asmfile = asmfile + '.z80'
@@ -1194,7 +1196,7 @@ def export_asm_data():
 def export_pal_data():
     asmpalfile = ''
     asmpalfile = tk.filedialog.asksaveasfilename(title='Save MSX2 palette assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
-    if asmpalfile == '':
+    if asmpalfile == '' or type(asmpalfile)==tuple:
         return 
     if asmpalfile[-4:].upper() != '.Z80':
             asmpalfile = asmpalfile + '.z80'
@@ -1624,7 +1626,8 @@ def initialize_new(patternMode, loading=False):
     else:
         iconwidth = 128
         iconcanvascolumn = 8
-
+    reset_mask_data()
+    reset_pattern_data()
     init_draw_canvas()
     init_icon_canvases()
     add_palette_display()
@@ -1780,10 +1783,6 @@ def initialize_new(patternMode, loading=False):
         fileMenu.entryconfigure(2, command=save_normal_sprite)
         fileMenu.entryconfigure(3, label='Save As .M2S...', command=save_sprite_as)
         fileMenu.entryconfigure(7, label='Export z80 sprite data...', command=export_asm_data)
-
-    reset_mask_data()
-    reset_pattern_data()
-
     return
 
 initialize_new(False)

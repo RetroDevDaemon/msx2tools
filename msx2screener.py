@@ -444,6 +444,7 @@ def import_m2p():
         finally:
             if(f):
                 f.close()
+    refresh_whole_screen()
 
 def launch_app():
     global win 
@@ -458,14 +459,28 @@ def launch_app():
     InitTilePalettes() 
 
 no_changes_made = True 
+saved = False
 
 def client_exit():
     global no_changes_made
     if no_changes_made == True:
         sys.exit()
     else:
-        # ask to save!
-        sys.exit() 
+        result = messagebox.askquestion("Quit", "Save changes before quit?", icon='warning', type='yesnocancel')
+        if result == 'yes':
+            global saved 
+            saved = False 
+            save_normal()
+            if saved == True:
+                sys.exit()
+            else:
+                global filename 
+                filename = ''
+                return 
+        elif result == 'no':
+            sys.exit()
+        elif result == 'cancel':
+            return
 
 def new_screen():
     # ask to save changes
@@ -490,6 +505,8 @@ def load_m2c():
         return # because they cancelled.
     global m2cfilename
     m2cfilename = tk.filedialog.askopenfilename(title='Load MSX2 Screener file', filetypes=( ('MSX2 Screener screen file', '*.m2c'),('All files', '*.*') ))
+    if m2cfilename == '' or type(m2cfilename) == tuple:
+        return
     f = None 
     try:
         f = open(m2cfilename, 'r')
@@ -559,6 +576,8 @@ def save_m2c():
         f = open(m2cfilename, 'w')
         for s in screentiles:
             f.write(str(s) +',')
+        global saved 
+        saved = True 
         messagebox.showinfo("Save OK", message='Save successful!')
     except IOError:
         messagebox.showerror("Save failed", message="I/O error saving file. Check drive and permissions and try again.")
