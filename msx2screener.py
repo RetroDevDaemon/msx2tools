@@ -108,7 +108,7 @@ while i < (256*3):
     screentiles.append(0)
     i += 1
 
-last_tile_printed = 99999
+last_tile_printed = -1
 
 def draw_tile(obj):
     if loaded_tiles == False:
@@ -135,12 +135,11 @@ def draw_tile(obj):
         yt -= 8
         tab += 1
     global selected_tile_num
-
     if selected_tile_data[tab] == []:
         return
     if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height()\
         and selected_tile_data[tab] != None:
-        if screentiles[(oyt*32)+xt] == selected_tile_num[tab]:
+        if screentiles[(oyt*32)+xt] == selected_tile_num[tab] and last_tile_printed > -1:
             return
         screentiles[(oyt*32)+xt] = selected_tile_num[tab]
         xp = 0
@@ -158,18 +157,20 @@ def draw_tile(obj):
 
 def refresh_whole_screen():
     i = 0
+    #print(screentiles[(2*256)+(23*32)+7])
     while i < 3:
         xt = 0
         while xt < 32:
             yt = 0
             while yt < 8:
-                tilepaint = screentiles[(i*256)+(yt*32)+xt] # tile_data is not divided into 3s!
-                tiletopaint = tile_data[tilepaint]
+                tilepaint = screentiles[(i*256)+(yt*32)+xt]
+                tiletopaint = tile_data[(i*256)+tilepaint]
                 xp = 0
                 while xp < 8:
                     yp = 0
                     while yp < 8:
                         paint = convertIntColorToHex(integerPalette[tiletopaint[(yp*8)+xp]])
+                        #paint = convertIntColorToHex(integerPalette[screentiles[(i*256)+(yt*32)+xt][(yp*8)+xp]])
                         screenCanvas.itemconfig(screenpixels[(i*32*64*8)+(yt*32*64)+(xt*64)+(yp*8)+xp], fill=paint)
                         yp += 1 #y pixel
                     xp += 1 #x pixel
@@ -196,7 +197,7 @@ def erase_tile(obj):
     if yt > 7:
         yt -= 8
         tab += 1
-    screentiles[(oyt*32)+xt] = tile_data[(tab*256)+0]
+    screentiles[(oyt*32)+xt] = 0
     if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height():
         #and selected_tile_data[tab] != None:
         if screentiles[(oyt*32)+xt] == tile_data[(tab*256)+0] and last_tile_erased > -1:
