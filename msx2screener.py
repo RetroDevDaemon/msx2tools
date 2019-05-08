@@ -583,9 +583,11 @@ def save_as():
     if m2cfilename[-4:].upper() != '.M2C':
         m2cfilename = m2cfilename + '.m2c'
     save_m2c()
+
     
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
+editMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label='New screen file', command=new_screen) #also ask to change m2p
 fileMenu.add_command(label="Save", command=save_normal)
 fileMenu.add_command(label="Save as .M2C file...", command=save_as)
@@ -595,11 +597,18 @@ fileMenu.add_separator()
 fileMenu.add_command(label='Import .M2P patterns...', command=import_m2p) #do not change m2c!
 fileMenu.add_separator()
 fileMenu.add_command(label='Quit', command=client_exit)
+editMenu.add_command(label='Configure RMB...', state=tk.DISABLED)
 menuBar.add_cascade(label="File", menu=fileMenu)
+menuBar.add_cascade(label='Edit', menu=editMenu)
 app.config(menu=menuBar) 
 
 launch_app()
 # Run the app
 app.resizable(False, False)
 app.protocol("WM_DELETE_WINDOW", client_exit)
+tk.Label(win, text='Screen view:').grid(row=2, column=1, columnspan=3)
+tk.Label(win, text='Pattern 0').grid(row=2, column=15, columnspan=3)
+tk.Label(win, text='Pattern 1').grid(row=5, column=15, columnspan=3)
+tk.Label(win, text='Pattern 2').grid(row=8, column=15, columnspan=3)
+
 app.mainloop()

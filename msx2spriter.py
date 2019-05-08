@@ -914,6 +914,8 @@ def export_asm_pattern():
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 pattern assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
     if asmfile == '':
         return 
+    if asmfile[-4:].upper() != '.Z80':
+            asmfile = asmfile + '.z80'
     outdata = []
     outdata_c = []
     colors_array = []
@@ -1034,6 +1036,8 @@ def export_asm_data():
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 sprite assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
     if asmfile == '':
         return 
+    if asmfile[-4:].upper() != '.Z80':
+            asmfile = asmfile + '.z80'
     outdata = []
     outdata.append("; Made with MSX2 Spriter")
     # Gotta do palette shit first 
@@ -1192,6 +1196,8 @@ def export_pal_data():
     asmpalfile = tk.filedialog.asksaveasfilename(title='Save MSX2 palette assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
     if asmpalfile == '':
         return 
+    if asmpalfile[-4:].upper() != '.Z80':
+            asmpalfile = asmpalfile + '.z80'
     outdata = []
     outdata.append('; Palette data made with MSX2 Spriter\n')
     outdata.append(';  Write in sequence to R#16!')
@@ -1511,6 +1517,13 @@ fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data
 fileMenu.add_separator()
 fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
+editMenu = tk.Menu(menuBar, tearoff=0)
+editMenu.add_command(label='Cut (Ctrl+X)', state=tk.DISABLED)
+editMenu.add_command(label='Copy (Ctrl+C)', state=tk.DISABLED)
+editMenu.add_command(label='Paste (Ctrl+V)', state=tk.DISABLED)
+editMenu.add_separator()
+editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
+menuBar.add_cascade(label='Edit', menu=editMenu)
 app.config(menu=menuBar) 
 
 win = None
