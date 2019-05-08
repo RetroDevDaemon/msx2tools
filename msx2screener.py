@@ -157,7 +157,6 @@ def draw_tile(obj):
 
 def refresh_whole_screen():
     i = 0
-    #print(screentiles[(2*256)+(23*32)+7])
     while i < 3:
         xt = 0
         while xt < 32:
@@ -170,7 +169,6 @@ def refresh_whole_screen():
                     yp = 0
                     while yp < 8:
                         paint = convertIntColorToHex(integerPalette[tiletopaint[(yp*8)+xp]])
-                        #paint = convertIntColorToHex(integerPalette[screentiles[(i*256)+(yt*32)+xt][(yp*8)+xp]])
                         screenCanvas.itemconfig(screenpixels[(i*32*64*8)+(yt*32*64)+(xt*64)+(yp*8)+xp], fill=paint)
                         yp += 1 #y pixel
                     xp += 1 #x pixel
@@ -504,13 +502,11 @@ def load_m2c():
         while i < (256*3):
             screentiles[i] = int(indata[i])
             i += 1
-        #screentiles = indata 
         refresh_whole_screen()
-        #print(indata)
     except IOError:
         messagebox.showerror("Load failed", message="I/O error loading file. Check drive and permissions and try again.")
-    #except:
-    #    messagebox.showerror("Load failed", message="Unknown error loading file. This might be a bug!")
+    except:
+        messagebox.showerror("Load failed", message="Unknown error loading file. This might be a bug!")
     finally:
         if f != None:
             f.close()
@@ -518,6 +514,41 @@ def load_m2c():
 
 def export_z80():
     global z80filename
+    z80filename = tk.filedialog.asksaveasfilename(title='Save z80 screen data file', filetypes=( ('z80 screen data file', '*.z80'),('All files', '*.*') ))
+    if z80filename == '' or type(z80filename)==tuple:
+        return
+    if z80filename[-4:].upper() != '.Z80':
+        z80filename = z80filename + '.z80'
+   
+    outdata = []
+    outdata.append("; Created with MSX2 Screener")
+    outdata.append("; ")
+    i = 0
+    while i < 96:
+        outstr = ' DB  '
+        j = 0
+        while j < 8:
+            outstr = outstr + '${:02x}, '.format(screentiles[(i*8)+j])
+            j += 1
+        outstr = outstr[:-2]
+        outdata.append(outstr)
+        i += 1
+
+    f = None 
+    try:
+        f = open(z80filename, 'w')
+        for s in outdata:
+            f.write(s)
+            f.write('\n')
+        messagebox.showinfo('Export OK', message='Z80 data file exported successfully.')
+    except IOError:
+        messagebox.showerror("Export failed", message="I/O error exporting file. Check drive and permissions and try again.")
+    except:
+        messagebox.showerror("Export failed", message="Unknown error exporting file. This might be a bug!")
+    finally:
+        if f != None:
+            f.close()
+
 
 def save_m2c():
     global m2cfilename
