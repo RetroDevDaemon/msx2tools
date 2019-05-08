@@ -108,6 +108,8 @@ GRAPHIC3 background patterns are surprisingly lenient:<br>
 
 The code is extremely ugly. I am not a professional coder by any means and this is mostly for personal use. I'm releasing it publically so maybe someone else will get some use out of it. 
 
+IT'S SLOW! I use Tkinter rectangles to represent pixels, which means there are sometimes several thousand canvas updates happening. Hopefully it remains manageable even on slower systems.
+
 Quality of life features (copy and paste, RMB functionality) are coming soon.
 
 Feel free to contribute, clean up, or give me a shout-out :)
