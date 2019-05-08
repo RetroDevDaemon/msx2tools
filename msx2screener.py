@@ -108,6 +108,8 @@ while i < (256*3):
     screentiles.append(0)
     i += 1
 
+last_tile_printed = 99999
+
 def draw_tile(obj):
     if loaded_tiles == False:
         global displayed_nopat_warn
@@ -174,7 +176,6 @@ def refresh_whole_screen():
     RedrawScreenGrid(0)
 
 last_tile_erased = 99999
-last_tile_printed = 99999
 
 def erase_tile(obj):
     if loaded_tiles == False:
