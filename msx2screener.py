@@ -122,6 +122,9 @@ def draw_tile(obj):
     # whatever tile number we are within our tab (tab doesn't matter), set that value 0-255 
     # into screentiles[].
     oyt = yt
+    global last_tile_printed
+    if (oyt*32)+xt == last_tile_printed:
+        return
     tab = 0
     if yt > 7:
         yt -= 8
@@ -129,7 +132,6 @@ def draw_tile(obj):
     if yt > 7:
         yt -= 8
         tab += 1
-
     global selected_tile_num
     screentiles[(oyt*32)+xt] = selected_tile_num[tab]
     if selected_tile_data[tab] == []:
@@ -144,9 +146,10 @@ def draw_tile(obj):
                 screenCanvas.itemconfig(screenpixels[(tab*32*64*8)+(yt*32*64)+(xt*64)+(yp*8)+xp], fill=paint)
                 yp += 1
             xp += 1
-        RedrawScreenGrid(0)
     global no_changes_made
     no_changes_made = False
+    last_tile_printed = (oyt*32)+xt
+
 
 def refresh_whole_screen():
     i = 0
@@ -170,10 +173,41 @@ def refresh_whole_screen():
         i += 1 #tab
     RedrawScreenGrid(0)
 
+last_tile_erased = 99999
+last_tile_printed = 99999
+
 def erase_tile(obj):
+    if loaded_tiles == False:
+        return 
     xt = math.floor(obj.x / (screenScale*8))
     yt = math.floor(obj.y / (screenScale*8))
-    print(str(xt) + ' ' + str(yt))
+    oyt = yt
+    tab = 0
+    global last_tile_erased
+    if (oyt*32)+xt == last_tile_erased:
+        return
+    if yt > 7:
+        yt -= 8
+        tab += 1
+    if yt > 7:
+        yt -= 8
+        tab += 1
+    #global selected_tile_num
+    screentiles[(oyt*32)+xt] = tile_data[(tab*256)+0]
+    if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height():
+        #and selected_tile_data[tab] != None:
+        xp = 0
+        while xp < 8:
+            yp = 0
+            while yp < 8:
+                paint = convertIntColorToHex(integerPalette[tile_data[(tab*256)+0][(yp*8)+xp]])
+                screenCanvas.itemconfig(screenpixels[(tab*32*64*8)+(yt*32*64)+(xt*64)+(yp*8)+xp], fill=paint)
+                yp += 1
+            xp += 1
+    global no_changes_made
+    no_changes_made = False
+    last_tile_erased = (oyt*32)+xt
+
 
 def select_tile0(obj):
     select_tile(0, obj.x, obj.y)
@@ -443,6 +477,12 @@ def load_m2c():
     if loaded_tiles == False:
         messagebox.showwarning("No patterns loaded", message='No pattern file imported!\nOpening import pattern dialog.', type='ok')
         import_m2p()
+    else:  
+        resp = messagebox.askyesno('Load new pattern?', message='Select Yes to load a different M2P file,\nor No to use the same patterns.', type='yesno')
+        if resp == True:
+            import_m2p()
+        else:
+            pass
     if loaded_tiles == False:
         return # because they cancelled.
     global m2cfilename
@@ -470,6 +510,9 @@ def load_m2c():
         if f != None:
             f.close()
     # now that tiles are confirmed, open m2c dialog
+
+def export_z80():
+    global z80filename
 
 def save_m2c():
     global m2cfilename
@@ -511,6 +554,7 @@ fileMenu.add_command(label='New screen file', command=new_screen) #also ask to c
 fileMenu.add_command(label="Save", command=save_normal)
 fileMenu.add_command(label="Save as .M2C file...", command=save_as)
 fileMenu.add_command(label="Load .M2C file...", command=load_m2c) #ask to change m2p
+fileMenu.add_command(label="Export as z80 screen data...", command=export_z80)
 fileMenu.add_separator()
 fileMenu.add_command(label='Import .M2P patterns...', command=import_m2p) #do not change m2c!
 fileMenu.add_separator()
