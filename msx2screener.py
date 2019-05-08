@@ -135,11 +135,14 @@ def draw_tile(obj):
         yt -= 8
         tab += 1
     global selected_tile_num
-    screentiles[(oyt*32)+xt] = selected_tile_num[tab]
+
     if selected_tile_data[tab] == []:
         return
     if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height()\
         and selected_tile_data[tab] != None:
+        if screentiles[(oyt*32)+xt] == selected_tile_num[tab]:
+            return
+        screentiles[(oyt*32)+xt] = selected_tile_num[tab]
         xp = 0
         while xp < 8:
             yp = 0
@@ -175,7 +178,7 @@ def refresh_whole_screen():
         i += 1 #tab
     RedrawScreenGrid(0)
 
-last_tile_erased = 99999
+last_tile_erased = -1
 
 def erase_tile(obj):
     if loaded_tiles == False:
@@ -193,10 +196,11 @@ def erase_tile(obj):
     if yt > 7:
         yt -= 8
         tab += 1
-    #global selected_tile_num
     screentiles[(oyt*32)+xt] = tile_data[(tab*256)+0]
     if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height():
         #and selected_tile_data[tab] != None:
+        if screentiles[(oyt*32)+xt] == tile_data[(tab*256)+0] and last_tile_erased > -1:
+            return
         xp = 0
         while xp < 8:
             yp = 0
@@ -207,7 +211,6 @@ def erase_tile(obj):
             xp += 1
     global no_changes_made
     no_changes_made = False
-    last_tile_erased = (oyt*32)+xt
 
 
 def select_tile0(obj):
