@@ -2,6 +2,7 @@
 
 Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts.
 
+
 ### Release notes:
 
 1.2: Added Screener tool, fixed various bugs, added visible selector<br>
@@ -91,7 +92,7 @@ Instructions for **Screener tool**:<br>
 
 Keep in mind the following restrictions:
 1. Each _individual mask_ can only have one color per row, but a total of 16 colors (one for each row, including transparent).<br>
-2. When two masks are overlaid, the overlapping pixels have their palette values OR-ed (e.g. palette number 1 overlaid with palette number 2 will produce palette number 3 (0001 | 0010 = 0011). Refer to this link for more information:<br>
+2. When two masks are overlaid, if the higher-order mask has bit 6 of its color bytes set, the overlapping pixels have their palette values OR-ed (e.g. palette number 1 overlaid with palette number 2 will produce palette number 3 (0001 | 0010 = 0011). MSX2 Spriter does this automatically for higher-order masks (every odd). Refer to this link for more information:<br>
 https://www.msx.org/wiki/The_OR_Color<br>
 3. In sprite mode 2, 8 sprite masks can be displayed on a single scanline, which means with overlaid sprites that restriction is reduced to an effective 4.
 
