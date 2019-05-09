@@ -5,7 +5,7 @@ Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprite
 
 ### Release notes:
 
-1.21: Added transparency selection/display to sprite mode, added copy/paste mask data
+1.21: Added transparency selection/display to sprite mode, added copy/paste mask data<br>
 1.2: Added Screener tool, fixed various bugs, added visible selector<br>
 1.1: Added PATTERN mode! <br>
 1.02: Moved file options to menu bar, added New file functionality<br>
