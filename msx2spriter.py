@@ -1642,6 +1642,13 @@ def pattern_move_down():
     l1.configure(text="Table {} / 3".format(math.floor(pattern_y_ofs/8)+1))
     return 
 
+def keyboard_monitor(obj):
+    if obj.state == 4:
+        if obj.keysym == 'c':
+            copy_data()
+        elif obj.keysym == 'v':
+            paste_data()
+
 def initialize_new(patternMode, loading=False):
     global intpal 
     intpal = defaultIntegerPalette.copy()
@@ -1861,6 +1868,9 @@ def initialize_new(patternMode, loading=False):
         fileMenu.entryconfigure(2, command=save_normal_sprite)
         fileMenu.entryconfigure(3, label='Save As .M2S...', command=save_sprite_as)
         fileMenu.entryconfigure(7, label='Export z80 sprite data...', command=export_asm_data)
+    
+    app.bind("<Key>", keyboard_monitor)
+    
     return
 
 initialize_new(False)
