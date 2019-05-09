@@ -349,7 +349,8 @@ def color_pixel(ob):
         if mask.get() == 2:
             pixels_mask2[(y_px*spriteSize)+x_px] = currentPalNo
         # TODO update this to trans
-        if currentColor != 0:#if numSel != 0:#if currentColor != 'trans':
+        #print(currentColor)
+        if currentColor != intpal[0]:#if numSel != 0:#if currentColor != 'trans':
             repaint_row(y_px)
         maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
         maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
@@ -401,7 +402,7 @@ def erase_pixel(ob):
     global currentPalNo 
     oldp = currentPalNo
     oldc = currentColor + '.'
-    currentColor = 0
+    currentColor = intpal[0]
     currentPalNo = 0
     color_pixel(ob)
     currentPalNo = oldp
