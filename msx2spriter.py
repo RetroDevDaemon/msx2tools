@@ -2,10 +2,10 @@
 # MSX2 Spriter
 #
 # (c) 2019 Ben Ferguson
-#
+#  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.2: Various bugfixes, added visible selector
+# v1.21: Transparency selection, copy/paste masks
 #
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
