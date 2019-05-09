@@ -45,6 +45,7 @@ pattern_page = 0
 page_ofs = 0
 iconwidth = 128
 iconcanvascolumn = 8
+copybuffer = None
 
 # MSX2 default 16-color palette, in integer strings
 defaultIntegerPalette = [
@@ -1442,6 +1443,7 @@ def new_file():
     # ask if ok, if not, open save_normal dialog
     global patternMode
     global filename  
+    global editMenu
     result = messagebox.askquestion("New file", "Save changes before creating new file?", icon='warning')
     if result == 'yes':
         global saved 
@@ -1454,12 +1456,16 @@ def new_file():
             filename = '' 
             return 
     patternMode = False 
+    tk.ACTIVE
     filename = ''
     initialize_new(patternMode)
+    editMenu.entryconfig(1, state=tk.NORMAL)
+    editMenu.entryconfig(2, state=tk.NORMAL)
 
 def new_pattern_file():
     global patternMode
     global filename  
+    global editMenu
     result = messagebox.askquestion("New file", "Save changes before creating new file?", icon='warning')
     if result == 'yes':
         global saved 
@@ -1474,6 +1480,8 @@ def new_pattern_file():
     patternMode = True
     filename = '' 
     initialize_new(patternMode)
+    editMenu.entryconfig(1, state=tk.DISABLED)
+    editMenu.entryconfig(2, state=tk.DISABLED)
 
 def save_normal_sprite():
     global patternMode 
@@ -1496,6 +1504,58 @@ def save_normal():
             savem2p()
     #return
 
+def copy_data():
+    global maskdata
+    global mask
+    global copybuffer
+    global icon_selected
+    global page_ofs
+
+    copybuffer = []
+    
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+
+        if icon_selected == 0:
+            copybuffer = maskdata[0+page_ofs+mask_ofs].copy()
+        elif icon_selected == 1:
+            copybuffer = maskdata[2+page_ofs+mask_ofs].copy()
+        elif icon_selected == 2:
+            copybuffer = maskdata[4+page_ofs+mask_ofs].copy()
+        elif icon_selected == 3:
+            copybuffer = maskdata[6+page_ofs+mask_ofs].copy()
+
+def paste_data():
+    global maskdata
+    global mask
+    global copybuffer
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    if not copybuffer:
+        return
+    
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+
+        if icon_selected == 0:
+            maskdata[0+page_ofs+mask_ofs] = copybuffer.copy()
+        elif icon_selected == 1:
+            maskdata[2+page_ofs+mask_ofs] = copybuffer.copy()
+        elif icon_selected == 2:
+            maskdata[4+page_ofs+mask_ofs] = copybuffer.copy()
+        elif icon_selected == 3:
+            maskdata[6+page_ofs+mask_ofs] = copybuffer.copy()
+        
+        if mask_ofs == 0:
+            pixels_mask1 = copybuffer.copy()
+        else:
+            pixels_mask2 = copybuffer.copy()
+
+        refresh_display(True)
+
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label="New sprite file", command=new_file)
@@ -1512,8 +1572,8 @@ fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
 editMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', state=tk.DISABLED)
-editMenu.add_command(label='Copy (Ctrl+C)', state=tk.DISABLED)
-editMenu.add_command(label='Paste (Ctrl+V)', state=tk.DISABLED)
+editMenu.add_command(label='Copy (Ctrl+C)', state=tk.NORMAL, command=copy_data)
+editMenu.add_command(label='Paste (Ctrl+V)', state=tk.NORMAL, command=paste_data)
 editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
 menuBar.add_cascade(label='Edit', menu=editMenu)
