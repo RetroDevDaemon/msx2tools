@@ -1816,6 +1816,7 @@ def initialize_new(patternMode, loading=False):
         iconCanvas.create_line(160+2, 0+2, 160+2, 128+2, fill='grey')
         iconCanvas.create_line(224+2, 0+2, 224+2, 128+2, fill='grey')
         update_pattern_icons()
+        refresh_display(True)
     if bl:
         bl.destroy()
     if br:
