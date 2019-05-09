@@ -45,7 +45,9 @@ pattern_page = 0
 page_ofs = 0
 iconwidth = 128
 iconcanvascolumn = 8
+last_pixel_colored = -1
 copybuffer = None
+
 
 # MSX2 default 16-color palette, in integer strings
 defaultIntegerPalette = [
@@ -70,25 +72,25 @@ def convert_int_pal_to_hex(integerPalette):
     displayPalette = []
     i = 0
     while i < 16:
-        if i == 0:
-            displayPalette.append('grey')
-        else:
-            tempPalVals = []
-            tempPalVals.append('#')
-            a = math.floor((int(integerPalette[i][:-2]) / 7) * 255)
-            tempPalVals.append(hex(a)[2:])
-            if a == 0:
-                tempPalVals.append('0')
-            a = math.floor((int(integerPalette[i][1:-1]) / 7) * 255)
-            tempPalVals.append(hex(a)[2:])
-            if a == 0:
-                tempPalVals.append('0')
-            a = math.floor((int(integerPalette[i][2:]) / 7) * 255)
-            tempPalVals.append(hex(a)[2:])
-            if a == 0:
-                tempPalVals.append('0')
-            displayPalette.append(tempPalVals)
-            displayPalette[i] = ''.join(displayPalette[i])
+        #if i == 0:
+        #    displayPalette.append('grey')
+        #else:
+        tempPalVals = []
+        tempPalVals.append('#')
+        a = math.floor((int(integerPalette[i][:-2]) / 7) * 255)
+        tempPalVals.append(hex(a)[2:])
+        if a == 0:
+            tempPalVals.append('0')
+        a = math.floor((int(integerPalette[i][1:-1]) / 7) * 255)
+        tempPalVals.append(hex(a)[2:])
+        if a == 0:
+            tempPalVals.append('0')
+        a = math.floor((int(integerPalette[i][2:]) / 7) * 255)
+        tempPalVals.append(hex(a)[2:])
+        if a == 0:
+            tempPalVals.append('0')
+        displayPalette.append(tempPalVals)
+        displayPalette[i] = ''.join(displayPalette[i])
         i += 1
  #
 
@@ -99,7 +101,7 @@ def convert_hex_pal_to_binary():
 
 # some globals
 numSel = 0
-currentColor = 'trans'
+currentColor = '000'
 is_drawing_held = False
 mask = tk.IntVar()
 mask.set(1)
@@ -226,8 +228,8 @@ def add_palette_display():
         palette_display.append(PaletteButton(win, width=scale, height=scale, background=displayPalette[i]))
         palette_display[i].grid(row=1, column=i+1)
         palette_display[i].setVal(intpal[i])
-        if i == 0:
-            palette_display[i].myVal = 'trans'
+        #if i == 0:
+        #    palette_display[i].myVal = 'trans'
         i += 1
 
 # Refreshes the palette colors
@@ -238,8 +240,8 @@ def updatePaletteDisplay():
     while i < 16:
         palette_display[i].configure(background=displayPalette[i])
         palette_display[i].setVal(intpal[i])
-        if i == 0:
-            palette_display[i].myVal = 'trans'
+        #if i == 0:
+        #    palette_display[i].myVal = 'trans'
         i += 1
     return 
 
@@ -248,7 +250,7 @@ def applyColorToSel():
     # 1) ensure input values are between 0-7 
     global currentColor
     oldcol = single_intcol_to_hex(currentColor)
-    if oldcol != 'grey':
+    if oldcol != intpal[0]:#'grey'intpal[0]:
         i = 0
         while i < 3:
             if float(pal_mod[i].get()) < 0:
@@ -282,7 +284,7 @@ def find_and_replace_pixels(oldcolor, newcolor):
 def resetSelectedColor():
     global currentColor
     oldcol = single_intcol_to_hex(currentColor)
-    if oldcol != 'grey':
+    if oldcol != intpal[0]:#'grey':
         intpal[numSel] = defaultIntegerPalette[numSel]
         convert_int_pal_to_hex(intpal)
         currentColor = intpal[numSel]
@@ -330,10 +332,17 @@ def repaint_row(row):
                 pixels_mask2[(row*spriteSize)+i] = currentPalNo    
         i += 1
 
+
+
 # Actually paints the pixel and changes the pal number in the mask array
 def color_pixel(ob):
     x_px = math.floor(ob.x/pixelSize) 
     y_px = math.floor(ob.y/pixelSize)
+    global last_pixel_colored 
+    global numSel
+    if last_pixel_colored == (y_px*spriteSize)+x_px:
+        return 
+    last_pixel_colored = (y_px*spriteSize) + x_px 
     if ob.x < 0 or ob.x >= (spriteSize*pixelSize) or ob.y < 0 or ob.y >= (spriteSize*pixelSize):
         return 
     if patternMode == False:
@@ -342,7 +351,8 @@ def color_pixel(ob):
         if mask.get() == 2:
             pixels_mask2[(y_px*spriteSize)+x_px] = currentPalNo
         # TODO update this to trans
-        if currentColor != 'trans':
+        #print(currentColor)
+        if currentColor != intpal[0]:#if numSel != 0:#if currentColor != 'trans':
             repaint_row(y_px)
         maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
         maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
@@ -394,7 +404,7 @@ def erase_pixel(ob):
     global currentPalNo 
     oldp = currentPalNo
     oldc = currentColor + '.'
-    currentColor = 'trans'
+    currentColor = intpal[0]
     currentPalNo = 0
     color_pixel(ob)
     currentPalNo = oldp
@@ -413,12 +423,14 @@ def update_orlayer():
             orpixels[i] = orpixels[i] | pixels_mask2[i] 
         elif orpixels[i] == 0 and pixels_mask2[i] != 0:
             orpixels[i] = pixels_mask2[i] 
-        topaint = 'grey'
+        topaint = single_intcol_to_hex(intpal[0])#'grey'
         cur_px = orpixels[i]
-        if palette_display[cur_px].myVal != 'trans':
+        stip = 'gray75'
+        if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
             intval = palette_display[cur_px].myVal
             topaint = single_intcol_to_hex(intval)
-        drawCanvas.itemconfig(pixels[i], fill=topaint)
+            stip = ''
+        drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
         i += 1
     #return
 
@@ -428,12 +440,14 @@ def update_layermask_2():
     global pixels_mask2
     global palette_display
     while i < (spriteSize * spriteSize):
-        topaint = 'grey'
+        topaint = single_intcol_to_hex(intpal[0])#'grey'
         cur_px = pixels_mask2[i]
-        if palette_display[cur_px].myVal != 'trans':
+        stip = 'gray75'
+        if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
+            stip = ''
             intval = palette_display[cur_px].myVal
             topaint = single_intcol_to_hex(intval)
-        drawCanvas.itemconfig(pixels[i], fill=topaint)
+        drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
         i += 1
     #return 
 
@@ -443,12 +457,16 @@ def update_layermask_1():
     global pixels_mask1
     global palette_display
     while i < (spriteSize * spriteSize):
-        topaint = 'grey'
+        topaint = single_intcol_to_hex(intpal[0])#'grey'
         cur_px = pixels_mask1[i]
-        if palette_display[cur_px].myVal != 'trans':
+        stip = 'gray75'
+        if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
+            stip = ''
             intval = palette_display[cur_px].myVal
             topaint = single_intcol_to_hex(intval)
-        drawCanvas.itemconfig(pixels[i], fill=topaint)
+        if patternMode == True:
+            stip = ''
+        drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
         i += 1
     #return 
 
@@ -484,7 +502,7 @@ def reset_pixels_display():
         j = 0
         while j < spriteSize:
             #create_rectangle's
-            pixels.append(drawCanvas.create_rectangle(j*pixelSize, i*pixelSize, (j+1)*pixelSize, (i+1)*pixelSize, outline='black', fill='grey'))
+            pixels.append(drawCanvas.create_rectangle(j*pixelSize, i*pixelSize, (j+1)*pixelSize, (i+1)*pixelSize, outline='grey', fill=single_intcol_to_hex(intpal[0]), stipple='gray75'))
             pixels_mask1.append(0)
             pixels_mask2.append(0)
             j += 1
@@ -500,10 +518,10 @@ show_m2.set(True)
 # Universally updates all 256 pixels
 def refresh_display(allicons=False):
     global patternMode 
-    transparent = 'grey'
+    transparent = single_intcol_to_hex(intpal[0])
     i = 0
     while i < (spriteSize*spriteSize):
-        drawCanvas.itemconfig(pixels[i], fill=transparent)
+        drawCanvas.itemconfig(pixels[i], fill=transparent, stipple='gray75')
         i += 1
     if show_m1.get() == True and show_m2.get() == True:
         update_orlayer()
@@ -583,7 +601,6 @@ def draw_pattern_selector(icnum):
             i += 1
     tw = math.floor(iconwidth/8)
     xa = ((icnum % 8)) * tw + 2
-    #print(icon_selected%32)
     ya = math.floor(icnum/8) * tw + 2
     #if icnum >= 0 and icnum < 32:
     if pattern_x_ofs > ((icon_selected % 32) - 8) and pattern_x_ofs < ((icon_selected % 32) + 1)\
@@ -738,19 +755,22 @@ def update_icon_window(win_no=None):
                 orpixels[i] = orpixels[i] | or2pixels[i] 
             elif orpixels[i] == 0 and or2pixels[i] != 0:
                 orpixels[i] = or2pixels[i] 
-            topaint = 'grey'
+            #topaint = 'grey'
+            topaint = single_intcol_to_hex(intpal[0])
             cur_px = orpixels[i]
-            if palette_display[cur_px].myVal != 'trans':
+            stip = 'gray25'
+            if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans':
                 intval = palette_display[cur_px].myVal
                 topaint = single_intcol_to_hex(intval)
+                stip = ''
             if win_no == 0:
-                iconCanvas.itemconfig(smallpixels1[i], fill=topaint)
+                iconCanvas.itemconfig(smallpixels1[i], fill=topaint, stipple=stip)
             elif win_no == 1:
-                iconCanvas.itemconfig(smallpixels2[i], fill=topaint)
+                iconCanvas.itemconfig(smallpixels2[i], fill=topaint, stipple=stip)
             elif win_no == 2:
-                iconCanvas.itemconfig(smallpixels3[i], fill=topaint)
+                iconCanvas.itemconfig(smallpixels3[i], fill=topaint, stipple=stip)
             elif win_no == 3:
-                iconCanvas.itemconfig(smallpixels4[i], fill=topaint)
+                iconCanvas.itemconfig(smallpixels4[i], fill=topaint, stipple=stip)
             i += 1
     else:
         # PATTERN MODE DRAWS!
@@ -1273,7 +1293,7 @@ def loadm2p():
             currentColor = i 
             i += 1
         resetPalette(palette_vals)
-        currentColor = 'trans'
+        currentColor = intpal[0]#'trans'
         #patterndata
         j = 0
         while j < (3*256):
@@ -1322,7 +1342,7 @@ def loadm2s():
             currentColor = i 
             i += 1
         resetPalette(palette_vals)
-        currentColor = 'trans'
+        currentColor = intpal[0]#'trans'
         # load in mf'in maskdata
         j = 0
         while j < 32:
@@ -1654,7 +1674,8 @@ def initialize_new(patternMode, loading=False):
     global bl 
     global br 
     global smallpatternpx
-
+    global last_pixel_colored
+    last_pixel_colored = -1
     # Set up the default window frame
     if win == None:
         win = tk.Frame(master=app, width=800, height=600)
@@ -1779,19 +1800,22 @@ def initialize_new(patternMode, loading=False):
             i += 1
 
     if patternMode == False:
-        iconCanvas.create_line(64+2, 0+2, 64+2, 128+2)
-        iconCanvas.create_line(0+2, 64+2, 128+2, 64+2)
+        iconCanvas.create_line(64+2, 0+2, 64+2, 128+2, fill='black')
+        iconCanvas.create_line(0+2, 64+2, 128+2, 64+2, fill='black')
+        draw_sprite_selector(0)
+        refresh_display(True)
     if patternMode == True:
-        iconCanvas.create_line(64+2, 0+2, 64+2, 128+2)
-        iconCanvas.create_line(0+2, 64+2, 256+2, 64+2)
-        iconCanvas.create_line(32+2, 0+2, 32+2, 128+2)
-        iconCanvas.create_line(96+2, 0+2, 96+2, 128+2)
-        iconCanvas.create_line(0+2, 32+2, 256+2, 32+2)
-        iconCanvas.create_line(0+2, 96+2, 256+2, 96+2)
-        iconCanvas.create_line(128+2, 0+2, 128+2, 128+2)
-        iconCanvas.create_line(192+2, 0+2, 192+2, 128+2)
-        iconCanvas.create_line(160+2, 0+2, 160+2, 128+2)
-        iconCanvas.create_line(224+2, 0+2, 224+2, 128+2)
+        iconCanvas.create_line(64+2, 0+2, 64+2, 128+2, fill='grey')
+        iconCanvas.create_line(0+2, 64+2, 256+2, 64+2, fill='grey')
+        iconCanvas.create_line(32+2, 0+2, 32+2, 128+2, fill='grey')
+        iconCanvas.create_line(96+2, 0+2, 96+2, 128+2, fill='grey')
+        iconCanvas.create_line(0+2, 32+2, 256+2, 32+2, fill='grey')
+        iconCanvas.create_line(0+2, 96+2, 256+2, 96+2, fill='grey')
+        iconCanvas.create_line(128+2, 0+2, 128+2, 128+2, fill='grey')
+        iconCanvas.create_line(192+2, 0+2, 192+2, 128+2, fill='grey')
+        iconCanvas.create_line(160+2, 0+2, 160+2, 128+2, fill='grey')
+        iconCanvas.create_line(224+2, 0+2, 224+2, 128+2, fill='grey')
+        update_pattern_icons()
     if bl:
         bl.destroy()
     if br:
