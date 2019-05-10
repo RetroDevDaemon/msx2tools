@@ -1683,13 +1683,14 @@ def pattern_move_down():
     return 
 
 def keyboard_monitor(obj):
-    if obj.state == 4:
+    if obj.state == 4 or obj.state == 12:
         if obj.keysym == 'c':
             copy_data()
         elif obj.keysym == 'v':
             paste_data()
         elif obj.keysym == 'x':
             cut_data()
+    #print(str(obj.state) + ' ' + 'keysym:' + str(obj.keysym))
 
 def initialize_new(patternMode, loading=False):
     global intpal 
