@@ -72,9 +72,9 @@ def convert_int_pal_to_hex(integerPalette):
     displayPalette = []
     i = 0
     while i < 16:
-        #if i == 0:
-        #    displayPalette.append('grey')
-        #else:
+        #print(integerPalette[i])
+        if integerPalette[i] == 'trans':
+            integerPalette[i] = '000'
         tempPalVals = []
         tempPalVals.append('#')
         a = math.floor((int(integerPalette[i][:-2]) / 7) * 255)
@@ -119,7 +119,7 @@ app.bind("<ButtonRelease-1>", stop_draw)
 def single_intcol_to_hex(col):
     #global currentColor
     if col[:-2] == 'tra':
-        return 'grey'
+        return '#000000'
     a = math.floor((int(col[:-2]) / 7) * 255)
     b = hex(a)[2:]
     if b == '0':
@@ -998,8 +998,21 @@ def export_asm_pattern():
     outdata.append(";")
     outdata.append("; Pattern generator data")
     outdata.append("; VDP location default @ $0000")
+    out_check = []
+    p = 0
+    while p < 3:
+        i = 0
+        out_check.append(0)
+        while i < (256):
+            j = 0
+            while j < (spriteSize*spriteSize):
+                if patterndata[(p*256)+i][j] != 0:
+                    out_check[p] = 1
+                j += 1
+            i += 1
+        p += 1
     #
-    # append ' ; Pattern table x
+    print(out_check)
     pl = 0
     while pl < 3:
         outdata.append(";;;;;;;;;;;;;;;;;;")
@@ -1115,140 +1128,154 @@ def export_asm_data():
             asmfile = asmfile + '.z80'
     outdata = []
     outdata.append("; Made with MSX2 Spriter")
+    # first, check to see what patterns need exporting.
+    # iterate through maskdata[], and set val to 1.
+    out_check = []
+    i = 0
+    while i < 32:
+        j = 0
+        out_check.append(0)
+        while j < (spriteSize*spriteSize):
+            if maskdata[i][j] != 0:
+                out_check[i] = 1
+            j += 1
+        i += 1
     # Gotta do palette shit first 
     i = 0
     while i < 32:
-        outdata.append('; Color mask {}'.format(i))
-        # top
-        y = 0
-        curline = []
-        curline.append(' DB ')
-        while y < 8:
-            outb = ''
-            x = 0
-            while x < 16:
-                # convert maskdata[i][(y*16)+x] to hex
-                md = maskdata[i][(y*16)+x]
-                if md > 0:
-                    if i % 2 == 0:
-                        outb = '{:02x}'.format(md)
-                    else:
-                        md += 64
-                        outb = '{:02x}'.format(md)
-                x += 1
-            y += 1
-            if outb == '':
-                curline.append(' $00,')
-            else:
-                curline.append(' ${},'.format(outb))
-        curline = ''.join(curline)[:-1]
-        outdata.append(curline)
-        # bottom
-        y = 8
-        curline = []
-        curline.append(' DB ')
-        while y < 16:
-            outb = ''
-            x = 0
-            while x < 16:
-                # convert maskdata[i][(y*16)+x] to hex
-                md = maskdata[i][(y*16)+x]
-                if md > 0:
-                    if i % 2 == 0:
-                        outb = '{:02x}'.format(md)
-                    else:
-                        md += 64
-                        outb = '{:02x}'.format(md)
-                x += 1
-            y += 1
-            if outb == '':
-                curline.append(' $00,')
-            else:
-                curline.append(' ${},'.format(outb))
-        curline = ''.join(curline)[:-1]
-        outdata.append(curline)
+        if out_check[i] == 1:
+            outdata.append('; Color mask {}'.format(i))
+            # top
+            y = 0
+            curline = []
+            curline.append(' DB ')
+            while y < 8:
+                outb = ''
+                x = 0
+                while x < 16:
+                    # convert maskdata[i][(y*16)+x] to hex
+                    md = maskdata[i][(y*16)+x]
+                    if md > 0:
+                        if i % 2 == 0:
+                            outb = '{:02x}'.format(md)
+                        else:
+                            md += 64
+                            outb = '{:02x}'.format(md)
+                    x += 1
+                y += 1
+                if outb == '':
+                    curline.append(' $00,')
+                else:
+                    curline.append(' ${},'.format(outb))
+            curline = ''.join(curline)[:-1]
+            outdata.append(curline)
+            # bottom
+            y = 8
+            curline = []
+            curline.append(' DB ')
+            while y < 16:
+                outb = ''
+                x = 0
+                while x < 16:
+                    # convert maskdata[i][(y*16)+x] to hex
+                    md = maskdata[i][(y*16)+x]
+                    if md > 0:
+                        if i % 2 == 0:
+                            outb = '{:02x}'.format(md)
+                        else:
+                            md += 64
+                            outb = '{:02x}'.format(md)
+                    x += 1
+                y += 1
+                if outb == '':
+                    curline.append(' $00,')
+                else:
+                    curline.append(' ${},'.format(outb))
+            curline = ''.join(curline)[:-1]
+            outdata.append(curline)
 
         i += 1
     # NOW do sprite stuff
     i = 0
     while i < 32:
-        # top left first
-        outdata.append('; Mask {}'.format(i))
-        y = 0
-        curline = []
-        curline.append (' DB ')
-        while y < 8:
-            outb = []
-            x = 0
-            while x < 8:
-                if maskdata[i][(y*16)+x] != 0:
-                    outb.append('1')
-                else: 
-                    outb.append('0')
-                x += 1
-            y += 1
-            curbin = int(''.join(outb),2)
-            curbin = "{:02x}".format(curbin)
-            curline.append(' ${},'.format(curbin))
-        curline = ''.join(curline)[:-1]
-        outdata.append(curline)
-        # bottom left
-        y = 8
-        curline = []
-        curline.append (' DB ')
-        while y < 16:
-            outb = []
-            x = 0
-            while x < 8:
-                if maskdata[i][(y*16)+x] != 0:
-                    outb.append('1')
-                else: 
-                    outb.append('0')
-                x += 1
-            y += 1
-            curbin = int(''.join(outb),2)
-            curbin = "{:02x}".format(curbin)
-            curline.append(' ${},'.format(curbin))
-        curline = ''.join(curline)[:-1]
-        outdata.append(curline)
-        # top right
-        y = 0
-        curline = []
-        curline.append (' DB ')
-        while y < 8:
-            outb = []
-            x = 8
-            while x < 16:
-                if maskdata[i][(y*16)+x] != 0:
-                    outb.append('1')
-                else: 
-                    outb.append('0')
-                x += 1
-            y += 1
-            curbin = int(''.join(outb),2)
-            curbin = "{:02x}".format(curbin)
-            curline.append(' ${},'.format(curbin))
-        curline = ''.join(curline)[:-1]
-        outdata.append(curline)
-        # bottom right
-        y = 8
-        curline = []
-        curline.append (' DB ')
-        while y < 16:
-            outb = []
-            x = 8
-            while x < 16:
-                if maskdata[i][(y*16)+x] != 0:
-                    outb.append('1')
-                else: 
-                    outb.append('0')
-                x += 1
-            y += 1
-            curbin = int(''.join(outb),2)
-            curbin = "{:02x}".format(curbin)
-            curline.append(' ${},'.format(curbin))
-        curline = ''.join(curline)[:-1]
-        outdata.append(curline)
+        if out_check[i] == 1:
+            # top left first
+            outdata.append('; Mask {}'.format(i))
+            y = 0
+            curline = []
+            curline.append (' DB ')
+            while y < 8:
+                outb = []
+                x = 0
+                while x < 8:
+                    if maskdata[i][(y*16)+x] != 0:
+                        outb.append('1')
+                    else: 
+                        outb.append('0')
+                    x += 1
+                y += 1
+                curbin = int(''.join(outb),2)
+                curbin = "{:02x}".format(curbin)
+                curline.append(' ${},'.format(curbin))
+            curline = ''.join(curline)[:-1]
+            outdata.append(curline)
+            # bottom left
+            y = 8
+            curline = []
+            curline.append (' DB ')
+            while y < 16:
+                outb = []
+                x = 0
+                while x < 8:
+                    if maskdata[i][(y*16)+x] != 0:
+                        outb.append('1')
+                    else: 
+                        outb.append('0')
+                    x += 1
+                y += 1
+                curbin = int(''.join(outb),2)
+                curbin = "{:02x}".format(curbin)
+                curline.append(' ${},'.format(curbin))
+            curline = ''.join(curline)[:-1]
+            outdata.append(curline)
+            # top right
+            y = 0
+            curline = []
+            curline.append (' DB ')
+            while y < 8:
+                outb = []
+                x = 8
+                while x < 16:
+                    if maskdata[i][(y*16)+x] != 0:
+                        outb.append('1')
+                    else: 
+                        outb.append('0')
+                    x += 1
+                y += 1
+                curbin = int(''.join(outb),2)
+                curbin = "{:02x}".format(curbin)
+                curline.append(' ${},'.format(curbin))
+            curline = ''.join(curline)[:-1]
+            outdata.append(curline)
+            # bottom right
+            y = 8
+            curline = []
+            curline.append (' DB ')
+            while y < 16:
+                outb = []
+                x = 8
+                while x < 16:
+                    if maskdata[i][(y*16)+x] != 0:
+                        outb.append('1')
+                    else: 
+                        outb.append('0')
+                    x += 1
+                y += 1
+                curbin = int(''.join(outb),2)
+                curbin = "{:02x}".format(curbin)
+                curline.append(' ${},'.format(curbin))
+            curline = ''.join(curline)[:-1]
+            outdata.append(curline)
         i += 1
 
     try:
@@ -1350,6 +1377,8 @@ def loadm2p():
         palette_vals = data.split(',')
         i = 0
         while i < 16:
+            if palette_vals[i] == 'trans':
+                palette_vals[i] = '000'
             palette_display[i].myVal = palette_vals[i]
             currentColor = i 
             i += 1
@@ -1378,8 +1407,8 @@ def loadm2p():
         refresh_display(True)
     except IOError:
         messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-    except:
-        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
+    #except:
+    #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
     finally:
         if(f):
             f.close()
@@ -1399,6 +1428,8 @@ def loadm2s():
         palette_vals = data.split(',')
         i = 0
         while i < 16:
+            if palette_vals[i] == 'trans':
+                palette_vals[i] == '000'
             palette_display[i].myVal = palette_vals[i]
             currentColor = i 
             i += 1
@@ -1424,8 +1455,8 @@ def loadm2s():
         refresh_display(True)
     except IOError:
         messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-    except:
-        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
+    #except:
+    #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
     finally:
         if(f):
             f.close()
