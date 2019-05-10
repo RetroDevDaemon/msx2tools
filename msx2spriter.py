@@ -5,8 +5,8 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.21: Transparency selection, copy/paste masks
-#
+# v1.22: Transparency fix, keyboard shortcuts,
+#           and reducing z80 byte exports
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
 # Easy point-and-click interface.
@@ -1012,53 +1012,53 @@ def export_asm_pattern():
             i += 1
         p += 1
     #
-    print(out_check)
     pl = 0
     while pl < 3:
-        outdata.append(";;;;;;;;;;;;;;;;;;")
-        outdata.append("; Pattern table {}".format(pl+1))
-        # determine palette values for color 0 and color 1
-        tl = 0
-        while tl < 256:
-            rl = 0
-            #outdata.append (" DB  ")
-            rowout = []
-            rowout.append(" DB  ")
-            thisbyteout = ''
-            while rl < 8:
-                #c1 = None 
-                c2 = None 
-                c1 = patterndata[(pl*256)+tl][0+(rl*8)]
-                cl = 1 
-                while cl < 8:
-                    if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
-                        c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
-                    if c2 != None:
-                        cl = 8
-                    cl += 1 #col loop
-                if c2 == None:
-                    c2 = 0
-                ## now convert to binary
-                c1b = format(c1, '04b')
-                c2b = format(c2, '04b')
-                colors_array.append('{}{}'.format(c2b, c1b))
-                #now colors_array has color byte
-                reformatrow = []
-                clp = 0 
-                while clp < 8:
-                    if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
-                        #is this pixel color 0?
-                        reformatrow.append('0')
-                    elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
-                        reformatrow.append('1')
-                    clp += 1
-                thisbyteout = ''.join(reformatrow)
-                thisbyteout = '$' + format(int(thisbyteout,2), '02x') + ', '
-                rowout.append(thisbyteout)
-                rl += 1 #row loop
-            rowout = ''.join(rowout)[:-2] + ' ; {}'.format(tl)
-            outdata.append(rowout)
-            tl += 1 #tile loop
+        if out_check[pl] == 1:
+            outdata.append(";;;;;;;;;;;;;;;;;;")
+            outdata.append("; Pattern table {}".format(pl+1))
+            # determine palette values for color 0 and color 1
+            tl = 0
+            while tl < 256:
+                rl = 0
+                #outdata.append (" DB  ")
+                rowout = []
+                rowout.append(" DB  ")
+                thisbyteout = ''
+                while rl < 8:
+                    #c1 = None 
+                    c2 = None 
+                    c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                    cl = 1 
+                    while cl < 8:
+                        if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
+                            c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
+                        if c2 != None:
+                            cl = 8
+                        cl += 1 #col loop
+                    if c2 == None:
+                        c2 = 0
+                    ## now convert to binary
+                    c1b = format(c1, '04b')
+                    c2b = format(c2, '04b')
+                    colors_array.append('{}{}'.format(c2b, c1b))
+                    #now colors_array has color byte
+                    reformatrow = []
+                    clp = 0 
+                    while clp < 8:
+                        if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
+                            #is this pixel color 0?
+                            reformatrow.append('0')
+                        elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
+                            reformatrow.append('1')
+                        clp += 1
+                    thisbyteout = ''.join(reformatrow)
+                    thisbyteout = '$' + format(int(thisbyteout,2), '02x') + ', '
+                    rowout.append(thisbyteout)
+                    rl += 1 #row loop
+                rowout = ''.join(rowout)[:-2] + ' ; {}'.format(tl)
+                outdata.append(rowout)
+                tl += 1 #tile loop
         pl += 1 #pattern loop
     outdata_c.append("; Made with MSX2 Spriter")
     outdata_c.append(";")
@@ -1066,23 +1066,24 @@ def export_asm_pattern():
     outdata_c.append("; VDP Location default @ $2000")
     pl = 0
     while pl < 3:
-        outdata_c.append(";;;;;;;;;;;;;;;;;")
-        outdata_c.append("; Table {} colors".format(pl+1))
-        tl = 0
-        while tl < 256:
-            rl = 0
-            rowout = []
-            rowout.append(" DB  ")
-            thisbyteout = ''
-            while rl < 8:
-                thisbyteout = colors_array[0]
-                thisbyteout = '$' + format(int(thisbyteout,2), '02x') + ', '
-                colors_array.pop(0)
-                rowout.append(thisbyteout)
-                rl += 1 # row loop
-            rowout = ''.join(rowout)[:-2] + ' ; {}'.format(tl)
-            outdata_c.append(rowout)
-            tl += 1 #tile loop
+        if out_check[pl] == 1:
+            outdata_c.append(";;;;;;;;;;;;;;;;;")
+            outdata_c.append("; Table {} colors".format(pl+1))
+            tl = 0
+            while tl < 256:
+                rl = 0
+                rowout = []
+                rowout.append(" DB  ")
+                thisbyteout = ''
+                while rl < 8:
+                    thisbyteout = colors_array[0]
+                    thisbyteout = '$' + format(int(thisbyteout,2), '02x') + ', '
+                    colors_array.pop(0)
+                    rowout.append(thisbyteout)
+                    rl += 1 # row loop
+                rowout = ''.join(rowout)[:-2] + ' ; {}'.format(tl)
+                outdata_c.append(rowout)
+                tl += 1 #tile loop
         pl += 1 #pattern loop
     f_c = None
     try:
