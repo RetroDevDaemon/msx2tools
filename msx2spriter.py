@@ -1574,9 +1574,6 @@ def new_file():
     tk.ACTIVE
     filename = ''
     initialize_new(patternMode)
-    editMenu.entryconfig(0, state=tk.NORMAL)
-    editMenu.entryconfig(1, state=tk.NORMAL)
-    editMenu.entryconfig(2, state=tk.NORMAL)
 
 def new_pattern_file():
     global patternMode
@@ -1596,9 +1593,6 @@ def new_pattern_file():
     patternMode = True
     filename = '' 
     initialize_new(patternMode)
-    editMenu.entryconfig(0, state=tk.DISABLED)
-    editMenu.entryconfig(1, state=tk.DISABLED)
-    editMenu.entryconfig(2, state=tk.DISABLED)
 
 def save_normal_sprite():
     global patternMode 
@@ -1656,8 +1650,18 @@ def cut_data():
             pixels_mask1 = maskdata[maskdata_ofs].copy()
         else:
             pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        copybuffer = patterndata[icon_selected].copy()
+        patterndata[icon_selected] = []
 
-        refresh_display(True)
+        i = 0
+        while i < 768:
+            patterndata[icon_selected].append(0)
+            i += 1
+
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
 
 def copy_data():
     global maskdata
@@ -1679,6 +1683,8 @@ def copy_data():
             copybuffer = maskdata[4+page_ofs+mask_ofs].copy()
         elif icon_selected == 3:
             copybuffer = maskdata[6+page_ofs+mask_ofs].copy()
+    else:
+        copybuffer = patterndata[icon_selected].copy()
 
 def paste_data():
     global maskdata
@@ -1708,8 +1714,11 @@ def paste_data():
             pixels_mask1 = copybuffer.copy()
         else:
             pixels_mask2 = copybuffer.copy()
+    else:
+        patterndata[icon_selected] = copybuffer.copy()
+        pixels_mask1 = copybuffer.copy()
 
-        refresh_display(True)
+    refresh_display(True)
 
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
@@ -1726,9 +1735,9 @@ fileMenu.add_separator()
 fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
 editMenu = tk.Menu(menuBar, tearoff=0)
-editMenu.add_command(label='Cut (Ctrl+X)', state=tk.NORMAL, command=cut_data)
-editMenu.add_command(label='Copy (Ctrl+C)', state=tk.NORMAL, command=copy_data)
-editMenu.add_command(label='Paste (Ctrl+V)', state=tk.NORMAL, command=paste_data)
+editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
+editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
+editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
 editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
 menuBar.add_cascade(label='Edit', menu=editMenu)
