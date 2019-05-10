@@ -587,12 +587,14 @@ def refresh_display(allicons=False, px=-1):
     if show_m1.get() == True and show_m2.get() == True:
         update_orlayer(px)
     elif show_m1.get() == True and show_m2.get() == False:
-        update_layermask_1(px)
+        if patternMode == False:
+            update_layermask_1(px)
+        else:
+            update_layermask_1()
     elif show_m2.get() == True and show_m1.get() == False:
         update_layermask_2(px)
     if allicons == False:
-        global icon_selected
-        global patternMode 
+        global icon_selected 
         if patternMode == False:
             update_icon_window(icon_selected)
         else:
