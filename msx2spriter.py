@@ -47,7 +47,7 @@ iconwidth = 128
 iconcanvascolumn = 8
 last_pixel_colored = -1
 copybuffer = None
-
+last_color_used = -1
 
 # MSX2 default 16-color palette, in integer strings
 defaultIntegerPalette = [
@@ -340,6 +340,7 @@ def color_pixel(ob):
     y_px = math.floor(ob.y/pixelSize)
     global last_pixel_colored 
     global numSel
+    global last_color_used
     if last_pixel_colored == (y_px*spriteSize)+x_px:
         return 
     last_pixel_colored = (y_px*spriteSize) + x_px 
@@ -347,8 +348,12 @@ def color_pixel(ob):
         return 
     if patternMode == False:
         if mask.get() == 1:
+            #if pixels_mask1[(y_px*spriteSize)+x_px] == currentPalNo:
+            #    return
             pixels_mask1[(y_px*spriteSize)+x_px] = currentPalNo
         if mask.get() == 2:
+            #if pixels_mask2[(y_px*spriteSize)+x_px] == currentPalNo:
+            #    return
             pixels_mask2[(y_px*spriteSize)+x_px] = currentPalNo
         if numSel != 0:# and currentColor != intpal[0]:#if numSel != 0:#if currentColor != 'trans':
             repaint_row(y_px)
@@ -360,7 +365,11 @@ def color_pixel(ob):
         patterndata[icon_selected] = pixels_mask1.copy()
         repaint_pattern_row(y_px, prevcol)
         #a = 0
-    refresh_display(False)
+    if last_color_used == currentPalNo:
+        refresh_display(False, last_pixel_colored)
+    else:
+        last_color_used = currentPalNo
+        refresh_display(False, -1)
 
 
 def get_palno_from_rgb(rgb):
@@ -414,62 +423,112 @@ def erase_pixel(ob):
     
 
 # Both layers enabled?
-def update_orlayer():
+def update_orlayer(px = -1):
     global palette_display
     global pixels_mask1 
     global pixels_mask2 
     orpixels = pixels_mask1.copy()
-    i = 0
-    while i < (spriteSize*spriteSize):
-        if orpixels[i] != 0 and pixels_mask2[i] != 0:
-            orpixels[i] = orpixels[i] | pixels_mask2[i] 
-        elif orpixels[i] == 0 and pixels_mask2[i] != 0:
-            orpixels[i] = pixels_mask2[i] 
-        topaint = single_intcol_to_hex(intpal[0])#'grey'
-        cur_px = orpixels[i]
-        stip = 'gray75'
-        if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
-            intval = palette_display[cur_px].myVal
-            topaint = single_intcol_to_hex(intval)
-            stip = ''
-        drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
-        i += 1
+    if px == -1:
+        i = 0
+        while i < (spriteSize*spriteSize):
+            if orpixels[i] != 0 and pixels_mask2[i] != 0:
+                orpixels[i] = orpixels[i] | pixels_mask2[i] 
+            elif orpixels[i] == 0 and pixels_mask2[i] != 0:
+                orpixels[i] = pixels_mask2[i] 
+            topaint = single_intcol_to_hex(intpal[0])#'grey'
+            cur_px = orpixels[i]
+            stip = 'gray75'
+            if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
+                intval = palette_display[cur_px].myVal
+                topaint = single_intcol_to_hex(intval)
+                stip = ''
+            drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
+            i += 1
+    else:
+        i = 0
+        y = math.floor(px/spriteSize)
+        while i < (spriteSize):
+            tpx = (y*spriteSize)+i
+            if orpixels[tpx] != 0 and pixels_mask2[tpx] != 0:
+                orpixels[tpx] = orpixels[tpx] | pixels_mask2[tpx] 
+            elif orpixels[tpx] == 0 and pixels_mask2[tpx] != 0:
+                orpixels[tpx] = pixels_mask2[tpx] 
+            topaint = single_intcol_to_hex(intpal[0])#'grey'
+            cur_px = orpixels[tpx]
+            stip = 'gray75'
+            if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
+                intval = palette_display[cur_px].myVal
+                topaint = single_intcol_to_hex(intval)
+                stip = ''
+            drawCanvas.itemconfig(pixels[tpx], fill=topaint, stipple=stip)
+            i += 1
     #return
 
 # Just layer 2 enabled
-def update_layermask_2():
+def update_layermask_2(px = -1):
     i = 0
     global pixels_mask2
     global palette_display
-    while i < (spriteSize * spriteSize):
-        topaint = single_intcol_to_hex(intpal[0])#'grey'
-        cur_px = pixels_mask2[i]
-        stip = 'gray75'
-        if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
-            stip = ''
-            intval = palette_display[cur_px].myVal
-            topaint = single_intcol_to_hex(intval)
-        drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
-        i += 1
+    if px == -1:
+        while i < (spriteSize*spriteSize):
+            topaint = single_intcol_to_hex(intpal[0])#'grey'
+            cur_px = pixels_mask2[i]
+            stip = 'gray75'
+            if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
+                stip = ''
+                intval = palette_display[cur_px].myVal
+                topaint = single_intcol_to_hex(intval)
+            drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
+            i += 1
+    else:
+        i = 0
+        y = math.floor(px/spriteSize)
+        while i < spriteSize:
+            tpx = (y*spriteSize)+i
+            topaint = single_intcol_to_hex(intpal[0])#'grey'
+            cur_px = pixels_mask2[tpx]
+            stip = 'gray75'
+            if cur_px != 0:
+                stip = ''
+                intval = palette_display[cur_px].myVal
+                topaint = single_intcol_to_hex(intval)
+            drawCanvas.itemconfig(pixels[tpx], fill=topaint, stipple=stip)
+            i += 1
     #return 
 
 # Just layer 1 enabled
-def update_layermask_1():
+def update_layermask_1(px = -1):
     i = 0
     global pixels_mask1
     global palette_display
-    while i < (spriteSize * spriteSize):
-        topaint = single_intcol_to_hex(intpal[0])#'grey'
-        cur_px = pixels_mask1[i]
-        stip = 'gray75'
-        if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
-            stip = ''
-            intval = palette_display[cur_px].myVal
-            topaint = single_intcol_to_hex(intval)
-        if patternMode == True:
-            stip = ''
-        drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
-        i += 1
+    if px == -1:
+        while i < (spriteSize * spriteSize):
+            topaint = single_intcol_to_hex(intpal[0])#'grey'
+            cur_px = pixels_mask1[i]
+            stip = 'gray75'
+            if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
+                stip = ''
+                intval = palette_display[cur_px].myVal
+                topaint = single_intcol_to_hex(intval)
+            if patternMode == True:
+                stip = ''
+            drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
+            i += 1
+    else:
+        i = 0
+        y = math.floor(px/spriteSize)
+        while i < spriteSize:
+            tpx = (y*spriteSize)+i
+            topaint = single_intcol_to_hex(intpal[0])#'grey'
+            cur_px = pixels_mask1[tpx]
+            stip = 'gray75'
+            if cur_px != 0:
+                stip = ''
+                intval = palette_display[cur_px].myVal
+                topaint = single_intcol_to_hex(intval)
+            if patternMode == True:
+                stip = ''
+            drawCanvas.itemconfig(pixels[tpx], fill=topaint, stipple=stip)
     #return 
 
 drawCanvas = None
@@ -518,19 +577,19 @@ show_m2 = tk.BooleanVar()
 show_m2.set(True)
 
 # Universally updates all 256 pixels
-def refresh_display(allicons=False):
+def refresh_display(allicons=False, px=-1):
     global patternMode 
-    transparent = single_intcol_to_hex(intpal[0])
-    i = 0
-    while i < (spriteSize*spriteSize):
-        drawCanvas.itemconfig(pixels[i], fill=transparent, stipple='gray75')
-        i += 1
+    #transparent = single_intcol_to_hex(intpal[0])
+    #i = 0
+    #while i < (spriteSize*spriteSize):
+    #    drawCanvas.itemconfig(pixels[i], fill=transparent, stipple='gray75')
+    #    i += 1
     if show_m1.get() == True and show_m2.get() == True:
-        update_orlayer()
+        update_orlayer(px)
     elif show_m1.get() == True and show_m2.get() == False:
-        update_layermask_1()
+        update_layermask_1(px)
     elif show_m2.get() == True and show_m1.get() == False:
-        update_layermask_2()
+        update_layermask_2(px)
     if allicons == False:
         global icon_selected
         global patternMode 
@@ -538,9 +597,7 @@ def refresh_display(allicons=False):
             update_icon_window(icon_selected)
         else:
             update_icon_window()
-            
     else:
-        #global patternMode
         if patternMode == False:
             i = 0
             while i < 4:
