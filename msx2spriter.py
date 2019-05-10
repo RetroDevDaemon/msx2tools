@@ -29,6 +29,8 @@ l0 = None
 l1 = None 
 l2 = None 
 l3 = None 
+buu = None
+bdd = None 
 smallpixels1 = []
 smallpixels2 = []
 smallpixels3 = []
@@ -72,7 +74,6 @@ def convert_int_pal_to_hex(integerPalette):
     displayPalette = []
     i = 0
     while i < 16:
-        #print(integerPalette[i])
         if integerPalette[i] == 'trans':
             integerPalette[i] = '000'
         tempPalVals = []
@@ -743,13 +744,15 @@ def select_from_icon(obj):
         ## and set pixels_mask1 as patterndata[x].copy
         # use obj.x and obj.y 
         patterndata[icon_selected] = pixels_mask1.copy()
-        sel_ptn = math.floor(obj.y/32) + pattern_y_ofs 
-        sel_ptn = (sel_ptn*32) + math.floor(obj.x/32) + pattern_x_ofs 
-        icon_selected = sel_ptn 
-        pixels_mask1 = patterndata[sel_ptn].copy()
-        pattern_icon_selected = math.floor(obj.x/32) + (math.floor(obj.y/32)*8)
-        l0.configure(text='Pattern {}\nX: {} Y: {}'.format(sel_ptn, (math.floor(obj.x/32) + pattern_x_ofs), (math.floor(obj.y/32) + pattern_y_ofs) ))
-        #draw_pattern_selector(pattern_icon_selected)
+        if obj.x < iconCanvas.winfo_width()-6 and obj.y < iconCanvas.winfo_height()-6\
+            and obj.x > 0 and obj.y > 0:
+            sel_ptn = math.floor(obj.y/32) + pattern_y_ofs 
+            sel_ptn = (sel_ptn*32) + math.floor(obj.x/32) + pattern_x_ofs 
+            icon_selected = sel_ptn 
+            pixels_mask1 = patterndata[sel_ptn].copy()
+            pattern_icon_selected = math.floor(obj.x/32) + (math.floor(obj.y/32)*8)
+            l0.configure(text='Pattern {}\nX: {} Y: {}'.format(sel_ptn, (math.floor(obj.x/32) + pattern_x_ofs), (math.floor(obj.y/32) + pattern_y_ofs) ))
+            l1.configure(text="Table {} / 3".format(math.floor((icon_selected/256)+1)))
     refresh_display(False)
 
 
@@ -939,7 +942,6 @@ def save_as():
         filename = tk.filedialog.asksaveasfilename(title='Save MSX2 Spriter file', filetypes=( ('MSX2 Spriter sprite file', '*.m2s'),('All files', '*.*') ))
     if filename == '' or type(filename)==tuple:
         return 
-    #print(filename)
     if patternMode == True:
         savem2p()
     else:
@@ -1745,7 +1747,6 @@ def pattern_move_back():
         pattern_icon_selected += 1
         pattern_x_ofs -= 1
     refresh_display(True)
-    return
 def pattern_move_fwd():
     global pattern_x_ofs
     global pattern_icon_selected
@@ -1753,7 +1754,6 @@ def pattern_move_fwd():
         pattern_x_ofs += 1
         pattern_icon_selected -= 1
     refresh_display(True)
-    return
 def pattern_move_up():
     global pattern_y_ofs
     global pattern_icon_selected
@@ -1762,7 +1762,6 @@ def pattern_move_up():
         pattern_icon_selected += 8
     refresh_display(True)
     l1.configure(text="Table {} / 3".format(math.floor(pattern_y_ofs/8)+1))
-    return 
 def pattern_move_down():
     global pattern_y_ofs
     global pattern_icon_selected
@@ -1770,14 +1769,36 @@ def pattern_move_down():
         pattern_y_ofs += 1
         pattern_icon_selected -= 8
     refresh_display(True)
+    l1.configure(text="Table {} / 3".format(math.floor(pattern_y_ofs/8)+1)) 
+    
+def pattern_page_up():
+    global pattern_y_ofs 
+    global pattern_icon_selected
+    if pattern_y_ofs > 7:
+        pattern_y_ofs -= 8
+        pattern_icon_selected += (8*8)
+    else:
+        while pattern_y_ofs > 0:
+            pattern_y_ofs -= 1
+            pattern_icon_selected += 8
+    refresh_display(True)
     l1.configure(text="Table {} / 3".format(math.floor(pattern_y_ofs/8)+1))
-    return 
+def pattern_page_down():
+    global pattern_y_ofs 
+    global pattern_icon_selected
+    #count = 0
+    if pattern_y_ofs < (8*3)-4-8:
+        pattern_y_ofs += 8
+        pattern_icon_selected -= (8*8)
+    else:
+        while pattern_y_ofs < (8*3)-4:
+            pattern_y_ofs += 1
+            pattern_icon_selected -= 8
+    refresh_display(True)
+    l1.configure(text="Table {} / 3".format(math.floor(pattern_y_ofs/8)+1)) 
+
 
 def keyboard_monitor(obj):
-    #if platform.system() == 'Windows':
-    #    ctrl_held = 12
-    #else:#if platform.system() == 'Linux':
-    #    ctrl_held = 4
     if obj.state & 4 == 4:
         if obj.keysym == 'c':
             copy_data()
@@ -1819,6 +1840,8 @@ def initialize_new(patternMode, loading=False):
     global bd 
     global bl 
     global br 
+    global buu 
+    global bdd
     global smallpatternpx
     global last_pixel_colored
     last_pixel_colored = -1
@@ -1969,22 +1992,27 @@ def initialize_new(patternMode, loading=False):
         br.destroy()
     if bu:
         bu.destroy()
-    if bd:
         bd.destroy()
+        buu.destroy()
+        bdd.destroy()
     if patternMode == False:
-        bl = tk.Button(win, text="<", command=page_back)
+        bl = tk.Button(win, text="←", command=page_back)
         bl.grid(row=11, column=11, columnspan=1)
-        br = tk.Button(win, text=">", command=page_forward)
+        br = tk.Button(win, text="→", command=page_forward)
         br.grid(row=11, column=12, columnspan=1)
     else:
-        bl = tk.Button(win, text="<", command=pattern_move_back)
+        bl = tk.Button(win, text="←", command=pattern_move_back)
         bl.grid(row=11, column=12, columnspan=1)
-        br = tk.Button(win, text=">", command=pattern_move_fwd)
+        br = tk.Button(win, text="→", command=pattern_move_fwd)
         br.grid(row=11, column=13, columnspan=1)
-        bu = tk.Button(win, text="^", command=pattern_move_up) 
+        bu = tk.Button(win, text="↑", command=pattern_move_up) 
         bu.grid(row=11, column=10)
-        bd = tk.Button(win, text="v", command=pattern_move_down)
+        buu = tk.Button(win, text='⇈', command=pattern_page_up)
+        buu.grid(row=11, column=11)
+        bd = tk.Button(win, text="↓", command=pattern_move_down)
         bd.grid(row=12, column=10)
+        bdd = tk.Button(win, text='⇊', command=pattern_page_down)
+        bdd.grid(row=12, column=11)
     
     global filename 
     global asmfile 
