@@ -1481,6 +1481,7 @@ def new_file():
     tk.ACTIVE
     filename = ''
     initialize_new(patternMode)
+    editMenu.entryconfig(0, state=tk.NORMAL)
     editMenu.entryconfig(1, state=tk.NORMAL)
     editMenu.entryconfig(2, state=tk.NORMAL)
 
@@ -1502,6 +1503,7 @@ def new_pattern_file():
     patternMode = True
     filename = '' 
     initialize_new(patternMode)
+    editMenu.entryconfig(0, state=tk.DISABLED)
     editMenu.entryconfig(1, state=tk.DISABLED)
     editMenu.entryconfig(2, state=tk.DISABLED)
 
@@ -1525,6 +1527,44 @@ def save_normal():
         else:
             savem2p()
     #return
+
+def cut_data():
+    global maskdata
+    global mask
+    global copybuffer
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    copybuffer = []
+    
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+
+        if icon_selected == 0:
+            maskdata_ofs = 0+page_ofs+mask_ofs
+        elif icon_selected == 1:
+            maskdata_ofs = 2+page_ofs+mask_ofs
+        elif icon_selected == 2:
+            maskdata_ofs = 4+page_ofs+mask_ofs
+        elif icon_selected == 3:
+            maskdata_ofs = 6+page_ofs+mask_ofs
+
+        copybuffer = maskdata[maskdata_ofs].copy()
+        maskdata[maskdata_ofs] = []
+
+        i = 0 
+        while i < (spriteSize*spriteSize): #64
+            maskdata[maskdata_ofs].append(0)
+            i += 1
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+
+        refresh_display(True)
 
 def copy_data():
     global maskdata
@@ -1593,7 +1633,7 @@ fileMenu.add_separator()
 fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
 editMenu = tk.Menu(menuBar, tearoff=0)
-editMenu.add_command(label='Cut (Ctrl+X)', state=tk.DISABLED)
+editMenu.add_command(label='Cut (Ctrl+X)', state=tk.NORMAL, command=cut_data)
 editMenu.add_command(label='Copy (Ctrl+C)', state=tk.NORMAL, command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', state=tk.NORMAL, command=paste_data)
 editMenu.add_separator()
@@ -1648,6 +1688,8 @@ def keyboard_monitor(obj):
             copy_data()
         elif obj.keysym == 'v':
             paste_data()
+        elif obj.keysym == 'x':
+            cut_data()
 
 def initialize_new(patternMode, loading=False):
     global intpal 
