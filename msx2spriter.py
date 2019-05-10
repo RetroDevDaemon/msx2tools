@@ -1655,7 +1655,7 @@ def cut_data():
         patterndata[icon_selected] = []
 
         i = 0
-        while i < 768:
+        while i < (spriteSize*spriteSize): #64
             patterndata[icon_selected].append(0)
             i += 1
 
