@@ -16,8 +16,7 @@
 # Imports 
 import tkinter as tk
 import sys 
-import math
-import platform 
+import math 
 
 patternMode = False
 
@@ -1684,18 +1683,17 @@ def pattern_move_down():
     return 
 
 def keyboard_monitor(obj):
-    if platform.system() == 'Windows':
-        ctrl_held = 12
-    else:#if platform.system() == 'Linux':
-        ctrl_held = 4
-    if obj.state == ctrl_held:
+    #if platform.system() == 'Windows':
+    #    ctrl_held = 12
+    #else:#if platform.system() == 'Linux':
+    #    ctrl_held = 4
+    if obj.state & 4 == 4:
         if obj.keysym == 'c':
             copy_data()
         elif obj.keysym == 'v':
             paste_data()
         elif obj.keysym == 'x':
             cut_data()
-    #print(str(obj.state) + ' ' + 'keysym:' + str(obj.keysym))
 
 def initialize_new(patternMode, loading=False):
     global intpal 
