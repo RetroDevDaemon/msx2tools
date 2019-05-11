@@ -109,6 +109,7 @@ while i < (256*3):
     i += 1
 
 last_tile_printed = -1
+last_tile_used = -1
 
 def draw_tile(obj):
     if loaded_tiles == False:
@@ -124,9 +125,9 @@ def draw_tile(obj):
     # whatever tile number we are within our tab (tab doesn't matter), set that value 0-255 
     # into screentiles[].
     oyt = yt
+    global selected_tile_num
+    global last_tile_used
     global last_tile_printed
-    if (oyt*32)+xt == last_tile_printed:
-        return
     tab = 0
     if yt > 7:
         yt -= 8
@@ -134,7 +135,9 @@ def draw_tile(obj):
     if yt > 7:
         yt -= 8
         tab += 1
-    global selected_tile_num
+    if (oyt*32)+xt == last_tile_printed and last_tile_used == selected_tile_data[tab]:
+        return
+    last_tile_used = selected_tile_num 
     if selected_tile_data[tab] == []:
         return
     if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height()\
@@ -180,6 +183,8 @@ def refresh_whole_screen():
 last_tile_erased = -1
 
 def erase_tile(obj):
+    global last_tile_used
+    last_tile_used = -1
     if loaded_tiles == False:
         return 
     xt = math.floor(obj.x / (screenScale*8))

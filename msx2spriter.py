@@ -342,19 +342,15 @@ def color_pixel(ob):
     global last_pixel_colored 
     global numSel
     global last_color_used
-    if last_pixel_colored == (y_px*spriteSize)+x_px:
+    if last_pixel_colored == (y_px*spriteSize)+x_px and last_color_used == currentPalNo:
         return 
     last_pixel_colored = (y_px*spriteSize) + x_px 
     if ob.x < 0 or ob.x >= (spriteSize*pixelSize) or ob.y < 0 or ob.y >= (spriteSize*pixelSize):
         return 
     if patternMode == False:
         if mask.get() == 1:
-            #if pixels_mask1[(y_px*spriteSize)+x_px] == currentPalNo:
-            #    return
             pixels_mask1[(y_px*spriteSize)+x_px] = currentPalNo
         if mask.get() == 2:
-            #if pixels_mask2[(y_px*spriteSize)+x_px] == currentPalNo:
-            #    return
             pixels_mask2[(y_px*spriteSize)+x_px] = currentPalNo
         if numSel != 0:# and currentColor != intpal[0]:#if numSel != 0:#if currentColor != 'trans':
             repaint_row(y_px)
