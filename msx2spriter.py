@@ -530,6 +530,7 @@ def update_layermask_1(px = -1):
             if patternMode == True:
                 stip = ''
             drawCanvas.itemconfig(pixels[tpx], fill=topaint, stipple=stip)
+            i += 1
     #return 
 
 drawCanvas = None
@@ -570,7 +571,7 @@ def reset_pixels_display():
             j += 1
         i += 1
  #
-
+ 
 # Radial bools have to be defined as tk variables
 show_m1 = tk.BooleanVar()
 show_m1.set(True)
