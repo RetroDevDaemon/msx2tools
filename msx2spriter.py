@@ -333,7 +333,7 @@ def repaint_row(row):
                 pixels_mask2[(row*spriteSize)+i] = currentPalNo    
         i += 1
 
-
+last_mask = -1
 
 # Actually paints the pixel and changes the pal number in the mask array
 def color_pixel(ob):
@@ -342,7 +342,8 @@ def color_pixel(ob):
     global last_pixel_colored 
     global numSel
     global last_color_used
-    if last_pixel_colored == (y_px*spriteSize)+x_px and last_color_used == currentPalNo:
+    global last_mask
+    if last_pixel_colored == (y_px*spriteSize)+x_px and last_color_used == currentPalNo and last_mask == mask.get():
         return 
     last_pixel_colored = (y_px*spriteSize) + x_px 
     if ob.x < 0 or ob.x >= (spriteSize*pixelSize) or ob.y < 0 or ob.y >= (spriteSize*pixelSize):
@@ -367,6 +368,7 @@ def color_pixel(ob):
     else:
         last_color_used = currentPalNo
         refresh_display(False, -1)
+    last_mask = mask.get()
 
 
 def get_palno_from_rgb(rgb):
@@ -380,7 +382,7 @@ def get_palno_from_rgb(rgb):
 def repaint_pattern_row(yrow, prevcol):
     color1 = patterndata[icon_selected][(yrow*8)]
     color2 = None
-    activecolor = get_palno_from_rgb(currentColor) #single_intcol_to_hex(currentColor)
+    activecolor = currentPalNo#get_palno_from_rgb(currentColor) #single_intcol_to_hex(currentColor)
 
     threeflag = False 
     i = 0
