@@ -1649,6 +1649,7 @@ def cut_data():
         else:
             pixels_mask2 = maskdata[maskdata_ofs].copy()
     else:
+        add_undo_point()
         copybuffer = patterndata[icon_selected].copy()
         patterndata[icon_selected] = []
 
@@ -1689,12 +1690,20 @@ redo_history = []
 def redo_last():
     global redo_history
     global maskdata 
-    if len(redo_history) > 0:
-        undo_history.append(maskdata)
-        maskdata = redo_history.pop()
-        CopyMaskToDisplay()
-        #SelectTarget(modified_icon_history[len(redo_history)])  
-        refresh_display(True)
+    global patternMode 
+    global patterndata 
+    if patternMode == False:
+        if len(redo_history) > 0:
+            undo_history.append(maskdata)
+            maskdata = redo_history.pop()
+            CopyMaskToDisplay()
+            #SelectTarget(modified_icon_history[len(redo_history)])  
+    else:
+        if len(redo_history) > 0:
+            undo_history.append(patterndata)
+            patterndata = redo_history.pop()
+            CopyMaskToDisplay()
+    refresh_display(True)
 
 undo_history = []
 modified_icon_history = []
@@ -1702,28 +1711,73 @@ modified_icon_history = []
 
 def SelectTarget(ic):
     global page_ofs
-    #print(ic)
-    if ic < 8:
-        page_ofs = 0
-    elif ic < 16:
-        page_ofs = 8
-    elif ic < 24:
-        page_ofs = 16
-    else:
-        page_ofs = 24
     global pixels_mask1
     global pixels_mask2 
-    if ic % 2 == 0:
-        pixels_mask1 = maskdata[ic].copy()
-        pixels_mask2 = maskdata[ic+1].copy()
-    else:
-        pixels_mask1 = maskdata[ic-1].copy()
-        pixels_mask2 = maskdata[ic].copy()
-    update_label_txt()
     global icon_selected
-    icon_selected = int((ic%8)/2)
-    draw_sprite_selector(icon_selected)
+    global patternMode 
+    #print(ic)
+    if patternMode == False:
+        if ic < 8:
+            page_ofs = 0
+        elif ic < 16:
+            page_ofs = 8
+        elif ic < 24:
+            page_ofs = 16
+        else:
+            page_ofs = 24
+        if ic % 2 == 0:
+            pixels_mask1 = maskdata[ic].copy()
+            pixels_mask2 = maskdata[ic+1].copy()
+        else:
+            pixels_mask1 = maskdata[ic-1].copy()
+            pixels_mask2 = maskdata[ic].copy()
+        update_label_txt()
+        icon_selected = int((ic%8)/2)
+        draw_sprite_selector(icon_selected)
+    else:
+        #TODO:
+        global pattern_icon_selected
+        global pattern_y_ofs 
+        global pattern_x_ofs 
+        topleft = (pattern_y_ofs*32) + pattern_x_ofs #<- has tile num 
+        #print(topleft)
+        if (ic >= topleft) and (ic <= (topleft+7)) or\
+            (ic >= (topleft+32)) and (ic <= (topleft+39)) or\
+            (ic >= (topleft+64)) and (ic <= (topleft+71)) or\
+            (ic >= (topleft+96)) and (ic <= (topleft+103)):
+                # we are visible!
+                pixels_mask1 = patterndata[ic].copy() 
+        else:
+            #remember, ic is our TARGET icon.
+            tr = math.floor(ic/32)
+            if pattern_y_ofs < tr-3:
+                pattern_y_ofs = tr-3
+            if pattern_y_ofs > tr:
+                pattern_y_ofs = tr
+            tc = ic % 32
+            if pattern_x_ofs < tc-7:
+                pattern_x_ofs = tc-7
+            if pattern_x_ofs > tc:
+                pattern_x_ofs = tc 
+            
+            if pattern_y_ofs < 0:
+                pattern_y_ofs = 0
+            if pattern_x_ofs < 0:
+               pattern_x_ofs = 0
+        icon_selected = ic 
+        pattern_icon_selected = get_pattern_sel_from_is()
+        draw_pattern_selector(pattern_icon_selected)
+            #otherwise, we need to adjust our x/y offsets.
     refresh_display(True)
+
+def get_pattern_sel_from_is():
+    global icon_selected
+    global pattern_y_ofs
+    global pattern_x_ofs 
+    tp = icon_selected - (pattern_y_ofs*32)-pattern_x_ofs
+    while tp > 31:
+        tp -= 32-8
+    return tp
 
 def undo_last():
     global redo_history
@@ -1731,6 +1785,7 @@ def undo_last():
     global patternMode 
     global maskdata 
     global modified_icon_history
+    global patterndata 
     if len(undo_history) < 1:
         return
     if patternMode == False:
@@ -1738,17 +1793,26 @@ def undo_last():
         if len(redo_history) > 100:
             redo_history.pop(0)
         maskdata = undo_history.pop()
-    CopyMaskToDisplay()  
-    SelectTarget(modified_icon_history[len(undo_history)])  
-    refresh_display(True)
-
+        CopyMaskToDisplay()  
+        SelectTarget(modified_icon_history[len(undo_history)])  
+    else:
+        redo_history.append(patterndata.copy())
+        if len(redo_history) > 100:
+            redo_history.pop(0)
+        patterndata = undo_history.pop()
+        CopyMaskToDisplay()
+        SelectTarget(modified_icon_history[len(undo_history)])
+    
 
 def CopyMaskToDisplay():
+    global icon_selected
+    global page_ofs 
+    global pixels_mask1
+    global pixels_mask2
+    global patternMode 
+    global maskdata 
+    global patterndata 
     if patternMode == False:
-        global icon_selected
-        global page_ofs 
-        global pixels_mask1
-        global pixels_mask2
         ic = (icon_selected*2) + page_ofs + mask.get()-1
         if mask.get() == 1:
             pixels_mask1 = maskdata[ic].copy()
@@ -1756,6 +1820,8 @@ def CopyMaskToDisplay():
         elif mask.get() == 2:
             pixels_mask1 = maskdata[ic-1].copy()
             pixels_mask2 = maskdata[ic].copy()
+    else:
+        pixels_mask1 = patterndata[icon_selected].copy()
 
 def paste_data():
     global maskdata
@@ -1787,6 +1853,7 @@ def paste_data():
         else:
             pixels_mask2 = copybuffer.copy()
     else:
+        add_undo_point()
         patterndata[icon_selected] = copybuffer.copy()
         pixels_mask1 = copybuffer.copy()
 
@@ -1895,29 +1962,29 @@ def keyboard_monitor(obj):
             redo_last()
             return 
 
-class undo_log(list):
-    # how to use:
-    # undo_log.append(data_to_revert, tilenum=num_of_tile_changed)
-    def __init__(self, *args, **kwargs):
-        list.__init__(self, *args, **kwargs)
-        self.undotile = list()
-    def append(self, tiledata, **kwargs):
-        super().append(tiledata)
-        for k,v in kwargs.items():
-            if k == 'tilenum':
-                self.undotile.append(v)
-    def pop(self):
-        a = super().pop()
-        b = self.undotile.pop()
-        return a,b
+# class undo_log(list):
+#     # how to use:
+#     # undo_log.append(data_to_revert, tilenum=num_of_tile_changed)
+#     def __init__(self, *args, **kwargs):
+#         list.__init__(self, *args, **kwargs)
+#         self.undotile = list()
+#     def append(self, tiledata, **kwargs):
+#         super().append(tiledata)
+#         for k,v in kwargs.items():
+#             if k == 'tilenum':
+#                 self.undotile.append(v)
+#     def pop(self):
+#         a = super().pop()
+#         b = self.undotile.pop()
+#         return a,b
 
-undosteps = undo_log()
+# undosteps = undo_log()
 
 def set_undo_release(o):
     global button_not_released
     button_not_released = False 
 
-def add_undo_point(icon_selected=0):#, actualIcon=False):
+def add_undo_point(icon_s=0):#, actualIcon=False):
     global undo_history
     global modified_icon_history
     if patternMode == False:
@@ -1926,9 +1993,19 @@ def add_undo_point(icon_selected=0):#, actualIcon=False):
         undo_history.append(maskdata.copy())
         if len(undo_history) > 100:
             undo_history.pop(0)
-        modified_icon_history.append(page_ofs + (icon_selected*2) + mask.get()-1) 
+        modified_icon_history.append(page_ofs + (icon_s*2) + mask.get()-1) 
         if(len(modified_icon_history)) > 100:
             modified_icon_history.pop(0)
+    else:
+        global patterndata 
+        global icon_selected 
+        undo_history.append(patterndata.copy())
+        if len(undo_history) > 100:
+            undo_history.pop(0)
+        modified_icon_history.append(icon_selected)
+        if len(modified_icon_history) > 100:
+            modified_icon_history.pop(0)
+
 
 def initialize_new(patternMode, loading=False):
     global intpal 
@@ -1967,6 +2044,10 @@ def initialize_new(patternMode, loading=False):
     global bdd
     global smallpatternpx
     global last_pixel_colored
+    global undo_history
+    global redo_history
+    undo_history = []
+    redo_history = []
     last_pixel_colored = -1
     # Set up the default window frame
     if win == None:
