@@ -1785,9 +1785,11 @@ def undo_last():
     global patternMode 
     global maskdata 
     global modified_icon_history
-    global patterndata 
+    global patterndata
+    global last_pixel_colored
     if len(undo_history) < 1:
         return
+    last_pixel_colored = -1
     if patternMode == False:
         redo_history.append(maskdata.copy())
         if len(redo_history) > 100:

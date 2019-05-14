@@ -110,6 +110,40 @@ while i < (256*3):
 
 last_tile_printed = -1
 last_tile_used = -1
+button_not_released = False 
+
+def set_undo_release(o):
+    global button_not_released
+    button_not_released = False 
+
+undo_history = []
+redo_history = []
+
+def add_undo_point():
+    global undo_history
+    global screentiles 
+    undo_history.append(screentiles.copy())
+    if len(undo_history) > 100:
+        undo_history.pop(0)
+    
+def undo_last():
+    global undo_history
+    global screentiles
+    global redo_history
+    if len(undo_history) < 1:
+        return
+    redo_history.append(screentiles.copy())
+    if len(redo_history) > 100:
+        redo_history.pop(0)
+    
+    screentiles = undo_history.pop()
+    refresh_whole_screen()
+
+def redo_last():
+    global undo_history
+    global redo_history
+    global screentiles 
+    
 
 def draw_tile(obj):
     if loaded_tiles == False:
@@ -119,7 +153,7 @@ def draw_tile(obj):
             nopattern_error = messagebox.showinfo("Error","No patterns loaded.\nLoad an M2P file first!", type='ok')
             if nopattern_error == 'ok':
                 displayed_nopat_warn = False
-        return 
+        return
     xt = math.floor(obj.x / (screenScale*8))
     yt = math.floor(obj.y / (screenScale*8))
     # whatever tile number we are within our tab (tab doesn't matter), set that value 0-255 
@@ -128,6 +162,7 @@ def draw_tile(obj):
     global selected_tile_num
     global last_tile_used
     global last_tile_printed
+    global button_not_released
     tab = 0
     if yt > 7:
         yt -= 8
@@ -137,9 +172,12 @@ def draw_tile(obj):
         tab += 1
     if (oyt*32)+xt == last_tile_printed and last_tile_used == selected_tile_data[tab]:
         return
-    last_tile_used = selected_tile_num 
     if selected_tile_data[tab] == []:
         return
+    last_tile_used = selected_tile_num 
+    if button_not_released == False: 
+        add_undo_point()
+        button_not_released = True 
     if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height()\
         and selected_tile_data[tab] != None:
         if screentiles[(oyt*32)+xt] == selected_tile_num[tab] and last_tile_printed > -1:
@@ -159,6 +197,9 @@ def draw_tile(obj):
 
 
 def refresh_whole_screen():
+    loadingt = screenCanvas.create_text(300,200, text='Refreshing...', fill='black', font=('Times New Roman',24))
+    loadings = screenCanvas.create_text(302,202, text="Refreshing...", fill='white', font=('Times New Roman',24))
+    screenCanvas.update_idletasks()
     i = 0
     while i < 3:
         xt = 0
@@ -179,7 +220,8 @@ def refresh_whole_screen():
             xt += 1 #tile
         i += 1 #tab
     RedrawScreenGrid(0)
-
+    screenCanvas.delete(loadingt)
+    screenCanvas.delete(loadings)
 last_tile_erased = -1
 
 def erase_tile(obj):
@@ -329,6 +371,7 @@ def InitScreenWindow():
         screenCanvas.bind("<B3-Motion>", erase_tile)
         screenCanvas.bind("<ButtonRelease-1>", RedrawScreenGrid)
         screenCanvas.bind("<ButtonRelease-3>", RedrawScreenGrid)
+        screenCanvas.bind("<ButtonRelease-1>", set_undo_release)
     # then clear it
     screenCanvas.delete("all")
     # set pos 
@@ -453,11 +496,13 @@ def import_m2p():
 
 def launch_app():
     global win 
-    
+    global undo_history
+    global redo_history
     if win == None:
         win = tk.Frame(master=app, width=800, height=600)
         win.grid(row=32, columnspan=32)
-
+    undo_history = []
+    redo_history = []
     # open screen draw window
     InitScreenWindow()
     # open 3x tile palettes
@@ -488,15 +533,36 @@ def client_exit():
             return
 
 def new_screen():
-    # ask to save changes
-    # ask to change to new m2p
-      # if yes, import_m2p
-    # else clear screen data
+    global loaded_tiles 
+    global undo_history
+    global redo_history
+    if loaded_tiles == False:
+        messagebox.showwarning("No patterns loaded", message='No pattern file imported!\nOpening import pattern dialog.', type='ok')
+        import_m2p()
+    else:  
+        resp = messagebox.askyesno('Load new pattern?', message='Select Yes to load a different M2P file,\nor No to use the same patterns.', type='yesno')
+        if resp == True:
+            import_m2p()
+        else:
+            pass
+    if loaded_tiles == False:
+        messagebox.showwarning('No pattern loaded', message="You can't draw without\nloading a pattern file!")
+        return # because they cancelled.
+    screentiles = []
+    i = 0
+    while i < (256*3):
+        screentiles.append(0)
+        i += 1
+    undo_history = []
+    redo_history = []
+    refresh_whole_screen()
     return 
 def load_m2c():
     # ask to change imported m2p
     # if none is imported, show warning
     global loaded_tiles
+    global undo_history
+    global redo_history
     if loaded_tiles == False:
         messagebox.showwarning("No patterns loaded", message='No pattern file imported!\nOpening import pattern dialog.', type='ok')
         import_m2p()
@@ -524,6 +590,8 @@ def load_m2c():
         while i < (256*3):
             screentiles[i] = int(indata[i])
             i += 1
+        undo_history = []
+        redo_history = []
         refresh_whole_screen()
     except IOError:
         messagebox.showerror("Load failed", message="I/O error loading file. Check drive and permissions and try again.")
@@ -608,6 +676,23 @@ def save_as():
         m2cfilename = m2cfilename + '.m2c'
     save_m2c()
 
+def kb_monitor(obj):
+    if obj.state & 4 == 4:
+        if obj.keysym == 'c':
+            return
+            #copy_data()
+        elif obj.keysym == 'v':
+            return
+            #paste_data()
+        elif obj.keysym == 'x':
+            return
+            #cut_data()
+        elif obj.keysym == 'z':
+            undo_last()
+        elif obj.keysym == 'y':
+            redo_last()
+            #return 
+
     
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
@@ -625,6 +710,8 @@ editMenu.add_command(label='Configure RMB...', state=tk.DISABLED)
 menuBar.add_cascade(label="File", menu=fileMenu)
 menuBar.add_cascade(label='Edit', menu=editMenu)
 app.config(menu=menuBar) 
+
+app.bind("<Key>", kb_monitor)
 
 launch_app()
 # Run the app
