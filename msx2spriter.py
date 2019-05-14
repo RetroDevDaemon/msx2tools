@@ -1635,7 +1635,7 @@ def cut_data():
             maskdata_ofs = 4+page_ofs+mask_ofs
         elif icon_selected == 3:
             maskdata_ofs = 6+page_ofs+mask_ofs
-
+        add_undo_point()
         copybuffer = maskdata[maskdata_ofs].copy()
         maskdata[maskdata_ofs] = []
 
@@ -1770,6 +1770,7 @@ def paste_data():
         return
     
     if patternMode == False:
+        add_undo_point()
         mask_ofs = mask.get() - 1
 
         if icon_selected == 0:
