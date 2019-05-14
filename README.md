@@ -5,7 +5,7 @@ Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprite
 
 ### Release notes:
 
-1.25: Added unlimited undo and various bug fixes <br>
+1.25: Added 100-step undo/redo and various bug fixes <br>
 1.22: Keyboard shortcuts for copy/paste sprites, fix for transparency color change<br>
 1.21: Added transparency selection/display to sprite mode, added copy/paste mask data<br>
 1.2: Added Screener tool, fixed various bugs, added visible selector<br>
