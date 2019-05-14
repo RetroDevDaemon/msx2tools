@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.25: Various bugfixes, unlimited undo
+# v1.25: Various bugfixes, 100-step undo and redo
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -373,8 +373,7 @@ def color_pixel(ob):
         last_color_used = currentPalNo
         refresh_display(False, -1)
     last_mask = mask.get()
-    #reset_redo_point(icon_selected)
-
+    
 
 def get_palno_from_rgb(rgb):
     i = 1
@@ -1685,17 +1684,78 @@ def copy_data():
     else:
         copybuffer = patterndata[icon_selected].copy()
 
+redo_history = []
+
+def redo_last():
+    global redo_history
+    global maskdata 
+    if len(redo_history) > 0:
+        undo_history.append(maskdata)
+        maskdata = redo_history.pop()
+        CopyMaskToDisplay()
+        #SelectTarget(modified_icon_history[len(redo_history)])  
+        refresh_display(True)
+
+undo_history = []
+modified_icon_history = []
+
+
+def SelectTarget(ic):
+    global page_ofs
+    #print(ic)
+    if ic < 8:
+        page_ofs = 0
+    elif ic < 16:
+        page_ofs = 8
+    elif ic < 24:
+        page_ofs = 16
+    else:
+        page_ofs = 24
+    global pixels_mask1
+    global pixels_mask2 
+    if ic % 2 == 0:
+        pixels_mask1 = maskdata[ic].copy()
+        pixels_mask2 = maskdata[ic+1].copy()
+    else:
+        pixels_mask1 = maskdata[ic-1].copy()
+        pixels_mask2 = maskdata[ic].copy()
+    update_label_txt()
+    global icon_selected
+    icon_selected = int((ic%8)/2)
+    draw_sprite_selector(icon_selected)
+    refresh_display(True)
 
 def undo_last():
-    global undosteps 
+    global redo_history
+    global undo_history
     global patternMode 
     global maskdata 
-    if len(undosteps) < 1:
+    global modified_icon_history
+    if len(undo_history) < 1:
         return
-    lu,lt = undosteps.pop()
     if patternMode == False:
-        PatternModeUndo(lu, lt)    
+        redo_history.append(maskdata.copy())
+        if len(redo_history) > 100:
+            redo_history.pop(0)
+        maskdata = undo_history.pop()
+    CopyMaskToDisplay()  
+    SelectTarget(modified_icon_history[len(undo_history)])  
     refresh_display(True)
+
+
+def CopyMaskToDisplay():
+    if patternMode == False:
+        global icon_selected
+        global page_ofs 
+        global pixels_mask1
+        global pixels_mask2
+        ic = (icon_selected*2) + page_ofs + mask.get()-1
+        if mask.get() == 1:
+            pixels_mask1 = maskdata[ic].copy()
+            pixels_mask2 = maskdata[ic+1].copy()
+        elif mask.get() == 2:
+            pixels_mask1 = maskdata[ic-1].copy()
+            pixels_mask2 = maskdata[ic].copy()
 
 def paste_data():
     global maskdata
@@ -1751,6 +1811,7 @@ editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
 editMenu.add_separator()
 editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
+editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
 editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
 menuBar.add_cascade(label='Edit', menu=editMenu)
@@ -1830,6 +1891,7 @@ def keyboard_monitor(obj):
         elif obj.keysym == 'z':
             undo_last()
         elif obj.keysym == 'y':
+            redo_last()
             return 
 
 class undo_log(list):
@@ -1855,52 +1917,17 @@ def set_undo_release(o):
     button_not_released = False 
 
 def add_undo_point(icon_selected=0):#, actualIcon=False):
-    global page_ofs 
-    global undosteps 
-    global pixels_mask1 
-    global pixels_mask2 
+    global undo_history
+    global modified_icon_history
     if patternMode == False:
-        icontoundo = (icon_selected*2) + page_ofs + mask.get()-1
-        if mask.get() == 1:
-            undosteps.append(pixels_mask1.copy(), tilenum=icontoundo)
-        elif mask.get() == 2:
-            undosteps.append(pixels_mask2.copy(), tilenum=icontoundo)
-    else:
-        print('pattern mode undo not implemented')
-
-def PatternModeUndo(lu, lt):
-    global pixels_mask1
-    global pixels_mask2 
-    global page_ofs
-    global icon_selected
-    global maskdata
-    wat = math.floor((lt % 8)/2)
-    icon_selected = wat
-    maskdata[lt] = lu.copy()\
-    # find where the selection was at, and select that one.
-    if(lt < 8):
-        # 0-3, so page to 0.
-        page_ofs = 0
-    elif(lt < 16):
-        page_ofs = 8
-    elif (lt < 24):
-        page_ofs = 16
-    else:
-        page_ofs = 24
-    if lt % 2 == 0:
-        mask.set(1)
-        pixels_mask1 = maskdata[lt].copy()
-        pixels_mask2 = maskdata[lt+1].copy()
-    else:
-        mask.set(2)
-        pixels_mask1 = maskdata[lt-1].copy()
-        pixels_mask2 = maskdata[lt].copy()
-    update_label_txt()
-    draw_sprite_selector(wat)
-    refresh_display(True)
-
-
-    
+        global maskdata 
+        #if len(undo_history) < 100:
+        undo_history.append(maskdata.copy())
+        if len(undo_history) > 100:
+            undo_history.pop(0)
+        modified_icon_history.append(page_ofs + (icon_selected*2) + mask.get()-1) 
+        if(len(modified_icon_history)) > 100:
+            modified_icon_history.pop(0)
 
 def initialize_new(patternMode, loading=False):
     global intpal 
