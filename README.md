@@ -1,10 +1,11 @@
-# MSX2 Spriter v1.22 / Screener v1.0
+# MSX2 Spriter v1.25 / Screener v1.0
 
 Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts.
 
 
 ### Release notes:
 
+1.25: Added unlimited undo and various bug fixes <br>
 1.22: Keyboard shortcuts for copy/paste sprites, fix for transparency color change<br>
 1.21: Added transparency selection/display to sprite mode, added copy/paste mask data<br>
 1.2: Added Screener tool, fixed various bugs, added visible selector<br>
