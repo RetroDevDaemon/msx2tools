@@ -5,8 +5,8 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.22: Transparency fix, keyboard shortcuts,
-#           and reducing z80 byte exports
+# v1.25: Various bugfixes, unlimited undo
+#           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
 # Easy point-and-click interface.
@@ -334,7 +334,7 @@ def repaint_row(row):
         i += 1
 
 last_mask = -1
-
+button_not_released = False
 # Actually paints the pixel and changes the pal number in the mask array
 def color_pixel(ob):
     x_px = math.floor(ob.x/pixelSize) 
@@ -343,11 +343,15 @@ def color_pixel(ob):
     global numSel
     global last_color_used
     global last_mask
+    global button_not_released
     if last_pixel_colored == (y_px*spriteSize)+x_px and last_color_used == currentPalNo and last_mask == mask.get():
         return 
-    last_pixel_colored = (y_px*spriteSize) + x_px 
     if ob.x < 0 or ob.x >= (spriteSize*pixelSize) or ob.y < 0 or ob.y >= (spriteSize*pixelSize):
-        return 
+        return
+    last_pixel_colored = (y_px*spriteSize) + x_px 
+    if button_not_released == False: 
+        add_undo_point(icon_selected)
+        button_not_released = True 
     if patternMode == False:
         if mask.get() == 1:
             pixels_mask1[(y_px*spriteSize)+x_px] = currentPalNo
@@ -369,6 +373,7 @@ def color_pixel(ob):
         last_color_used = currentPalNo
         refresh_display(False, -1)
     last_mask = mask.get()
+    #reset_redo_point(icon_selected)
 
 
 def get_palno_from_rgb(rgb):
@@ -579,11 +584,6 @@ show_m2.set(True)
 # Universally updates all 256 pixels
 def refresh_display(allicons=False, px=-1):
     global patternMode 
-    #transparent = single_intcol_to_hex(intpal[0])
-    #i = 0
-    #while i < (spriteSize*spriteSize):
-    #    drawCanvas.itemconfig(pixels[i], fill=transparent, stipple='gray75')
-    #    i += 1
     if show_m1.get() == True and show_m2.get() == True:
         update_orlayer(px)
     elif show_m1.get() == True and show_m2.get() == False:
@@ -1685,6 +1685,18 @@ def copy_data():
     else:
         copybuffer = patterndata[icon_selected].copy()
 
+
+def undo_last():
+    global undosteps 
+    global patternMode 
+    global maskdata 
+    if len(undosteps) < 1:
+        return
+    lu,lt = undosteps.pop()
+    if patternMode == False:
+        PatternModeUndo(lu, lt)    
+    refresh_display(True)
+
 def paste_data():
     global maskdata
     global mask
@@ -1737,6 +1749,8 @@ editMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
 editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
+editMenu.add_separator()
+editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
 editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
 menuBar.add_cascade(label='Edit', menu=editMenu)
@@ -1794,7 +1808,6 @@ def pattern_page_up():
 def pattern_page_down():
     global pattern_y_ofs 
     global pattern_icon_selected
-    #count = 0
     if pattern_y_ofs < (8*3)-4-8:
         pattern_y_ofs += 8
         pattern_icon_selected -= (8*8)
@@ -1814,6 +1827,80 @@ def keyboard_monitor(obj):
             paste_data()
         elif obj.keysym == 'x':
             cut_data()
+        elif obj.keysym == 'z':
+            undo_last()
+        elif obj.keysym == 'y':
+            return 
+
+class undo_log(list):
+    # how to use:
+    # undo_log.append(data_to_revert, tilenum=num_of_tile_changed)
+    def __init__(self, *args, **kwargs):
+        list.__init__(self, *args, **kwargs)
+        self.undotile = list()
+    def append(self, tiledata, **kwargs):
+        super().append(tiledata)
+        for k,v in kwargs.items():
+            if k == 'tilenum':
+                self.undotile.append(v)
+    def pop(self):
+        a = super().pop()
+        b = self.undotile.pop()
+        return a,b
+
+undosteps = undo_log()
+
+def set_undo_release(o):
+    global button_not_released
+    button_not_released = False 
+
+def add_undo_point(icon_selected=0):#, actualIcon=False):
+    global page_ofs 
+    global undosteps 
+    global pixels_mask1 
+    global pixels_mask2 
+    if patternMode == False:
+        icontoundo = (icon_selected*2) + page_ofs + mask.get()-1
+        if mask.get() == 1:
+            undosteps.append(pixels_mask1.copy(), tilenum=icontoundo)
+        elif mask.get() == 2:
+            undosteps.append(pixels_mask2.copy(), tilenum=icontoundo)
+    else:
+        print('pattern mode undo not implemented')
+
+def PatternModeUndo(lu, lt):
+    global pixels_mask1
+    global pixels_mask2 
+    global page_ofs
+    global icon_selected
+    global maskdata
+    wat = math.floor((lt % 8)/2)
+    icon_selected = wat
+    maskdata[lt] = lu.copy()\
+    # find where the selection was at, and select that one.
+    if(lt < 8):
+        # 0-3, so page to 0.
+        page_ofs = 0
+    elif(lt < 16):
+        page_ofs = 8
+    elif (lt < 24):
+        page_ofs = 16
+    else:
+        page_ofs = 24
+    if lt % 2 == 0:
+        mask.set(1)
+        pixels_mask1 = maskdata[lt].copy()
+        pixels_mask2 = maskdata[lt+1].copy()
+    else:
+        mask.set(2)
+        pixels_mask1 = maskdata[lt-1].copy()
+        pixels_mask2 = maskdata[lt].copy()
+    update_label_txt()
+    draw_sprite_selector(wat)
+    refresh_display(True)
+
+
+    
 
 def initialize_new(patternMode, loading=False):
     global intpal 
@@ -2032,6 +2119,7 @@ def initialize_new(patternMode, loading=False):
     drawCanvas.bind("<B1-Motion>", color_pixel)
     drawCanvas.bind("<Button-3>", erase_pixel)
     drawCanvas.bind("<B3-Motion>", erase_pixel)
+    drawCanvas.bind("<ButtonRelease-1>", set_undo_release)
     
     if patternMode == True:
         fileMenu.entryconfigure(2, command=save_normal_pattern)
