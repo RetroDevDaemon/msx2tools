@@ -5,7 +5,7 @@
 #
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.00: First release
+# v1.1: Undo, redo, bugfixes
 # 
 #
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
@@ -143,6 +143,10 @@ def redo_last():
     global undo_history
     global redo_history
     global screentiles 
+    if len(redo_history) > 0:
+        undo_history.append(screentiles.copy())
+        screentiles = redo_history.pop()
+        refresh_whole_screen()
     
 
 def draw_tile(obj):
@@ -706,6 +710,9 @@ fileMenu.add_separator()
 fileMenu.add_command(label='Import .M2P patterns...', command=import_m2p) #do not change m2c!
 fileMenu.add_separator()
 fileMenu.add_command(label='Quit', command=client_exit)
+editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
+editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
+editMenu.add_separator()
 editMenu.add_command(label='Configure RMB...', state=tk.DISABLED)
 menuBar.add_cascade(label="File", menu=fileMenu)
 menuBar.add_cascade(label='Edit', menu=editMenu)

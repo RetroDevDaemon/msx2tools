@@ -1692,18 +1692,14 @@ def redo_last():
     global maskdata 
     global patternMode 
     global patterndata 
-    if patternMode == False:
-        if len(redo_history) > 0:
-            undo_history.append(maskdata)
+    if len(redo_history) > 0:
+        add_undo_point()
+        if patternMode == False:
             maskdata = redo_history.pop()
-            CopyMaskToDisplay()
-            #SelectTarget(modified_icon_history[len(redo_history)])  
-    else:
-        if len(redo_history) > 0:
-            undo_history.append(patterndata)
+        else:
             patterndata = redo_history.pop()
-            CopyMaskToDisplay()
-    refresh_display(True)
+        CopyMaskToDisplay()
+        refresh_display(True)
 
 undo_history = []
 modified_icon_history = []
@@ -1714,8 +1710,7 @@ def SelectTarget(ic):
     global pixels_mask1
     global pixels_mask2 
     global icon_selected
-    global patternMode 
-    #print(ic)
+    global patternMode
     if patternMode == False:
         if ic < 8:
             page_ofs = 0
@@ -1733,6 +1728,7 @@ def SelectTarget(ic):
             pixels_mask2 = maskdata[ic].copy()
         update_label_txt()
         icon_selected = int((ic%8)/2)
+        #print(icon_selected)
         draw_sprite_selector(icon_selected)
     else:
         #TODO:
@@ -1986,9 +1982,12 @@ def set_undo_release(o):
     global button_not_released
     button_not_released = False 
 
-def add_undo_point(icon_s=0):#, actualIcon=False):
+def add_undo_point(icon_s=-1):#, actualIcon=False):
     global undo_history
     global modified_icon_history
+    global icon_selected 
+    if icon_s == -1:
+        icon_s = icon_selected
     if patternMode == False:
         global maskdata 
         #if len(undo_history) < 100:
@@ -2000,7 +1999,6 @@ def add_undo_point(icon_s=0):#, actualIcon=False):
             modified_icon_history.pop(0)
     else:
         global patterndata 
-        global icon_selected 
         undo_history.append(patterndata.copy())
         if len(undo_history) > 100:
             undo_history.pop(0)
