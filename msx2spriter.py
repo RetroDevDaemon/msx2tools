@@ -1686,6 +1686,63 @@ def copy_data():
 
 redo_history = []
 
+def flip_horizontal():
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+        maskdata_ofs = page_ofs + mask_ofs
+
+        if icon_selected == 1:
+            maskdata_ofs += 2
+        elif icon_selected == 2:
+            maskdata_ofs += 4
+        elif icon_selected == 3:
+            maskdata_ofs += 6
+
+        rowstart = 0
+        rowend = spriteSize
+
+        while rowstart < rowend:
+            start = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize) - 1
+
+            while start < end:
+                maskdata[maskdata_ofs][start], maskdata[maskdata_ofs][end] = maskdata[maskdata_ofs][end], maskdata[maskdata_ofs][start]
+                start += 1
+                end -= 1
+
+            rowstart += 1
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        rowstart = 0
+        rowend = spriteSize
+
+        while rowstart < rowend:
+            start = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize ) - 1
+
+            while start < end:
+                patterndata[icon_selected][start], patterndata[icon_selected][end] = patterndata[icon_selected][end], patterndata[icon_selected][start]
+                start += 1
+                end -= 1
+
+            rowstart += 1
+
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
+
+
 def redo_last():
     global redo_history
     global maskdata 
@@ -1919,6 +1976,8 @@ helpMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
 editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
+editMenu.add_separator()
+editMenu.add_command(label='Flip Horizontal', command=flip_horizontal)
 editMenu.add_separator()
 editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
 editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
