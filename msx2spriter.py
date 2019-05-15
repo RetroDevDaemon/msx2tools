@@ -1692,8 +1692,11 @@ def redo_last():
     global maskdata 
     global patternMode 
     global patterndata 
+    #
     if len(redo_history) > 0:
+        #modified_icon_history.pop()
         add_undo_point()
+        #modified_icon_history.pop()
         if patternMode == False:
             maskdata = redo_history.pop()
         else:
@@ -1726,9 +1729,8 @@ def SelectTarget(ic):
         else:
             pixels_mask1 = maskdata[ic-1].copy()
             pixels_mask2 = maskdata[ic].copy()
-        update_label_txt()
         icon_selected = int((ic%8)/2)
-        #print(icon_selected)
+        update_label_txt()
         draw_sprite_selector(icon_selected)
     else:
         #TODO:
@@ -1791,16 +1793,16 @@ def undo_last():
         if len(redo_history) > 100:
             redo_history.pop(0)
         maskdata = undo_history.pop()
-        CopyMaskToDisplay()  
-        SelectTarget(modified_icon_history[len(undo_history)])  
+        CopyMaskToDisplay() 
+#        SelectTarget(modified_icon_history.pop())
     else:
         redo_history.append(patterndata.copy())
         if len(redo_history) > 100:
             redo_history.pop(0)
         patterndata = undo_history.pop()
         CopyMaskToDisplay()
-        SelectTarget(modified_icon_history[len(undo_history)])
-    
+#        SelectTarget(modified_icon_history.pop())
+    refresh_display(True)
 
 def CopyMaskToDisplay():
     global icon_selected
