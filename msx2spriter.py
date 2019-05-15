@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.25: Various bugfixes, 100-step undo and redo
+# v1.26: UDLR shifting for both modes.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -1858,8 +1858,11 @@ def paste_data():
         add_undo_point()
         patterndata[icon_selected] = copybuffer.copy()
         pixels_mask1 = copybuffer.copy()
-
     refresh_display(True)
+
+def open_about():
+    messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.26\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
+
 
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
@@ -1876,6 +1879,7 @@ fileMenu.add_separator()
 fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
 editMenu = tk.Menu(menuBar, tearoff=0)
+helpMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
 editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
@@ -1884,7 +1888,9 @@ editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
 editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
 editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
+helpMenu.add_command(label='About...', command=open_about)
 menuBar.add_cascade(label='Edit', menu=editMenu)
+menuBar.add_cascade(label='Help', menu=helpMenu)
 app.config(menu=menuBar) 
 
 win = None

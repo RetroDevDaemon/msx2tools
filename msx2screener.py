@@ -680,6 +680,9 @@ def save_as():
         m2cfilename = m2cfilename + '.m2c'
     save_m2c()
 
+def open_about():
+    messagebox.showinfo(title='About', message='MSX2 Screener tool v1.1\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
+
 def kb_monitor(obj):
     if obj.state & 4 == 4:
         if obj.keysym == 'c':
@@ -701,6 +704,7 @@ def kb_monitor(obj):
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 editMenu = tk.Menu(menuBar, tearoff=0)
+helpMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label='New screen file', command=new_screen) #also ask to change m2p
 fileMenu.add_command(label="Save", command=save_normal)
 fileMenu.add_command(label="Save as .M2C file...", command=save_as)
@@ -714,8 +718,10 @@ editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
 editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
 editMenu.add_separator()
 editMenu.add_command(label='Configure RMB...', state=tk.DISABLED)
+helpMenu.add_command(label='About...', command=open_about)
 menuBar.add_cascade(label="File", menu=fileMenu)
 menuBar.add_cascade(label='Edit', menu=editMenu)
+menuBar.add_cascade(label='Help', menu=helpMenu)
 app.config(menu=menuBar) 
 
 app.bind("<Key>", kb_monitor)
