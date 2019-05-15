@@ -1623,6 +1623,8 @@ def cut_data():
 
     copybuffer = []
     
+    add_undo_point()
+
     if patternMode == False:
         mask_ofs = mask.get() - 1
 
@@ -1648,7 +1650,6 @@ def cut_data():
         else:
             pixels_mask2 = maskdata[maskdata_ofs].copy()
     else:
-        add_undo_point()
         copybuffer = patterndata[icon_selected].copy()
         patterndata[icon_selected] = []
 
@@ -1694,6 +1695,8 @@ def flip_horizontal():
     global pixels_mask1
     global pixels_mask2
 
+    add_undo_point()
+
     if patternMode == False:
         mask_ofs = mask.get() - 1
         maskdata_ofs = page_ofs + mask_ofs
@@ -1708,16 +1711,20 @@ def flip_horizontal():
         rowstart = 0
         rowend = spriteSize
 
+        copiedmaskdata = maskdata[maskdata_ofs].copy()
+
         while rowstart < rowend:
             start = 0 + (rowstart * spriteSize)
             end = spriteSize + (rowstart * spriteSize) - 1
 
             while start < end:
-                maskdata[maskdata_ofs][start], maskdata[maskdata_ofs][end] = maskdata[maskdata_ofs][end], maskdata[maskdata_ofs][start]
+                copiedmaskdata[start], copiedmaskdata[end] = copiedmaskdata[end], copiedmaskdata[start]
                 start += 1
                 end -= 1
 
             rowstart += 1
+
+        maskdata[maskdata_ofs] = copiedmaskdata.copy()
 
         if mask_ofs == 0:
             pixels_mask1 = maskdata[maskdata_ofs].copy()
@@ -1727,16 +1734,20 @@ def flip_horizontal():
         rowstart = 0
         rowend = spriteSize
 
+        copiedpatterndata = patterndata[icon_selected].copy()
+
         while rowstart < rowend:
             start = 0 + (rowstart * spriteSize)
             end = spriteSize + (rowstart * spriteSize ) - 1
 
             while start < end:
-                patterndata[icon_selected][start], patterndata[icon_selected][end] = patterndata[icon_selected][end], patterndata[icon_selected][start]
+                copiedpatterndata[start], copiedpatterndata[end] = copiedpatterndata[end], copiedpatterndata[start]
                 start += 1
                 end -= 1
 
             rowstart += 1
+
+        patterndata[icon_selected] = copiedpatterndata.copy()
 
         pixels_mask1 = patterndata[icon_selected].copy()
 
@@ -1750,6 +1761,8 @@ def flip_vertical():
     global pixels_mask1
     global pixels_mask2
 
+    add_undo_point()
+
     if patternMode == False:
         mask_ofs = mask.get() - 1
         maskdata_ofs = page_ofs + mask_ofs
@@ -1764,6 +1777,8 @@ def flip_vertical():
         colstart = 0
         colend = spriteSize
 
+        copiedmaskdata = maskdata[maskdata_ofs].copy()
+
         while colstart < colend:
             rowstart = 0
             rowend = spriteSize - 1
@@ -1772,12 +1787,14 @@ def flip_vertical():
                 cellstart = colstart + (rowstart * spriteSize)
                 cellend = colstart + (rowend * spriteSize)
 
-                maskdata[maskdata_ofs][cellstart], maskdata[maskdata_ofs][cellend] = maskdata[maskdata_ofs][cellend], maskdata[maskdata_ofs][cellstart]
+                copiedmaskdata[cellstart], copiedmaskdata[cellend] = copiedmaskdata[cellend], copiedmaskdata[cellstart]
 
                 rowstart += 1
                 rowend -= 1
 
             colstart += 1
+
+        maskdata[maskdata_ofs] = copiedmaskdata.copy()
 
         if mask_ofs == 0:
             pixels_mask1 = maskdata[maskdata_ofs].copy()
@@ -1787,6 +1804,8 @@ def flip_vertical():
         colstart = 0
         colend = spriteSize
 
+        copiedpatterndata = patterndata[icon_selected].copy()
+
         while colstart < colend:
             rowstart = 0
             rowend = spriteSize - 1
@@ -1795,13 +1814,14 @@ def flip_vertical():
                 cellstart = colstart + (rowstart * spriteSize)
                 cellend = colstart + (rowend * spriteSize)
 
-                patterndata[icon_selected][cellstart], patterndata[icon_selected][cellend] = patterndata[icon_selected][cellend], patterndata[icon_selected][cellstart]
+                copiedpatterndata[cellstart], copiedpatterndata[cellend] = copiedpatterndata[cellend], copiedpatterndata[cellstart]
 
                 rowstart += 1
                 rowend -= 1
 
             colstart += 1
 
+        patterndata[icon_selected] = copiedpatterndata.copy()
         pixels_mask1 = patterndata[icon_selected].copy()
 
     refresh_display(True)
@@ -1954,8 +1974,9 @@ def paste_data():
     if not copybuffer:
         return
     
+    add_undo_point()
+
     if patternMode == False:
-        add_undo_point()
         mask_ofs = mask.get() - 1
 
         if icon_selected == 0:
@@ -1972,7 +1993,6 @@ def paste_data():
         else:
             pixels_mask2 = copybuffer.copy()
     else:
-        add_undo_point()
         patterndata[icon_selected] = copybuffer.copy()
         pixels_mask1 = copybuffer.copy()
     refresh_display(True)
