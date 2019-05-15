@@ -1742,6 +1742,69 @@ def flip_horizontal():
 
     refresh_display(True)
 
+def flip_vertical():
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+        maskdata_ofs = page_ofs + mask_ofs
+
+        if icon_selected == 1:
+            maskdata_ofs += 2
+        elif icon_selected == 2:
+            maskdata_ofs += 4
+        elif icon_selected == 3:
+            maskdata_ofs += 6
+
+        colstart = 0
+        colend = spriteSize
+
+        while colstart < colend:
+            rowstart = 0
+            rowend = spriteSize - 1
+
+            while rowstart < rowend:
+                cellstart = colstart + (rowstart * spriteSize)
+                cellend = colstart + (rowend * spriteSize)
+
+                maskdata[maskdata_ofs][cellstart], maskdata[maskdata_ofs][cellend] = maskdata[maskdata_ofs][cellend], maskdata[maskdata_ofs][cellstart]
+
+                rowstart += 1
+                rowend -= 1
+
+            colstart += 1
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        colstart = 0
+        colend = spriteSize
+
+        while colstart < colend:
+            rowstart = 0
+            rowend = spriteSize - 1
+
+            while rowstart < rowend:
+                cellstart = colstart + (rowstart * spriteSize)
+                cellend = colstart + (rowend * spriteSize)
+
+                patterndata[icon_selected][cellstart], patterndata[icon_selected][cellend] = patterndata[icon_selected][cellend], patterndata[icon_selected][cellstart]
+
+                rowstart += 1
+                rowend -= 1
+
+            colstart += 1
+
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
 
 def redo_last():
     global redo_history
@@ -1978,6 +2041,7 @@ editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
 editMenu.add_separator()
 editMenu.add_command(label='Flip Horizontal', command=flip_horizontal)
+editMenu.add_command(label='Flip Vertical', command=flip_vertical)
 editMenu.add_separator()
 editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
 editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
