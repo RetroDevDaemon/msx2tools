@@ -20,6 +20,15 @@ import math
 
 patternMode = False
 
+## button bitmaps
+drawpx_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x00, 0x10, 0x00, 0x28, 0x00, 0x5c, 0x00, 0x2e, 0x00, 0x17, 0x80, 0x0b, 0xc0, 0x05, 0xe0, 0x02, 0x70, 0x01, 0xb8, 0x00, 0x54, 0x00, 0x24, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
+
 ## GLOBALS - MUST BE REFD IN INIT DEF
 r0 = None 
 r1 = None 
@@ -31,6 +40,15 @@ l2 = None
 l3 = None 
 buu = None
 bdd = None 
+win = None
+bl = None 
+br = None 
+bu = None 
+bd = None
+sr = None 
+sl = None 
+su = None 
+sd = None
 smallpixels1 = []
 smallpixels2 = []
 smallpixels3 = []
@@ -66,6 +84,8 @@ displayPalette = []
 # TK Setup
 app = tk.Tk()
 app.title('MSX2 Spriter')
+
+drawpx_icon = tk.BitmapImage(data=drawpx_data)
 
 # First, convert the integer palette to hexadecimal palette.    
 def convert_int_pal_to_hex(integerPalette):
@@ -1927,17 +1947,15 @@ editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
 helpMenu.add_command(label='About...', command=open_about)
 menuBar.add_cascade(label='Edit', menu=editMenu)
 menuBar.add_cascade(label='Help', menu=helpMenu)
+toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
+drawpxbutton = tk.Button(toolbar, image=drawpx_icon, width=20, height=20, relief=tk.SUNKEN)
+#selbutton = tk.Button(toolbar, image=boxbmp, width=20, height=20)
+drawpxbutton.grid(row=0, column=0)
+#selbutton.grid(row=0,column=1)
+toolbar.grid(row=0)
+
 app.config(menu=menuBar) 
 
-win = None
-bl = None 
-br = None 
-bu = None 
-bd = None
-sr = None 
-sl = None 
-su = None 
-sd = None
 
 def pattern_move_back():
     global pattern_x_ofs
