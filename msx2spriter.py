@@ -252,6 +252,8 @@ def applyColorToSel():
     global currentColor
     oldcol = single_intcol_to_hex(currentColor)
     if oldcol != intpal[0]:#'grey'intpal[0]:
+        if (type(pal_mod[0]) != int) or (type(pal_mod[0]) != float):
+            return
         i = 0
         while i < 3:
             if float(pal_mod[i].get()) < 0:
@@ -1890,6 +1892,10 @@ bl = None
 br = None 
 bu = None 
 bd = None
+sr = None 
+sl = None 
+su = None 
+sd = None
 
 def pattern_move_back():
     global pattern_x_ofs
@@ -2008,6 +2014,101 @@ def add_undo_point(icon_s=-1):#, actualIcon=False):
         if len(modified_icon_history) > 100:
             modified_icon_history.pop(0)
 
+def rotate_left(l, n):
+    return l[n:] + l[:n]
+def rotate_right(l, n):
+    return l[-n:] + l[:-n]
+
+def shift_right():
+    global pixels_mask1
+    global pixels_mask2
+    global patternMode
+    global page_ofs 
+    global icon_selected
+    if mask.get() == 1:# or patternMode == True:
+        i = 0
+        while i < (spriteSize*spriteSize):
+            l = pixels_mask1[i:spriteSize+i]
+            l = rotate_right(l, 1)
+            pixels_mask1 = pixels_mask1[:i] + l + pixels_mask1[spriteSize+i:]
+            i += spriteSize
+        if patternMode == False:
+            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        else:
+            patterndata[icon_selected] = pixels_mask1.copy()
+    else:
+        i = 0
+        while i < (spriteSize*spriteSize):
+            l = pixels_mask2[i:spriteSize+i]
+            l = rotate_right(l, 1)
+            pixels_mask2 = pixels_mask2[:i] + l + pixels_mask2[spriteSize+i:]
+            i += spriteSize
+        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    refresh_display(True)
+     
+def shift_left():
+    global pixels_mask1
+    global pixels_mask2
+    global patternMode
+    global page_ofs 
+    global icon_selected
+    if mask.get() == 1:# or patternMode == True:
+        i = 0
+        while i < (spriteSize*spriteSize):
+            l = pixels_mask1[i:spriteSize+i]
+            l = rotate_left(l, 1)
+            pixels_mask1 = pixels_mask1[:i] + l + pixels_mask1[spriteSize+i:]
+            i += spriteSize
+        if patternMode == False:
+            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        else:
+            maskdata[icon_selected] = pixels_mask1.copy()
+    else:
+        i = 0
+        while i < (spriteSize*spriteSize):
+            l = pixels_mask2[i:spriteSize+i]
+            l = rotate_left(l, 1)
+            pixels_mask2 = pixels_mask2[:i] + l + pixels_mask2[spriteSize+i:]
+            i += spriteSize
+        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    refresh_display(True)
+def shift_down():
+    global pixels_mask1
+    global pixels_mask2
+    global patternMode
+    global page_ofs 
+    global icon_selected
+    if mask.get() == 1:# or patternMode == True:
+        pixels_mask1 = rotate_right(pixels_mask1, spriteSize)
+        if patternMode == False:
+            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        else:
+            patterndata[icon_selected] = pixels_mask1.copy()
+    else:
+        pixels_mask2 = rotate_right(pixels_mask2, spriteSize)
+        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    refresh_display(True) 
+def shift_up():
+    global pixels_mask1
+    global pixels_mask2
+    global patternMode
+    global page_ofs 
+    global icon_selected
+    if mask.get() == 1:
+        pixels_mask1 = rotate_left(pixels_mask1, spriteSize)
+        if patternMode == False:
+            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        else:
+            patterndata[icon_selected] = pixels_mask1.copy()
+    else:
+        pixels_mask2 = rotate_left(pixels_mask2, spriteSize)
+        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    refresh_display(True) 
+
 
 def initialize_new(patternMode, loading=False):
     global intpal 
@@ -2044,6 +2145,10 @@ def initialize_new(patternMode, loading=False):
     global br 
     global buu 
     global bdd
+    global su
+    global sd 
+    global sr 
+    global sl
     global smallpatternpx
     global last_pixel_colored
     global undo_history
@@ -2054,8 +2159,8 @@ def initialize_new(patternMode, loading=False):
     # Set up the default window frame
     if win == None:
         win = tk.Frame(master=app, width=800, height=600)
-        win.grid(row=16, columnspan=16)
-    
+        win.grid(rowspan=16, columnspan=16)
+    mask.set(1)
     if patternMode == True:
         show_m1.set(True)
         show_m2.set(False)
@@ -2093,13 +2198,13 @@ def initialize_new(patternMode, loading=False):
     if patternMode == False:
         # add radials to swap between mask 1 and mask 2
         r1 = tk.Radiobutton(win, text='Mask 1', variable=mask, value=2, command=refresh_display)
-        r1.grid(row=14, column=4, columnspan=3)
+        r1.grid(row=15, column=5, columnspan=3)
         r0 = tk.Radiobutton(win, text='Mask 0', variable=mask, value=1, command=refresh_display)
-        r0.grid(row=14, column=1, columnspan=3)
+        r0.grid(row=15, column=2, columnspan=3)
         s1 = tk.Checkbutton(win, text='Show 1', variable=show_m2, command=refresh_display)
-        s1.grid(row=15, column=4, columnspan=3)
+        s1.grid(row=16, column=5, columnspan=3)
         s0 = tk.Checkbutton(win, text='Show 0', variable=show_m1, command=refresh_display)
-        s0.grid(row=15, column=1, columnspan=3)
+        s0.grid(row=16, column=2, columnspan=3)
         
     if patternMode == False:
         if l0:
@@ -2201,6 +2306,11 @@ def initialize_new(patternMode, loading=False):
         bd.destroy()
         buu.destroy()
         bdd.destroy()
+    if sr:
+        sr.destroy()
+        su.destroy()
+        sl.destroy()
+        sd.destroy()
     if patternMode == False:
         bl = tk.Button(win, text="←", command=page_back)
         bl.grid(row=11, column=11, columnspan=1)
@@ -2219,7 +2329,14 @@ def initialize_new(patternMode, loading=False):
         bd.grid(row=12, column=10)
         bdd = tk.Button(win, text='⇊', command=pattern_page_down)
         bdd.grid(row=12, column=11)
-    
+    sr = tk.Button(win, text='⇒', command=shift_right)
+    sr.grid(row=14, column=8, columnspan=2)
+    sl = tk.Button(win, text='⇐', command=shift_left)
+    sl.grid(row=14, column=6, columnspan=2)
+    su = tk.Button(win, text='⇑', command=shift_up)
+    su.grid(row=14, column=1, columnspan=2)
+    sd = tk.Button(win, text='⇓', command=shift_down)
+    sd.grid(row=14, column=3, columnspan=2)
     global filename 
     global asmfile 
     if loading==False:

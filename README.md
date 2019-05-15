@@ -1,10 +1,11 @@
-# MSX2 Spriter v1.25 / Screener v1.1
+# MSX2 Spriter v1.26 / Screener v1.1
 
 Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts.
 
 
 ### Release notes:
 
+1.26: Added UDLR shifting of sprites and patterns. (This does NOT add to the undo queue, since it's easy to undo yourself). <br>
 1.25: Added 100-step undo/redo and various bug fixes <br>
 1.22: Keyboard shortcuts for copy/paste sprites, fix for transparency color change<br>
 1.21: Added transparency selection/display to sprite mode, added copy/paste mask data<br>
@@ -112,8 +113,8 @@ GRAPHIC3 background patterns are surprisingly lenient:<br>
 
 The code is extremely ugly. I am not a professional coder by any means and this is mostly for personal use. I'm releasing it publically so maybe someone else will get some use out of it. 
 
-IT'S SLOW! I use Tkinter rectangles to represent pixels, which means there are sometimes several thousand canvas updates happening. Hopefully it remains manageable even on slower systems.
+IT'S SLOW! I use Tkinter rectangles to represent pixels, which means there are sometimes several thousand canvas updates happening. Hopefully it remains manageable even on slower systems. I've done quite a bit of optimizing, so right now the only noticable thing is importing and undo on the screener tool (which has a loading notification).
 
-Quality of life features (copy and paste, RMB functionality) are coming soon.
+More QoL features coming soon!
 
 Feel free to contribute, clean up, or give me a shout-out :)
