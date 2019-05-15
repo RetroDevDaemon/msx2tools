@@ -5,6 +5,7 @@ Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprite
 
 ### Release notes:
 
+1.27: Added import of palettes from other M2S/M2P files.<br>
 1.26: Added UDLR shifting of sprites and patterns. (This does NOT add to the undo queue, since it's easy to undo yourself). <br>
 1.25: Added 100-step undo/redo and various bug fixes <br>
 1.22: Keyboard shortcuts for copy/paste sprites, fix for transparency color change<br>

@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.26: UDLR shifting for both modes.
+# v1.27: Added import of palettes only.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -251,9 +251,7 @@ def applyColorToSel():
     # 1) ensure input values are between 0-7 
     global currentColor
     oldcol = single_intcol_to_hex(currentColor)
-    if oldcol != intpal[0]:#'grey'intpal[0]:
-        if (type(pal_mod[0]) != int) or (type(pal_mod[0]) != float):
-            return
+    if oldcol != intpal[0]:
         i = 0
         while i < 3:
             if float(pal_mod[i].get()) < 0:
@@ -1386,8 +1384,7 @@ def loadm2p():
             currentColor = i 
             i += 1
         resetPalette(palette_vals)
-        currentColor = intpal[0]#'trans'
-        #patterndata
+        currentColor = intpal[0]
         j = 0
         while j < (3*256):
             data = f.readline().split(',')
@@ -1410,8 +1407,8 @@ def loadm2p():
         refresh_display(True)
     except IOError:
         messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-    #except:
-    #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
+    except:
+        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
     finally:
         if(f):
             f.close()
@@ -1458,8 +1455,8 @@ def loadm2s():
         refresh_display(True)
     except IOError:
         messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-    #except:
-    #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
+    except:
+        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
     finally:
         if(f):
             f.close()
@@ -1860,6 +1857,43 @@ def paste_data():
         pixels_mask1 = copybuffer.copy()
     refresh_display(True)
 
+def import_palette():
+    global filename
+    #global spriteSize
+    #spriteSize = 16
+    filename = tk.filedialog.askopenfilename(title='Load MSX2 sprite/pattern file', filetypes=( ('MSX2 Spriter file', '*.m2s;*.m2p'),('All files', '*.*') ))
+    if filename == '':
+        return 
+    if type(filename) == tuple:
+        return
+    f = None 
+    try:
+        f = open(filename, 'r')
+        data = f.readline()
+        # reset palette data
+        global palette_display
+        global currentColor
+        palette_vals = data.split(',')
+        i = 0
+        while i < 16:
+            if palette_vals[i] == 'trans':
+                palette_vals[i] == '000'
+            palette_display[i].myVal = palette_vals[i]
+            currentColor = i 
+            i += 1
+        resetPalette(palette_vals)
+        currentColor = intpal[0]
+        #unclick_all()
+        refresh_display(True)
+        messagebox.showinfo(title='Import successful', message='Palette imported successfully!')
+    except IOError:
+        messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
+    except:
+        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
+    finally:
+        if(f):
+            f.close()
+
 def open_about():
     messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.26\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
 
@@ -1868,13 +1902,15 @@ menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label="New sprite file", command=new_file)
 fileMenu.add_command(label="New pattern file", command=new_pattern_file)
-fileMenu.add_command(label="Save", command=save_normal_sprite)
-fileMenu.add_command(label="Save As .M2S...", command=save_sprite_as)
+fileMenu.add_command(label="Save", command=save_normal_sprite) #2
+fileMenu.add_command(label="Save As .M2S...", command=save_sprite_as) #3
 fileMenu.add_command(label="Load .M2S Sprite...", command=load_sprite_as)
 fileMenu.add_command(label="Load .M2P Pattern...", command=load_pattern_as)
 fileMenu.add_separator()
-fileMenu.add_command(label="Export z80 sprite data...", command=export_asm_data)
+fileMenu.add_command(label="Export z80 sprite data...", command=export_asm_data) #7
 fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data)
+fileMenu.add_separator()
+fileMenu.add_command(label='Import palette from...', command=import_palette)
 fileMenu.add_separator()
 fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
