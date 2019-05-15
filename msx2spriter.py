@@ -1643,6 +1643,8 @@ def cut_data():
 
     copybuffer = []
     
+    add_undo_point()
+
     if patternMode == False:
         mask_ofs = mask.get() - 1
 
@@ -1668,7 +1670,6 @@ def cut_data():
         else:
             pixels_mask2 = maskdata[maskdata_ofs].copy()
     else:
-        add_undo_point()
         copybuffer = patterndata[icon_selected].copy()
         patterndata[icon_selected] = []
 
@@ -1705,6 +1706,145 @@ def copy_data():
         copybuffer = patterndata[icon_selected].copy()
 
 redo_history = []
+
+def flip_horizontal():
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    add_undo_point()
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+        maskdata_ofs = page_ofs + mask_ofs
+
+        if icon_selected == 1:
+            maskdata_ofs += 2
+        elif icon_selected == 2:
+            maskdata_ofs += 4
+        elif icon_selected == 3:
+            maskdata_ofs += 6
+
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedmaskdata = maskdata[maskdata_ofs].copy()
+
+        while rowstart < rowend:
+            start = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize) - 1
+
+            while start < end:
+                copiedmaskdata[start], copiedmaskdata[end] = copiedmaskdata[end], copiedmaskdata[start]
+                start += 1
+                end -= 1
+
+            rowstart += 1
+
+        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedpatterndata = patterndata[icon_selected].copy()
+
+        while rowstart < rowend:
+            start = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize ) - 1
+
+            while start < end:
+                copiedpatterndata[start], copiedpatterndata[end] = copiedpatterndata[end], copiedpatterndata[start]
+                start += 1
+                end -= 1
+
+            rowstart += 1
+
+        patterndata[icon_selected] = copiedpatterndata.copy()
+
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
+
+def flip_vertical():
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    add_undo_point()
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+        maskdata_ofs = page_ofs + mask_ofs
+
+        if icon_selected == 1:
+            maskdata_ofs += 2
+        elif icon_selected == 2:
+            maskdata_ofs += 4
+        elif icon_selected == 3:
+            maskdata_ofs += 6
+
+        colstart = 0
+        colend = spriteSize
+
+        copiedmaskdata = maskdata[maskdata_ofs].copy()
+
+        while colstart < colend:
+            rowstart = 0
+            rowend = spriteSize - 1
+
+            while rowstart < rowend:
+                cellstart = colstart + (rowstart * spriteSize)
+                cellend = colstart + (rowend * spriteSize)
+
+                copiedmaskdata[cellstart], copiedmaskdata[cellend] = copiedmaskdata[cellend], copiedmaskdata[cellstart]
+
+                rowstart += 1
+                rowend -= 1
+
+            colstart += 1
+
+        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        colstart = 0
+        colend = spriteSize
+
+        copiedpatterndata = patterndata[icon_selected].copy()
+
+        while colstart < colend:
+            rowstart = 0
+            rowend = spriteSize - 1
+
+            while rowstart < rowend:
+                cellstart = colstart + (rowstart * spriteSize)
+                cellend = colstart + (rowend * spriteSize)
+
+                copiedpatterndata[cellstart], copiedpatterndata[cellend] = copiedpatterndata[cellend], copiedpatterndata[cellstart]
+
+                rowstart += 1
+                rowend -= 1
+
+            colstart += 1
+
+        patterndata[icon_selected] = copiedpatterndata.copy()
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
 
 def redo_last():
     global redo_history
@@ -1854,8 +1994,9 @@ def paste_data():
     if not copybuffer:
         return
     
+    add_undo_point()
+
     if patternMode == False:
-        add_undo_point()
         mask_ofs = mask.get() - 1
 
         if icon_selected == 0:
@@ -1872,7 +2013,6 @@ def paste_data():
         else:
             pixels_mask2 = copybuffer.copy()
     else:
-        add_undo_point()
         patterndata[icon_selected] = copybuffer.copy()
         pixels_mask1 = copybuffer.copy()
     refresh_display(True)
@@ -1939,6 +2079,9 @@ helpMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
 editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
+editMenu.add_separator()
+editMenu.add_command(label='Flip Horizontal', command=flip_horizontal)
+editMenu.add_command(label='Flip Vertical', command=flip_vertical)
 editMenu.add_separator()
 editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
 editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
