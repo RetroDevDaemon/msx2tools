@@ -28,12 +28,35 @@ defaultIntegerPalette = [
     '141', '625', '555', '777'
 ]
 
+dotdata = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x00, 0x10, 0x00, 0x28, 0x00, 0x5c, 0x00, 0x2e, 0x00, 0x17, 0x80, 0x0b, 0xc0, 0x05, 0xe0, 0x02, 0x70, 0x01, 0xb8, 0x00, 0x54, 0x00, 0x24, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
+boxdata = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00,0x00, 0x00,
+0x54, 0x15,0x00, 0x20,
+0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0xa8, 0x2a,
+0x00, 0x00,0x00, 0x00
+};
+"""
+
 integerPalette = defaultIntegerPalette.copy()
 
 # TK Setup
 app = tk.Tk()
 app.title('MSX2 Screener')
-
+boxbmp = tk.BitmapImage(data=boxdata)
+dotbmp = tk.BitmapImage(data=dotdata)
 # Global def 
 win = None 
 screenCanvas = None 
@@ -687,18 +710,14 @@ def kb_monitor(obj):
     if obj.state & 4 == 4:
         if obj.keysym == 'c':
             return
-            #copy_data()
         elif obj.keysym == 'v':
             return
-            #paste_data()
         elif obj.keysym == 'x':
             return
-            #cut_data()
         elif obj.keysym == 'z':
             undo_last()
         elif obj.keysym == 'y':
             redo_last()
-            #return 
 
     
 menuBar = tk.Menu(app)
@@ -722,6 +741,12 @@ helpMenu.add_command(label='About...', command=open_about)
 menuBar.add_cascade(label="File", menu=fileMenu)
 menuBar.add_cascade(label='Edit', menu=editMenu)
 menuBar.add_cascade(label='Help', menu=helpMenu)
+toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
+pxbutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, relief=tk.SUNKEN)
+selbutton = tk.Button(toolbar, image=boxbmp, width=20, height=20)
+pxbutton.grid(row=0, column=0)
+selbutton.grid(row=0,column=1)
+toolbar.grid(row=0)
 app.config(menu=menuBar) 
 
 app.bind("<Key>", kb_monitor)
