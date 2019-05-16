@@ -1,11 +1,11 @@
-# MSX2 Spriter v1.28 / Screener v1.1
+# MSX2 Spriter v1.28 / Screener v1.2
 
 Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts.
 
 
 ### Release notes:
 
-1.28: Added icon toolbar and horizontal/vertical flip for sprite tool.<br>
+1.28: Added icon toolbar to both tools, box select to screen tool, and horizontal/vertical flip for sprite tool.<br>
 1.27: Added import of palettes from other M2S/M2P files.<br>
 1.26: Added UDLR shifting of sprites and patterns. (This does NOT add to the undo queue, since it's easy to undo yourself). <br>
 1.25: Added 100-step undo/redo and various bug fixes <br>
@@ -61,9 +61,9 @@ To export the universal palette, use the **Export z80 palette data...** option. 
 
 As of 1.1, you can also create pattern sets for backgrounds!
 
-To switch to pattern mode, select **New pattern file** from the File menu. You will be greeted with a screen similar to the following (screenshot slightly out of date):
+To switch to pattern mode, select **New pattern file** from the File menu. You will be greeted with a screen similar to the following:
 
-![ss2](m2s3.png)
+![ss2](m2s7.png)
 
 Instructions for **Pattern mode**:<br>
 -As above, the left mouse button draws a color, the right mouse button draws transparent.<br>
