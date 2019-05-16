@@ -237,10 +237,6 @@ def single_intcol_to_hex(col):
 # for screener, selectioncanvas will be a new class.
 # for spriter, is faster to just redraw.
 
-# swapping_palette = False
-# palette_to_swap = -1
-# palette_swapping = -1
-# Define the palette button class
 class PaletteButton(tk.Canvas):
     def __init__(self, *args, **kwargs):
         tk.Canvas.__init__(self, *args, **kwargs)
@@ -251,45 +247,12 @@ class PaletteButton(tk.Canvas):
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
         self.bind("<Button-1>", self.clicked)
-        #self.bind("<B1-Motion>", self.dragging)
-        #self.bind("<ButtonRelease-1>", self.checkbuttonup)
-    
-    # def checkbuttonup(self, event):
-    #     global mbuttonup
-    #     mbuttonup = True
-    #     global palette_to_swap
-    #     global palette_swapping
-    #     print(palette_to_swap, palette_swapping)
-
-    # def dragging(self, event):
-    #     global swapping_palette
-    #     swapping_palette = True 
-    #     global palette_to_swap
-    #     global palette_display
-    #     i = 0 
-    #     while i < len(palette_display):
-    #         if palette_display[i] == self:
-    #             palette_to_swap = i
-    #             break
-    #         i += 1
-    #     return
 
     def on_enter(self, event):
         self.delete(self.lbl)
         self.delete(self.lbl2)
         self.lbl2 = self.create_text(17, 17, text=self.myVal, fill='white')
         self.lbl = self.create_text(16, 16, text=self.myVal)
-        # global swapping_palette
-        # global palette_display 
-        # global palette_swapping
-        # if swapping_palette == True:#) and (mbuttonup == True):
-        #     print('??')
-        #     i = 0
-        #     while i < len(palette_display):
-        #         if palette_display[i] == self:
-        #             palette_swapping = i
-        #             break
-        #         i += 1
             
     def on_leave(self, enter):
         self.delete(self.lbl)
@@ -375,8 +338,6 @@ def updatePaletteDisplay():
     while i < 16:
         palette_display[i].configure(background=displayPalette[i])
         palette_display[i].setVal(intpal[i])
-        #if i == 0:
-        #    palette_display[i].myVal = 'trans'
         i += 1
     return 
 
@@ -2530,18 +2491,35 @@ def grab_palette(obj):
                 break
             i += 1
     
+pwin = None
+
 def drag_palette(obj):
     global dragging_pal
     global grabbed_palno
+    global palette_display
+    global pwin
+    if pwin == None:
+        pwin = tk.Tk()
+        pwin.overrideredirect(1)
+    else:
+        pwin.deiconify()
     if grabbed_palno != -1:
+        x,y = app.winfo_pointerxy()
+        pwin.geometry('%dx%d+%d+%d' % (30, 30, x+5, y+5))
+        pwin.configure(background=displayPalette[grabbed_palno])
         dragging_pal = True
-    
+
+if pwin:
+    pwin.mainloop()
+
 def swap_palette(obj):
     global dragging_pal
     global grabbed_palno
     global target_palno
     x,y = app.winfo_pointerxy()
     target_palno = app.winfo_containing(x, y)
+    if pwin:
+        pwin.withdraw()
     if dragging_pal == True:
         i = 0
         while i < len(palette_display):
