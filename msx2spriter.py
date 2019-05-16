@@ -79,6 +79,7 @@ static char im_bits[] = {
 0x00, 0x01, 0xfe, 0x7f, 0xaa, 0x6b, 0xd6, 0x57, 0x2a, 0x69, 0x56, 0x55, 0x2a, 0x69, 0x56, 0x55, 0x02, 0x41, 0x02, 0x41, 0x02, 0x41, 0x02, 0x41, 0xc2, 0x47, 0x82, 0x43, 0xfe, 0x7f, 0x00, 0x01
 };
 """
+
 save_icon_data = """
 #define im_width 16
 #define im_height 16
@@ -86,6 +87,15 @@ static char im_bits[] = {
 0x00, 0x00, 0xfc, 0x3f, 0x1e, 0x78, 0x5e, 0x78, 0x5e, 0x78, 0x1e, 0x78, 0xfe, 0x7f, 0xfe, 0x7f, 0x7e, 0x7e, 0xbe, 0x7d, 0xbe, 0x7c, 0x7e, 0x7e, 0xfe, 0x7f, 0xfe, 0x6f, 0xfc, 0x3f, 0x00, 0x00
 };
 """
+
+inv_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0xff, 0xff, 0xff, 0xff, 0x1d, 0xf8, 0x09, 0xf0, 0x1d, 0xe0, 0xff, 0xc3, 0xdf, 0xc7, 0x9f, 0xc7, 0x1f, 0xc7, 0x1f, 0xc6, 0x3f, 0xc4, 0xfd, 0xef, 0xf9, 0xff, 0xf1, 0xef, 0xe1, 0xc7, 0xff, 0xff
+};
+"""
+
 dropper_icon_data = """
 #define im_width 16
 #define im_height 16
@@ -159,8 +169,8 @@ redo_icon = tk.BitmapImage(data=redo_icon_data)
 horiz_icon = tk.BitmapImage(data=horiz_icon_data)
 vert_icon = tk.BitmapImage(data=vert_icon_data)
 save_icon = tk.BitmapImage(data=save_icon_data)
+inv_icon = tk.BitmapImage(data=inv_icon_data)
 dropper_icon = tk.BitmapImage(data=dropper_icon_data)
-
 
 # First, convert the integer palette to hexadecimal palette.    
 def convert_int_pal_to_hex(integerPalette):
@@ -1826,6 +1836,147 @@ def copy_data():
 
 redo_history = []
 
+def invert_pixels():
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    add_undo_point()
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+        maskdata_ofs = page_ofs + mask_ofs
+
+        if icon_selected == 1:
+            maskdata_ofs += 2
+        elif icon_selected == 2:
+            maskdata_ofs += 4
+        elif icon_selected == 3:
+            maskdata_ofs += 6
+
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedmaskdata = maskdata[maskdata_ofs].copy()
+        firstUsedColor = None
+        lastUsedColor = None
+        firstEmptyRows = []
+
+        while rowstart < rowend:
+            index = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize)
+            rowcolor = None
+
+            # Find row color
+            while index < end:
+                if copiedmaskdata[index] > 0:
+                    rowcolor = copiedmaskdata[index]
+                    lastUsedColor = rowcolor
+
+                    if firstUsedColor == None:
+                        firstUsedColor = rowcolor
+    
+                    break
+                index += 1
+
+            # Loop row again to perform invert
+            if rowcolor == None:
+                if lastUsedColor != None:
+                    rowcolor = lastUsedColor
+                else:
+                    firstEmptyRows.append(rowstart)
+            
+            if rowcolor != None:
+                index = 0 + (rowstart * spriteSize)
+
+                while index < end:
+                    if copiedmaskdata[index] == 0:
+                        copiedmaskdata[index] = rowcolor
+                    else:
+                        copiedmaskdata[index] = 0
+
+                    index += 1
+
+            rowstart += 1
+
+        if len(firstEmptyRows) > 0 and firstUsedColor != None:
+            for rowNum in firstEmptyRows:
+                index = 0 + (rowNum * spriteSize)
+                end = spriteSize + (rowNum * spriteSize)
+
+                while index < end:
+                    copiedmaskdata[index] = firstUsedColor
+                    index += 1
+
+        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedpatterndata = patterndata[icon_selected].copy()
+        firstUsedColor = None
+        lastUsedColor = None
+        firstEmptyRows = []
+
+        while rowstart < rowend:
+            index = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize)
+            rowcolor = None
+
+            # Find row color
+            while index < end:
+                if copiedpatterndata[index] > 0:
+                    rowcolor = copiedpatterndata[index]
+                    lastUsedColor = rowcolor
+
+                    if firstUsedColor == None:
+                        firstUsedColor = rowcolor
+    
+                    break
+                index += 1
+
+            # Loop row again to perform invert
+            if rowcolor == None:
+                if lastUsedColor != None:
+                    rowcolor = lastUsedColor
+                else:
+                    firstEmptyRows.append(rowstart)
+
+            if rowcolor != None:
+                index = 0 + (rowstart * spriteSize)
+
+                while index < end:
+                    if copiedpatterndata[index] == 0:
+                        copiedpatterndata[index] = rowcolor
+                    else:
+                        copiedpatterndata[index] = 0
+
+                    index += 1
+
+            rowstart += 1
+
+        if len(firstEmptyRows) > 0 and firstUsedColor != None:
+            for rowNum in firstEmptyRows:
+                index = 0 + (rowNum * spriteSize)
+                end = spriteSize + (rowNum * spriteSize)
+
+                while index < end:
+                    copiedpatterndata[index] = firstUsedColor
+                    index += 1
+
+        patterndata[icon_selected] = copiedpatterndata.copy()
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
+
 def flip_horizontal():
     global maskdata
     global mask
@@ -2202,6 +2353,7 @@ editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
 editMenu.add_separator()
 editMenu.add_command(label='Flip Horizontal', command=flip_horizontal)
 editMenu.add_command(label='Flip Vertical', command=flip_vertical)
+editMenu.add_command(label='Invert', command=invert_pixels)
 editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
 helpMenu.add_command(label='About...', command=open_about)
@@ -2217,7 +2369,9 @@ undobutton = tk.Button(toolbar, image=undo_icon, width=20, height=20, command=un
 redobutton = tk.Button(toolbar, image=redo_icon, width=20, height=20, command=redo_last)
 horizbutton = tk.Button(toolbar, image=horiz_icon, width=20, height=20, command=flip_horizontal)
 vertbutton = tk.Button(toolbar, image=vert_icon, width=20, height=20, command=flip_vertical)
+invbutton = tk.Button(toolbar, image=inv_icon, width=20, height=20, command=invert_pixels)
 dropperbutton = tk.Button(toolbar, image=dropper_icon, width=20, height=20, command=changemode_colorpicker)
+
 savebutton.grid(row=0, column=0)
 drawpxbutton.grid(row=0, column=1, padx=(20,0))
 dropperbutton.grid(row=0, column=2)
@@ -2228,6 +2382,8 @@ undobutton.grid(row=0, column=6, padx=(20,0))
 redobutton.grid(row=0, column=7)
 horizbutton.grid(row=0, column=8, padx=(20,0))
 vertbutton.grid(row=0, column=9)
+invbutton.grid(row=0, column=10)
+
 toolbar.grid(row=0)
 
 app.config(menu=menuBar) 
