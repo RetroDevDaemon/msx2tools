@@ -7,3 +7,5 @@ build/
 dist/
 *.z80
 inverter.py
+hexinverter.py
+.gitignore

@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.27: Added import of palettes only.
+# v1.28: Added icons and flip h/v.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -28,6 +28,65 @@ static char im_bits[] = {
 0x00, 0x00, 0x00, 0x10, 0x00, 0x28, 0x00, 0x5c, 0x00, 0x2e, 0x00, 0x17, 0x80, 0x0b, 0xc0, 0x05, 0xe0, 0x02, 0x70, 0x01, 0xb8, 0x00, 0x54, 0x00, 0x24, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 """
+cut_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x80, 0x00, 0x80, 0x01, 0x80, 0x02, 0x80, 0x02, 0x80, 0x02, 0x80, 0x02, 0x80, 0x32, 0x80, 0x7a, 0xff, 0xcf, 0x82, 0xce, 0xfc, 0xcb, 0x80, 0x31, 0xc0, 0x03, 0x60, 0x06, 0x60, 0x06, 0xc0, 0x03
+};
+"""
+copy_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0xf8, 0x00, 0xac, 0x01, 0x56, 0x03, 0xab, 0x06, 0x55, 0x05, 0xab, 0x1f, 0xd5, 0x20, 0x6b, 0x40, 0x36, 0x80, 0x2c, 0x80, 0x38, 0x80, 0x20, 0x80, 0x20, 0x80, 0x40, 0x40, 0x80, 0x20, 0x00, 0x1f
+};
+"""
+paste_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x01, 0x80, 0x01, 0x80, 0x01, 0xc0, 0x02, 0xe0, 0x05, 0x20, 0x05, 0xe0, 0x0c, 0x10, 0x09, 0x08, 0x16, 0xe8, 0x17, 0x28, 0x14, 0x28, 0x14, 0xe8, 0x17, 0x08, 0x10, 0x08, 0x10, 0xf0, 0x0f
+};
+"""
+undo_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x40, 0x00, 0x60, 0x00, 0xf0, 0x0f, 0xf8, 0x1f, 0xf0, 0x3f, 0x60, 0x38, 0x40, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x18, 0x00, 0x0c, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
+redo_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x00, 0x02, 0x00, 0x06, 0xf0, 0x0b, 0x08, 0x10, 0xf4, 0x0b, 0x14, 0x06, 0x0c, 0x02, 0x0c, 0x00, 0x0c, 0x00, 0x18, 0x00, 0x30, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
+
+horiz_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xfe, 0x7f, 0x56, 0x40, 0xaa, 0x40, 0x56, 0x40, 0xaa, 0x50, 0x0e, 0x70, 0xff, 0xff, 0x0e, 0x70, 0xaa, 0x50, 0x56, 0x40, 0xaa, 0x40, 0x56, 0x40, 0xaa, 0x40, 0xfe, 0x7f, 0x00, 0x00
+};
+"""
+
+vert_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x01, 0xfe, 0x7f, 0xaa, 0x6b, 0xd6, 0x57, 0x2a, 0x69, 0x56, 0x55, 0x2a, 0x69, 0x56, 0x55, 0x02, 0x41, 0x02, 0x41, 0x02, 0x41, 0x02, 0x41, 0xc2, 0x47, 0x82, 0x43, 0xfe, 0x7f, 0x00, 0x01
+};
+"""
+save_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xfc, 0x3f, 0x1e, 0x78, 0x5e, 0x78, 0x5e, 0x78, 0x1e, 0x78, 0xfe, 0x7f, 0xfe, 0x7f, 0x7e, 0x7e, 0xbe, 0x7d, 0xbe, 0x7c, 0x7e, 0x7e, 0xfe, 0x7f, 0xfe, 0x6f, 0xfc, 0x3f, 0x00, 0x00
+};
+"""
+
 
 ## GLOBALS - MUST BE REFD IN INIT DEF
 r0 = None 
@@ -86,6 +145,14 @@ app = tk.Tk()
 app.title('MSX2 Spriter')
 
 drawpx_icon = tk.BitmapImage(data=drawpx_data)
+cut_icon = tk.BitmapImage(data=cut_icon_data)
+copy_icon = tk.BitmapImage(data=copy_icon_data)
+paste_icon = tk.BitmapImage(data=paste_icon_data)
+undo_icon = tk.BitmapImage(data=undo_icon_data)
+redo_icon = tk.BitmapImage(data=redo_icon_data)
+horiz_icon = tk.BitmapImage(data=horiz_icon_data)
+vert_icon = tk.BitmapImage(data=vert_icon_data)
+save_icon = tk.BitmapImage(data=save_icon_data)
 
 # First, convert the integer palette to hexadecimal palette.    
 def convert_int_pal_to_hex(integerPalette):
@@ -1853,9 +1920,7 @@ def redo_last():
     global patterndata 
     #
     if len(redo_history) > 0:
-        #modified_icon_history.pop()
         add_undo_point()
-        #modified_icon_history.pop()
         if patternMode == False:
             maskdata = redo_history.pop()
         else:
@@ -2055,7 +2120,7 @@ def import_palette():
             f.close()
 
 def open_about():
-    messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.26\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
+    messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.28\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
 
 
 menuBar = tk.Menu(app)
@@ -2080,21 +2145,35 @@ editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
 editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
 editMenu.add_separator()
-editMenu.add_command(label='Flip Horizontal', command=flip_horizontal)
-editMenu.add_command(label='Flip Vertical', command=flip_vertical)
-editMenu.add_separator()
 editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
 editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
+editMenu.add_separator()
+editMenu.add_command(label='Flip Horizontal', command=flip_horizontal)
+editMenu.add_command(label='Flip Vertical', command=flip_vertical)
 editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
 helpMenu.add_command(label='About...', command=open_about)
 menuBar.add_cascade(label='Edit', menu=editMenu)
 menuBar.add_cascade(label='Help', menu=helpMenu)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
+savebutton = tk.Button(toolbar, image=save_icon, width=20, height=20, command=save_normal)
 drawpxbutton = tk.Button(toolbar, image=drawpx_icon, width=20, height=20, relief=tk.SUNKEN)
-#selbutton = tk.Button(toolbar, image=boxbmp, width=20, height=20)
-drawpxbutton.grid(row=0, column=0)
-#selbutton.grid(row=0,column=1)
+cutbutton = tk.Button(toolbar, image=cut_icon, width=20, height=20, command=cut_data)
+copybutton = tk.Button(toolbar, image=copy_icon, width=20, height=20, command=copy_data)
+pastebutton = tk.Button(toolbar, image=paste_icon, width=20, height=20, command=paste_data)
+undobutton = tk.Button(toolbar, image=undo_icon, width=20, height=20, command=undo_last)
+redobutton = tk.Button(toolbar, image=redo_icon, width=20, height=20, command=redo_last)
+horizbutton = tk.Button(toolbar, image=horiz_icon, width=20, height=20, command=flip_horizontal)
+vertbutton = tk.Button(toolbar, image=vert_icon, width=20, height=20, command=flip_vertical)
+savebutton.grid(row=0, column=0)
+drawpxbutton.grid(row=0, column=1, padx=(20,0))
+cutbutton.grid(row=0, column=2,padx=(20,0))
+copybutton.grid(row=0, column=3)
+pastebutton.grid(row=0, column=4)
+undobutton.grid(row=0, column=5, padx=(20,0))
+redobutton.grid(row=0, column=6)
+horizbutton.grid(row=0, column=7, padx=(20,0))
+vertbutton.grid(row=0, column=8)
 toolbar.grid(row=0)
 
 app.config(menu=menuBar) 
@@ -2266,7 +2345,7 @@ def shift_left():
         if patternMode == False:
             maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
         else:
-            maskdata[icon_selected] = pixels_mask1.copy()
+            patterndata[icon_selected] = pixels_mask1.copy()
     else:
         i = 0
         while i < (spriteSize*spriteSize):
@@ -2277,6 +2356,7 @@ def shift_left():
         maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
         maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
     refresh_display(True)
+
 def shift_down():
     global pixels_mask1
     global pixels_mask2
@@ -2551,6 +2631,7 @@ def initialize_new(patternMode, loading=False):
     drawCanvas.bind("<Button-3>", erase_pixel)
     drawCanvas.bind("<B3-Motion>", erase_pixel)
     drawCanvas.bind("<ButtonRelease-1>", set_undo_release)
+    drawCanvas.bind("<ButtonRelease-3>", set_undo_release)
     
     if patternMode == True:
         fileMenu.entryconfigure(2, command=save_normal_pattern)
@@ -2561,6 +2642,8 @@ def initialize_new(patternMode, loading=False):
         fileMenu.entryconfigure(3, label='Save As .M2S...', command=save_sprite_as)
         fileMenu.entryconfigure(7, label='Export z80 sprite data...', command=export_asm_data)
     
+    palette_display[1].clicked(0)
+
     app.bind("<Key>", keyboard_monitor)
     
     return
