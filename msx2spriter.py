@@ -2498,12 +2498,13 @@ def drag_palette(obj):
     global grabbed_palno
     global palette_display
     global pwin
-    if pwin == None:
-        pwin = tk.Tk()
-        pwin.overrideredirect(1)
-    else:
-        pwin.deiconify()
-    if grabbed_palno != -1:
+    
+    if grabbed_palno != -1 and type(grabbed_palno) == int:
+        if pwin == None:
+            pwin = tk.Tk()
+            pwin.overrideredirect(1)
+        else:
+            pwin.deiconify()
         x,y = app.winfo_pointerxy()
         pwin.geometry('%dx%d+%d+%d' % (30, 30, x+5, y+5))
         pwin.configure(background=displayPalette[grabbed_palno])
@@ -2516,6 +2517,8 @@ def swap_palette(obj):
     global dragging_pal
     global grabbed_palno
     global target_palno
+    if dragging_pal == False:
+        return
     x,y = app.winfo_pointerxy()
     target_palno = app.winfo_containing(x, y)
     if pwin:
@@ -2795,8 +2798,8 @@ def initialize_new(patternMode, loading=False):
     palette_display[1].clicked(0)
 
     app.bind("<Key>", keyboard_monitor)
-    app.bind("<KeyPress>", keydown_monitor)
-    app.bind("<KeyRelease>", keyup_monitor)
+    app.bind("<KeyPress>", keydown_monitor, "+")
+    app.bind("<KeyRelease>", keyup_monitor, "+")
     app.bind("<Button-1>", grab_palette)
     app.bind("<B1-Motion>", drag_palette)
     app.bind("<ButtonRelease-1>", swap_palette)
