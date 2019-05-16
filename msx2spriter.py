@@ -1807,6 +1807,9 @@ def invert_pixels():
         rowend = spriteSize
 
         copiedmaskdata = maskdata[maskdata_ofs].copy()
+        firstUsedColor = None
+        lastUsedColor = None
+        firstEmptyRows = []
 
         while rowstart < rowend:
             index = 0 + (rowstart * spriteSize)
@@ -1817,10 +1820,21 @@ def invert_pixels():
             while index < end:
                 if copiedmaskdata[index] > 0:
                     rowcolor = copiedmaskdata[index]
+                    lastUsedColor = rowcolor
+
+                    if firstUsedColor == None:
+                        firstUsedColor = rowcolor
+    
                     break
                 index += 1
 
             # Loop row again to perform invert
+            if rowcolor == None:
+                if lastUsedColor != None:
+                    rowcolor = lastUsedColor
+                else:
+                    firstEmptyRows.append(rowstart)
+            
             if rowcolor != None:
                 index = 0 + (rowstart * spriteSize)
 
@@ -1834,6 +1848,15 @@ def invert_pixels():
 
             rowstart += 1
 
+        if len(firstEmptyRows) > 0 and firstUsedColor != None:
+            for rowNum in firstEmptyRows:
+                index = 0 + (rowNum * spriteSize)
+                end = spriteSize + (rowNum * spriteSize)
+
+                while index < end:
+                    copiedmaskdata[index] = firstUsedColor
+                    index += 1
+
         maskdata[maskdata_ofs] = copiedmaskdata.copy()
 
         if mask_ofs == 0:
@@ -1845,6 +1868,9 @@ def invert_pixels():
         rowend = spriteSize
 
         copiedpatterndata = patterndata[icon_selected].copy()
+        firstUsedColor = None
+        lastUsedColor = None
+        firstEmptyRows = []
 
         while rowstart < rowend:
             index = 0 + (rowstart * spriteSize)
@@ -1855,10 +1881,21 @@ def invert_pixels():
             while index < end:
                 if copiedpatterndata[index] > 0:
                     rowcolor = copiedpatterndata[index]
+                    lastUsedColor = rowcolor
+
+                    if firstUsedColor == None:
+                        firstUsedColor = rowcolor
+    
                     break
                 index += 1
 
             # Loop row again to perform invert
+            if rowcolor == None:
+                if lastUsedColor != None:
+                    rowcolor = lastUsedColor
+                else:
+                    firstEmptyRows.append(rowstart)
+
             if rowcolor != None:
                 index = 0 + (rowstart * spriteSize)
 
@@ -1871,6 +1908,15 @@ def invert_pixels():
                     index += 1
 
             rowstart += 1
+
+        if len(firstEmptyRows) > 0 and firstUsedColor != None:
+            for rowNum in firstEmptyRows:
+                index = 0 + (rowNum * spriteSize)
+                end = spriteSize + (rowNum * spriteSize)
+
+                while index < end:
+                    copiedpatterndata[index] = firstUsedColor
+                    index += 1
 
         patterndata[icon_selected] = copiedpatterndata.copy()
         pixels_mask1 = patterndata[icon_selected].copy()
