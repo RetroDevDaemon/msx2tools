@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.28: Added icons and flip h/v.
+# v1.29: Added dropper tool.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -2172,7 +2172,7 @@ def import_palette():
             f.close()
 
 def open_about():
-    messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.28\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
+    messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.29\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
 
 
 menuBar = tk.Menu(app)
