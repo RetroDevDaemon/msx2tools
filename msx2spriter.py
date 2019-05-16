@@ -1774,6 +1774,101 @@ def copy_data():
 
 redo_history = []
 
+def invert_pixels():
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    add_undo_point()
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+        maskdata_ofs = page_ofs + mask_ofs
+
+        if icon_selected == 1:
+            maskdata_ofs += 2
+        elif icon_selected == 2:
+            maskdata_ofs += 4
+        elif icon_selected == 3:
+            maskdata_ofs += 6
+
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedmaskdata = maskdata[maskdata_ofs].copy()
+
+        while rowstart < rowend:
+            index = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize)
+            rowcolor = None
+
+            # Find row color
+            while index < end:
+                if copiedmaskdata[index] > 0:
+                    rowcolor = copiedmaskdata[index]
+                    break
+                index += 1
+
+            # Loop row again to perform invert
+            if rowcolor != None:
+                index = 0 + (rowstart * spriteSize)
+
+                while index < end:
+                    if copiedmaskdata[index] == 0:
+                        copiedmaskdata[index] = rowcolor
+                    else:
+                        copiedmaskdata[index] = 0
+
+                    index += 1
+
+            rowstart += 1
+
+        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedpatterndata = patterndata[icon_selected].copy()
+
+        while rowstart < rowend:
+            index = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize)
+            rowcolor = None
+
+            # Find row color
+            while index < end:
+                if copiedpatterndata[index] > 0:
+                    rowcolor = copiedpatterndata[index]
+                    break
+                index += 1
+
+            # Loop row again to perform invert
+            if rowcolor != None:
+                index = 0 + (rowstart * spriteSize)
+
+                while index < end:
+                    if copiedpatterndata[index] == 0:
+                        copiedpatterndata[index] = rowcolor
+                    else:
+                        copiedpatterndata[index] = 0
+
+                    index += 1
+
+            rowstart += 1
+
+        patterndata[icon_selected] = copiedpatterndata.copy()
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
+
 def flip_horizontal():
     global maskdata
     global mask
@@ -2150,6 +2245,7 @@ editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
 editMenu.add_separator()
 editMenu.add_command(label='Flip Horizontal', command=flip_horizontal)
 editMenu.add_command(label='Flip Vertical', command=flip_vertical)
+editMenu.add_command(label='Invert', command=invert_pixels)
 editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
 helpMenu.add_command(label='About...', command=open_about)
