@@ -2222,7 +2222,7 @@ menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label="New sprite file", command=new_file)
 fileMenu.add_command(label="New pattern file", command=new_pattern_file)
-fileMenu.add_command(label="Save", command=save_normal_sprite) #2
+fileMenu.add_command(label="Save (Ctrl+S)", command=save_normal_sprite) #2
 fileMenu.add_command(label="Save As .M2S...", command=save_sprite_as) #3
 fileMenu.add_command(label="Load .M2S Sprite...", command=load_sprite_as)
 fileMenu.add_command(label="Load .M2P Pattern...", command=load_pattern_as)
@@ -2344,6 +2344,8 @@ def keyboard_monitor(obj):
             undo_last()
         elif obj.keysym == 'y':
             redo_last()
+        elif obj.keysym == 's':
+            save_normal()
             return 
 
 # class undo_log(list):
