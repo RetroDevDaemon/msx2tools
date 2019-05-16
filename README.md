@@ -1,10 +1,11 @@
-# MSX2 Spriter v1.27 / Screener v1.1
+# MSX2 Spriter v1.28 / Screener v1.1
 
 Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts.
 
 
 ### Release notes:
 
+1.28: Added icon toolbar and horizontal/vertical flip for sprite tool.<br>
 1.27: Added import of palettes from other M2S/M2P files.<br>
 1.26: Added UDLR shifting of sprites and patterns. (This does NOT add to the undo queue, since it's easy to undo yourself). <br>
 1.25: Added 100-step undo/redo and various bug fixes <br>
@@ -26,11 +27,11 @@ To start it, download (or copy) msx2spriter.py to any folder on a computer with 
 
 The following window will open:
 
-![ss1](m2s4.png)
+![ss1](m2s6.png)
 
 The palette at the top of the screen is the default MSX2 palette. To modify these colors, simply select the color, input new RGB values in the edit boxes (values of 0-7), and select **Apply**. The **Reset** button will change the selected color back to the MSX2 system default.
 
-_Note that the first color (color 0) is transparent, and its grey value cannot be changed as of this version!_
+_Note that the first color (color 0) is transparent for sprites. Its value can be changed, but for practical purposes this is cosmetic._
 
 Instructions:<br>
 -The left mouse button draws the selected color, and the right mouse button erases (draws transparent).<br>
@@ -40,6 +41,9 @@ Instructions:<br>
 -Use the checkbox buttons to toggle visibility of the two currently displayed masks.<br>
 -Click the small sprite display to swap between the two masks currently being edited.<br>
 -Click the arrows to swap between pages (there are four, to constitute a full MSX2 mode-2 sprite set).<br>
+-The arrows underneath the draw area allow you to shift in all four directions.<br>
+-The toolbar at the top of the screen represents, in order: Save, Pixel (draw mode cannot be changed at this time), Cut, Copy, Paste, Undo, Redo, Flip Horiz. and Flip Vertical. These options are all in the Edit menu as well (Save is in File).<br>
+-To use a palette from another M2S or M2P file in your current file, choose 'Import palette from...' option from the File menu.<br>
 
 ### Save, Load, and Export
 
@@ -57,7 +61,7 @@ To export the universal palette, use the **Export z80 palette data...** option. 
 
 As of 1.1, you can also create pattern sets for backgrounds!
 
-To switch to pattern mode, select **New pattern file** from the File menu. You will be greeted with a screen similar to the following:
+To switch to pattern mode, select **New pattern file** from the File menu. You will be greeted with a screen similar to the following (screenshot slightly out of date):
 
 ![ss2](m2s3.png)
 
@@ -89,6 +93,7 @@ Instructions for **Screener tool**:<br>
 -Screen patterns are limited to one-third sections of the screen. Patterns 0-255 are for the top third, 256-511 for the middle, and 512-767 for the bottom.<br>
 -Click any of the patterns on each of the pattern windows to select a 'paintbrush' for that section of the screen. After doing this, painting is natural and fluid - you can drag your mouse between the screen's third-sections and continue painting with the selected neighboring pattern.<br>
 -Right click to set that tile to whatever is set to tile '0' in that section. <br>
+-When creating a new screen file, all tiles will be filled in by default with tile '0'. It is recommended this tile is fully transparent (color 0).<br>
 -You can freely change screen files and pattern files. Import a new M2P to change the current screen's pattern graphics, or load/create a new M2C and the tool will ask if you want to change your current pattern set.<br>
 -Exporting is nice and easy - 768 bytes, one per tile, each valued 0-255. Formatting is the same as described above.<br>
 
@@ -115,6 +120,8 @@ GRAPHIC3 background patterns are surprisingly lenient:<br>
 The code is extremely ugly. I am not a professional coder by any means and this is mostly for personal use. I'm releasing it publically so maybe someone else will get some use out of it. 
 
 IT'S SLOW! I use Tkinter rectangles to represent pixels, which means there are sometimes several thousand canvas updates happening. Hopefully it remains manageable even on slower systems. I've done quite a bit of optimizing, so right now the only noticable thing is importing and undo on the screener tool (which has a loading notification).
+
+The icons for the toolbar were actually made using the tool, and inverting the byte order for X11-method bitmaps.
 
 More QoL features coming soon!
 
