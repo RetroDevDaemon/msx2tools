@@ -439,9 +439,9 @@ def color_pixel(ob):
     global last_color_used
     global last_mask
     global button_not_released
-    if last_pixel_colored == (y_px*spriteSize)+x_px and last_color_used == currentPalNo and last_mask == mask.get():
+    if (last_pixel_colored == ((y_px*spriteSize)+x_px)) and (last_color_used == currentPalNo) and (last_mask == mask.get()):
         return 
-    if ob.x < 0 or ob.x >= (spriteSize*pixelSize) or ob.y < 0 or ob.y >= (spriteSize*pixelSize):
+    if (ob.x < 0) or (ob.x >= (spriteSize*pixelSize)) or (ob.y < 0) or (ob.y >= (spriteSize*pixelSize)):
         return
     last_pixel_colored = (y_px*spriteSize) + x_px 
     if button_not_released == False: 
