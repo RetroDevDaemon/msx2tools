@@ -237,23 +237,23 @@ def single_intcol_to_hex(col):
 # for screener, selectioncanvas will be a new class.
 # for spriter, is faster to just redraw.
 
-# Define the palette button class
 class PaletteButton(tk.Canvas):
     def __init__(self, *args, **kwargs):
         tk.Canvas.__init__(self, *args, **kwargs)
         self.lbl = 0
         self.lbl2 = 0
+        self.swapping = False
         self.selector=[]
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
         self.bind("<Button-1>", self.clicked)
-    
+
     def on_enter(self, event):
         self.delete(self.lbl)
         self.delete(self.lbl2)
         self.lbl2 = self.create_text(17, 17, text=self.myVal, fill='white')
         self.lbl = self.create_text(16, 16, text=self.myVal)
-    
+            
     def on_leave(self, enter):
         self.delete(self.lbl)
         self.delete(self.lbl2)
@@ -268,6 +268,8 @@ class PaletteButton(tk.Canvas):
             b += 1
 
     def clicked(self, event):
+        #global mbuttonup
+        #mbuttonup = False 
         unclick_all()
         self.selector.append(self.create_line(2, 2, scale, 2, width=3, fill='yellow'))
         self.selector.append(self.create_line(2, 2, 2, scale, width=3, fill='yellow'))
@@ -336,8 +338,6 @@ def updatePaletteDisplay():
     while i < 16:
         palette_display[i].configure(background=displayPalette[i])
         palette_display[i].setVal(intpal[i])
-        #if i == 0:
-        #    palette_display[i].myVal = 'trans'
         i += 1
     return 
 
@@ -439,9 +439,9 @@ def color_pixel(ob):
     global last_color_used
     global last_mask
     global button_not_released
-    if last_pixel_colored == (y_px*spriteSize)+x_px and last_color_used == currentPalNo and last_mask == mask.get():
+    if (last_pixel_colored == ((y_px*spriteSize)+x_px)) and (last_color_used == currentPalNo) and (last_mask == mask.get()):
         return 
-    if ob.x < 0 or ob.x >= (spriteSize*pixelSize) or ob.y < 0 or ob.y >= (spriteSize*pixelSize):
+    if (ob.x < 0) or (ob.x >= (spriteSize*pixelSize)) or (ob.y < 0) or (ob.y >= (spriteSize*pixelSize)):
         return
     last_pixel_colored = (y_px*spriteSize) + x_px 
     if button_not_released == False: 
@@ -2471,6 +2471,81 @@ def shift_up():
     refresh_display(True) 
 
 
+grabbed_palno = -1
+target_palno = -1
+dragging_pal = False
+
+def grab_palette(obj):
+    global grabbed_palno
+    global dragging_pal
+    global target_palno
+    target_palno = -1
+    dragging_pal = False
+    x,y = app.winfo_pointerxy()
+    if app.winfo_containing(x, y) != None:
+        grabbed_palno = app.winfo_containing(x, y)
+        i = 0
+        while i < len(palette_display):
+            if palette_display[i] == grabbed_palno:
+                grabbed_palno = i
+                break
+            i += 1
+    
+pwin = None
+
+def drag_palette(obj):
+    global dragging_pal
+    global grabbed_palno
+    global palette_display
+    global pwin
+    
+    if grabbed_palno != -1 and type(grabbed_palno) == int:
+        if pwin == None:
+            pwin = tk.Tk()
+            pwin.overrideredirect(1)
+        else:
+            pwin.deiconify()
+        x,y = app.winfo_pointerxy()
+        pwin.geometry('%dx%d+%d+%d' % (30, 30, x+5, y+5))
+        pwin.configure(background=displayPalette[grabbed_palno])
+        dragging_pal = True
+
+if pwin:
+    pwin.mainloop()
+
+def swap_palette(obj):
+    global dragging_pal
+    global grabbed_palno
+    global target_palno
+    if dragging_pal == False:
+        return
+    x,y = app.winfo_pointerxy()
+    target_palno = app.winfo_containing(x, y)
+    if pwin:
+        pwin.withdraw()
+    if dragging_pal == True:
+        i = 0
+        while i < len(palette_display):
+            if palette_display[i] == target_palno:
+                target_palno = i
+                break
+            i += 1
+    if type(target_palno) != int:
+        return
+    buf = palette_display[target_palno].myVal
+    palette_display[target_palno].myVal = palette_display[grabbed_palno].myVal
+    palette_display[grabbed_palno].myVal = buf
+    palette_display[target_palno].clicked(0)
+    buf = intpal[target_palno]
+    intpal[target_palno] = intpal[grabbed_palno]
+    intpal[grabbed_palno] = buf
+    dragging_pal = False
+    grabbed_palno = -1
+    convert_int_pal_to_hex(intpal)
+    updatePaletteDisplay()
+    refresh_display(True)
+    
+
 def initialize_new(patternMode, loading=False):
     global intpal 
     intpal = defaultIntegerPalette.copy()
@@ -2723,8 +2798,11 @@ def initialize_new(patternMode, loading=False):
     palette_display[1].clicked(0)
 
     app.bind("<Key>", keyboard_monitor)
-    app.bind("<KeyPress>", keydown_monitor)
-    app.bind("<KeyRelease>", keyup_monitor)
+    app.bind("<KeyPress>", keydown_monitor, "+")
+    app.bind("<KeyRelease>", keyup_monitor, "+")
+    app.bind("<Button-1>", grab_palette)
+    app.bind("<B1-Motion>", drag_palette)
+    app.bind("<ButtonRelease-1>", swap_palette)
 
     return
 
