@@ -87,6 +87,13 @@ static char im_bits[] = {
 };
 """
 
+inv_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0xff, 0xff, 0xff, 0xff, 0x1d, 0xf8, 0x09, 0xf0, 0x1d, 0xe0, 0xff, 0xc3, 0xdf, 0xc7, 0x9f, 0xc7, 0x1f, 0xc7, 0x1f, 0xc6, 0x3f, 0xc4, 0xfd, 0xef, 0xf9, 0xff, 0xf1, 0xef, 0xe1, 0xc7, 0xff, 0xff
+};
+"""
 
 ## GLOBALS - MUST BE REFD IN INIT DEF
 r0 = None 
@@ -153,6 +160,7 @@ redo_icon = tk.BitmapImage(data=redo_icon_data)
 horiz_icon = tk.BitmapImage(data=horiz_icon_data)
 vert_icon = tk.BitmapImage(data=vert_icon_data)
 save_icon = tk.BitmapImage(data=save_icon_data)
+inv_icon = tk.BitmapImage(data=inv_icon_data)
 
 # First, convert the integer palette to hexadecimal palette.    
 def convert_int_pal_to_hex(integerPalette):
@@ -2261,6 +2269,7 @@ undobutton = tk.Button(toolbar, image=undo_icon, width=20, height=20, command=un
 redobutton = tk.Button(toolbar, image=redo_icon, width=20, height=20, command=redo_last)
 horizbutton = tk.Button(toolbar, image=horiz_icon, width=20, height=20, command=flip_horizontal)
 vertbutton = tk.Button(toolbar, image=vert_icon, width=20, height=20, command=flip_vertical)
+invbutton = tk.Button(toolbar, image=inv_icon, width=20, height=20, command=invert_pixels)
 savebutton.grid(row=0, column=0)
 drawpxbutton.grid(row=0, column=1, padx=(20,0))
 cutbutton.grid(row=0, column=2,padx=(20,0))
@@ -2270,6 +2279,7 @@ undobutton.grid(row=0, column=5, padx=(20,0))
 redobutton.grid(row=0, column=6)
 horizbutton.grid(row=0, column=7, padx=(20,0))
 vertbutton.grid(row=0, column=8)
+invbutton.grid(row=0, column=9)
 toolbar.grid(row=0)
 
 app.config(menu=menuBar) 
