@@ -86,7 +86,13 @@ static char im_bits[] = {
 0x00, 0x00, 0xfc, 0x3f, 0x1e, 0x78, 0x5e, 0x78, 0x5e, 0x78, 0x1e, 0x78, 0xfe, 0x7f, 0xfe, 0x7f, 0x7e, 0x7e, 0xbe, 0x7d, 0xbe, 0x7c, 0x7e, 0x7e, 0xfe, 0x7f, 0xfe, 0x6f, 0xfc, 0x3f, 0x00, 0x00
 };
 """
-
+dropper_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x70, 0x00, 0x78, 0x00, 0x7d, 0x00, 0x3f, 0x00, 0x1f, 0x80, 0x0c, 0x40, 0x1c, 0x20, 0x02, 0x10, 0x01, 0xf8, 0x00, 0x48, 0x00, 0x34, 0x00, 0x0c, 0x00, 0x04, 0x00, 0x04, 0x00, 0x0e, 0x00
+};
+"""
 
 ## GLOBALS - MUST BE REFD IN INIT DEF
 r0 = None 
@@ -153,6 +159,8 @@ redo_icon = tk.BitmapImage(data=redo_icon_data)
 horiz_icon = tk.BitmapImage(data=horiz_icon_data)
 vert_icon = tk.BitmapImage(data=vert_icon_data)
 save_icon = tk.BitmapImage(data=save_icon_data)
+dropper_icon = tk.BitmapImage(data=dropper_icon_data)
+
 
 # First, convert the integer palette to hexadecimal palette.    
 def convert_int_pal_to_hex(integerPalette):
@@ -1699,6 +1707,50 @@ def save_normal():
             savem2p()
     #return
 
+interface_mode = 'DRAWPIXEL'
+
+def pick_color(obj):
+    x = math.floor(obj.x/pixelSize)
+    y = math.floor(obj.y/pixelSize)
+    tl = (y*spriteSize)+x 
+    if mask.get() == 1:
+        c = pixels_mask1[tl]
+        palette_display[c].clicked(0)
+    else:
+        c = pixels_mask2[tl]
+        palette_display[c].clicked(0)
+    return
+
+def changemode_colorpicker(temp=False):
+    global interface_mode
+    if temp==False:
+        interface_mode = 'COLORPICKER'
+    drawpxbutton.configure(relief=tk.RAISED)
+    dropperbutton.configure(relief=tk.SUNKEN)
+    drawCanvas.bind("<Button-1>", pick_color)
+    drawCanvas.unbind("<B1-Motion>")#, color_pixel)
+    drawCanvas.unbind("<Button-3>")#, erase_pixel)
+    drawCanvas.unbind("<B3-Motion>")#, erase_pixel)
+    drawCanvas.unbind("<ButtonRelease-1>")#, set_undo_release)
+    drawCanvas.unbind("<ButtonRelease-3>")#, set_undo_release)
+    return
+
+def changemode_drawpixel(temp=False):
+    global interface_mode
+    if temp==False:
+        interface_mode = 'DRAWPIXEL'
+    drawpxbutton.configure(relief=tk.SUNKEN)
+    dropperbutton.configure(relief=tk.RAISED)   
+    drawCanvas.bind("<Button-1>", color_pixel)
+    drawCanvas.bind("<B1-Motion>", color_pixel)
+    drawCanvas.bind("<Button-3>", erase_pixel)
+    drawCanvas.bind("<B3-Motion>", erase_pixel)
+    drawCanvas.bind("<ButtonRelease-1>", set_undo_release)
+    drawCanvas.bind("<ButtonRelease-3>", set_undo_release)
+    return
+
+
+
 def cut_data():
     global maskdata
     global mask
@@ -2157,7 +2209,7 @@ menuBar.add_cascade(label='Edit', menu=editMenu)
 menuBar.add_cascade(label='Help', menu=helpMenu)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
 savebutton = tk.Button(toolbar, image=save_icon, width=20, height=20, command=save_normal)
-drawpxbutton = tk.Button(toolbar, image=drawpx_icon, width=20, height=20, relief=tk.SUNKEN)
+drawpxbutton = tk.Button(toolbar, image=drawpx_icon, width=20, height=20, relief=tk.SUNKEN, command=changemode_drawpixel)
 cutbutton = tk.Button(toolbar, image=cut_icon, width=20, height=20, command=cut_data)
 copybutton = tk.Button(toolbar, image=copy_icon, width=20, height=20, command=copy_data)
 pastebutton = tk.Button(toolbar, image=paste_icon, width=20, height=20, command=paste_data)
@@ -2165,15 +2217,17 @@ undobutton = tk.Button(toolbar, image=undo_icon, width=20, height=20, command=un
 redobutton = tk.Button(toolbar, image=redo_icon, width=20, height=20, command=redo_last)
 horizbutton = tk.Button(toolbar, image=horiz_icon, width=20, height=20, command=flip_horizontal)
 vertbutton = tk.Button(toolbar, image=vert_icon, width=20, height=20, command=flip_vertical)
+dropperbutton = tk.Button(toolbar, image=dropper_icon, width=20, height=20, command=changemode_colorpicker)
 savebutton.grid(row=0, column=0)
 drawpxbutton.grid(row=0, column=1, padx=(20,0))
-cutbutton.grid(row=0, column=2,padx=(20,0))
-copybutton.grid(row=0, column=3)
-pastebutton.grid(row=0, column=4)
-undobutton.grid(row=0, column=5, padx=(20,0))
-redobutton.grid(row=0, column=6)
-horizbutton.grid(row=0, column=7, padx=(20,0))
-vertbutton.grid(row=0, column=8)
+dropperbutton.grid(row=0, column=2)
+cutbutton.grid(row=0, column=3,padx=(20,0))
+copybutton.grid(row=0, column=4)
+pastebutton.grid(row=0, column=5)
+undobutton.grid(row=0, column=6, padx=(20,0))
+redobutton.grid(row=0, column=7)
+horizbutton.grid(row=0, column=8, padx=(20,0))
+vertbutton.grid(row=0, column=9)
 toolbar.grid(row=0)
 
 app.config(menu=menuBar) 
@@ -2251,6 +2305,28 @@ def keyboard_monitor(obj):
         elif obj.keysym == 's':
             save_normal()
             return 
+
+shiftheld = False
+
+def keydown_monitor(obj):
+    global shiftheld 
+    if shiftheld == False:
+        if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R':
+            shiftheld = True 
+            if interface_mode != 'COLORPICKER':
+                changemode_colorpicker(True)
+            # toggle to color picker mode by popping up px button
+            # and poping down dropper button
+            # rebind left AND right click 
+    return
+def keyup_monitor(obj):
+    if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R':
+        global shiftheld
+        shiftheld = False 
+        if interface_mode == 'DRAWPIXEL':
+            changemode_drawpixel(True)
+        
+    return
 
 # class undo_log(list):
 #     # how to use:
@@ -2647,7 +2723,9 @@ def initialize_new(patternMode, loading=False):
     palette_display[1].clicked(0)
 
     app.bind("<Key>", keyboard_monitor)
-    
+    app.bind("<KeyPress>", keydown_monitor)
+    app.bind("<KeyRelease>", keyup_monitor)
+
     return
 
 initialize_new(False)
