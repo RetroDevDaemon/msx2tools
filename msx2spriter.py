@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.28: Added icons and flip h/v.
+# v1.29: Added dropper tool.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -79,6 +79,7 @@ static char im_bits[] = {
 0x00, 0x01, 0xfe, 0x7f, 0xaa, 0x6b, 0xd6, 0x57, 0x2a, 0x69, 0x56, 0x55, 0x2a, 0x69, 0x56, 0x55, 0x02, 0x41, 0x02, 0x41, 0x02, 0x41, 0x02, 0x41, 0xc2, 0x47, 0x82, 0x43, 0xfe, 0x7f, 0x00, 0x01
 };
 """
+
 save_icon_data = """
 #define im_width 16
 #define im_height 16
@@ -92,6 +93,14 @@ inv_icon_data = """
 #define im_height 16
 static char im_bits[] = {
 0xff, 0xff, 0xff, 0xff, 0x1d, 0xf8, 0x09, 0xf0, 0x1d, 0xe0, 0xff, 0xc3, 0xdf, 0xc7, 0x9f, 0xc7, 0x1f, 0xc7, 0x1f, 0xc6, 0x3f, 0xc4, 0xfd, 0xef, 0xf9, 0xff, 0xf1, 0xef, 0xe1, 0xc7, 0xff, 0xff
+};
+"""
+
+dropper_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x70, 0x00, 0x78, 0x00, 0x7d, 0x00, 0x3f, 0x00, 0x1f, 0x80, 0x0c, 0x40, 0x1c, 0x20, 0x02, 0x10, 0x01, 0xf8, 0x00, 0x48, 0x00, 0x34, 0x00, 0x0c, 0x00, 0x04, 0x00, 0x04, 0x00, 0x0e, 0x00
 };
 """
 
@@ -161,6 +170,7 @@ horiz_icon = tk.BitmapImage(data=horiz_icon_data)
 vert_icon = tk.BitmapImage(data=vert_icon_data)
 save_icon = tk.BitmapImage(data=save_icon_data)
 inv_icon = tk.BitmapImage(data=inv_icon_data)
+dropper_icon = tk.BitmapImage(data=dropper_icon_data)
 
 # First, convert the integer palette to hexadecimal palette.    
 def convert_int_pal_to_hex(integerPalette):
@@ -237,23 +247,23 @@ def single_intcol_to_hex(col):
 # for screener, selectioncanvas will be a new class.
 # for spriter, is faster to just redraw.
 
-# Define the palette button class
 class PaletteButton(tk.Canvas):
     def __init__(self, *args, **kwargs):
         tk.Canvas.__init__(self, *args, **kwargs)
         self.lbl = 0
         self.lbl2 = 0
+        self.swapping = False
         self.selector=[]
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
         self.bind("<Button-1>", self.clicked)
-    
+
     def on_enter(self, event):
         self.delete(self.lbl)
         self.delete(self.lbl2)
         self.lbl2 = self.create_text(17, 17, text=self.myVal, fill='white')
         self.lbl = self.create_text(16, 16, text=self.myVal)
-    
+            
     def on_leave(self, enter):
         self.delete(self.lbl)
         self.delete(self.lbl2)
@@ -268,6 +278,8 @@ class PaletteButton(tk.Canvas):
             b += 1
 
     def clicked(self, event):
+        #global mbuttonup
+        #mbuttonup = False 
         unclick_all()
         self.selector.append(self.create_line(2, 2, scale, 2, width=3, fill='yellow'))
         self.selector.append(self.create_line(2, 2, 2, scale, width=3, fill='yellow'))
@@ -336,8 +348,6 @@ def updatePaletteDisplay():
     while i < 16:
         palette_display[i].configure(background=displayPalette[i])
         palette_display[i].setVal(intpal[i])
-        #if i == 0:
-        #    palette_display[i].myVal = 'trans'
         i += 1
     return 
 
@@ -439,9 +449,9 @@ def color_pixel(ob):
     global last_color_used
     global last_mask
     global button_not_released
-    if last_pixel_colored == (y_px*spriteSize)+x_px and last_color_used == currentPalNo and last_mask == mask.get():
+    if (last_pixel_colored == ((y_px*spriteSize)+x_px)) and (last_color_used == currentPalNo) and (last_mask == mask.get()):
         return 
-    if ob.x < 0 or ob.x >= (spriteSize*pixelSize) or ob.y < 0 or ob.y >= (spriteSize*pixelSize):
+    if (ob.x < 0) or (ob.x >= (spriteSize*pixelSize)) or (ob.y < 0) or (ob.y >= (spriteSize*pixelSize)):
         return
     last_pixel_colored = (y_px*spriteSize) + x_px 
     if button_not_released == False: 
@@ -1707,6 +1717,50 @@ def save_normal():
             savem2p()
     #return
 
+interface_mode = 'DRAWPIXEL'
+
+def pick_color(obj):
+    x = math.floor(obj.x/pixelSize)
+    y = math.floor(obj.y/pixelSize)
+    tl = (y*spriteSize)+x 
+    if mask.get() == 1:
+        c = pixels_mask1[tl]
+        palette_display[c].clicked(0)
+    else:
+        c = pixels_mask2[tl]
+        palette_display[c].clicked(0)
+    return
+
+def changemode_colorpicker(temp=False):
+    global interface_mode
+    if temp==False:
+        interface_mode = 'COLORPICKER'
+    drawpxbutton.configure(relief=tk.RAISED)
+    dropperbutton.configure(relief=tk.SUNKEN)
+    drawCanvas.bind("<Button-1>", pick_color)
+    drawCanvas.unbind("<B1-Motion>")#, color_pixel)
+    drawCanvas.unbind("<Button-3>")#, erase_pixel)
+    drawCanvas.unbind("<B3-Motion>")#, erase_pixel)
+    drawCanvas.unbind("<ButtonRelease-1>")#, set_undo_release)
+    drawCanvas.unbind("<ButtonRelease-3>")#, set_undo_release)
+    return
+
+def changemode_drawpixel(temp=False):
+    global interface_mode
+    if temp==False:
+        interface_mode = 'DRAWPIXEL'
+    drawpxbutton.configure(relief=tk.SUNKEN)
+    dropperbutton.configure(relief=tk.RAISED)   
+    drawCanvas.bind("<Button-1>", color_pixel)
+    drawCanvas.bind("<B1-Motion>", color_pixel)
+    drawCanvas.bind("<Button-3>", erase_pixel)
+    drawCanvas.bind("<B3-Motion>", erase_pixel)
+    drawCanvas.bind("<ButtonRelease-1>", set_undo_release)
+    drawCanvas.bind("<ButtonRelease-3>", set_undo_release)
+    return
+
+
+
 def cut_data():
     global maskdata
     global mask
@@ -2269,7 +2323,7 @@ def import_palette():
             f.close()
 
 def open_about():
-    messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.28\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
+    messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.29\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
 
 
 menuBar = tk.Menu(app)
@@ -2307,7 +2361,7 @@ menuBar.add_cascade(label='Edit', menu=editMenu)
 menuBar.add_cascade(label='Help', menu=helpMenu)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
 savebutton = tk.Button(toolbar, image=save_icon, width=20, height=20, command=save_normal)
-drawpxbutton = tk.Button(toolbar, image=drawpx_icon, width=20, height=20, relief=tk.SUNKEN)
+drawpxbutton = tk.Button(toolbar, image=drawpx_icon, width=20, height=20, relief=tk.SUNKEN, command=changemode_drawpixel)
 cutbutton = tk.Button(toolbar, image=cut_icon, width=20, height=20, command=cut_data)
 copybutton = tk.Button(toolbar, image=copy_icon, width=20, height=20, command=copy_data)
 pastebutton = tk.Button(toolbar, image=paste_icon, width=20, height=20, command=paste_data)
@@ -2316,16 +2370,20 @@ redobutton = tk.Button(toolbar, image=redo_icon, width=20, height=20, command=re
 horizbutton = tk.Button(toolbar, image=horiz_icon, width=20, height=20, command=flip_horizontal)
 vertbutton = tk.Button(toolbar, image=vert_icon, width=20, height=20, command=flip_vertical)
 invbutton = tk.Button(toolbar, image=inv_icon, width=20, height=20, command=invert_pixels)
+dropperbutton = tk.Button(toolbar, image=dropper_icon, width=20, height=20, command=changemode_colorpicker)
+
 savebutton.grid(row=0, column=0)
 drawpxbutton.grid(row=0, column=1, padx=(20,0))
-cutbutton.grid(row=0, column=2,padx=(20,0))
-copybutton.grid(row=0, column=3)
-pastebutton.grid(row=0, column=4)
-undobutton.grid(row=0, column=5, padx=(20,0))
-redobutton.grid(row=0, column=6)
-horizbutton.grid(row=0, column=7, padx=(20,0))
-vertbutton.grid(row=0, column=8)
-invbutton.grid(row=0, column=9)
+dropperbutton.grid(row=0, column=2)
+cutbutton.grid(row=0, column=3,padx=(20,0))
+copybutton.grid(row=0, column=4)
+pastebutton.grid(row=0, column=5)
+undobutton.grid(row=0, column=6, padx=(20,0))
+redobutton.grid(row=0, column=7)
+horizbutton.grid(row=0, column=8, padx=(20,0))
+vertbutton.grid(row=0, column=9)
+invbutton.grid(row=0, column=10)
+
 toolbar.grid(row=0)
 
 app.config(menu=menuBar) 
@@ -2403,6 +2461,28 @@ def keyboard_monitor(obj):
         elif obj.keysym == 's':
             save_normal()
             return 
+
+shiftheld = False
+
+def keydown_monitor(obj):
+    global shiftheld 
+    if shiftheld == False:
+        if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R':
+            shiftheld = True 
+            if interface_mode != 'COLORPICKER':
+                changemode_colorpicker(True)
+            # toggle to color picker mode by popping up px button
+            # and poping down dropper button
+            # rebind left AND right click 
+    return
+def keyup_monitor(obj):
+    if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R':
+        global shiftheld
+        shiftheld = False 
+        if interface_mode == 'DRAWPIXEL':
+            changemode_drawpixel(True)
+        
+    return
 
 # class undo_log(list):
 #     # how to use:
@@ -2546,6 +2626,81 @@ def shift_up():
         maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
     refresh_display(True) 
 
+
+grabbed_palno = -1
+target_palno = -1
+dragging_pal = False
+
+def grab_palette(obj):
+    global grabbed_palno
+    global dragging_pal
+    global target_palno
+    target_palno = -1
+    dragging_pal = False
+    x,y = app.winfo_pointerxy()
+    if app.winfo_containing(x, y) != None:
+        grabbed_palno = app.winfo_containing(x, y)
+        i = 0
+        while i < len(palette_display):
+            if palette_display[i] == grabbed_palno:
+                grabbed_palno = i
+                break
+            i += 1
+    
+pwin = None
+
+def drag_palette(obj):
+    global dragging_pal
+    global grabbed_palno
+    global palette_display
+    global pwin
+    
+    if grabbed_palno != -1 and type(grabbed_palno) == int:
+        if pwin == None:
+            pwin = tk.Tk()
+            pwin.overrideredirect(1)
+        else:
+            pwin.deiconify()
+        x,y = app.winfo_pointerxy()
+        pwin.geometry('%dx%d+%d+%d' % (30, 30, x+5, y+5))
+        pwin.configure(background=displayPalette[grabbed_palno])
+        dragging_pal = True
+
+if pwin:
+    pwin.mainloop()
+
+def swap_palette(obj):
+    global dragging_pal
+    global grabbed_palno
+    global target_palno
+    if dragging_pal == False:
+        return
+    x,y = app.winfo_pointerxy()
+    target_palno = app.winfo_containing(x, y)
+    if pwin:
+        pwin.withdraw()
+    if dragging_pal == True:
+        i = 0
+        while i < len(palette_display):
+            if palette_display[i] == target_palno:
+                target_palno = i
+                break
+            i += 1
+    if type(target_palno) != int:
+        return
+    buf = palette_display[target_palno].myVal
+    palette_display[target_palno].myVal = palette_display[grabbed_palno].myVal
+    palette_display[grabbed_palno].myVal = buf
+    palette_display[target_palno].clicked(0)
+    buf = intpal[target_palno]
+    intpal[target_palno] = intpal[grabbed_palno]
+    intpal[grabbed_palno] = buf
+    dragging_pal = False
+    grabbed_palno = -1
+    convert_int_pal_to_hex(intpal)
+    updatePaletteDisplay()
+    refresh_display(True)
+    
 
 def initialize_new(patternMode, loading=False):
     global intpal 
@@ -2799,7 +2954,12 @@ def initialize_new(patternMode, loading=False):
     palette_display[1].clicked(0)
 
     app.bind("<Key>", keyboard_monitor)
-    
+    app.bind("<KeyPress>", keydown_monitor, "+")
+    app.bind("<KeyRelease>", keyup_monitor, "+")
+    app.bind("<Button-1>", grab_palette)
+    app.bind("<B1-Motion>", drag_palette)
+    app.bind("<ButtonRelease-1>", swap_palette)
+
     return
 
 initialize_new(False)
