@@ -992,7 +992,6 @@ pastebutton.grid(row=0,column=5)
 undobutton.grid(row=0, column=6, padx=(20,0))
 redobutton.grid(row=0,column=7)
 
-
 toolbar.grid(row=0)
 app.config(menu=menuBar) 
 
