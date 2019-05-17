@@ -103,7 +103,14 @@ static char im_bits[] = {
 0x00, 0x70, 0x00, 0x78, 0x00, 0x7d, 0x00, 0x3f, 0x00, 0x1f, 0x80, 0x0c, 0x40, 0x1c, 0x20, 0x02, 0x10, 0x01, 0xf8, 0x00, 0x48, 0x00, 0x34, 0x00, 0x0c, 0x00, 0x04, 0x00, 0x04, 0x00, 0x0e, 0x00
 };
 """
-
+bucket_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xe0, 0x1f, 0x50, 0x20, 0xa8, 0x40, 0x54, 0x81, 0xac, 0x81, 0x54, 0x81, 0xac, 0x81, 0xf8, 0x40, 0x70, 0x20, 0xf0, 0x1f, 0x30, 0x00, 0x30, 0x00, 0x78, 0x00,
+0xfe, 0x01, 0xff, 0x13
+};
+"""
 ## GLOBALS - MUST BE REFD IN INIT DEF
 r0 = None 
 r1 = None 
@@ -171,6 +178,7 @@ vert_icon = tk.BitmapImage(data=vert_icon_data)
 save_icon = tk.BitmapImage(data=save_icon_data)
 inv_icon = tk.BitmapImage(data=inv_icon_data)
 dropper_icon = tk.BitmapImage(data=dropper_icon_data)
+fill_icon = tk.BitmapImage(data=bucket_icon_data)
 
 # First, convert the integer palette to hexadecimal palette.    
 def convert_int_pal_to_hex(integerPalette):
@@ -2460,7 +2468,7 @@ horizbutton = tk.Button(toolbar, image=horiz_icon, width=20, height=20, command=
 vertbutton = tk.Button(toolbar, image=vert_icon, width=20, height=20, command=flip_vertical)
 invbutton = tk.Button(toolbar, image=inv_icon, width=20, height=20, command=invert_pixels)
 dropperbutton = tk.Button(toolbar, image=dropper_icon, width=20, height=20, command=changemode_colorpicker)
-fillpxbutton = tk.Button(toolbar, image=dropper_icon, width=20, height=20, command=changemode_fillpixel)
+fillpxbutton = tk.Button(toolbar, image=fill_icon, width=20, height=20, command=changemode_fillpixel)
 
 savebutton.grid(row=0, column=0)
 drawpxbutton.grid(row=0, column=1, padx=(20,0))
