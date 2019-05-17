@@ -183,18 +183,15 @@ def convert_int_pal_to_hex(integerPalette):
             integerPalette[i] = '000'
         tempPalVals = []
         tempPalVals.append('#')
-        a = math.floor((int(integerPalette[i][:-2]) / 7) * 255)
-        tempPalVals.append(hex(a)[2:])
-        if a == 0:
-            tempPalVals.append('0')
-        a = math.floor((int(integerPalette[i][1:-1]) / 7) * 255)
-        tempPalVals.append(hex(a)[2:])
-        if a == 0:
-            tempPalVals.append('0')
-        a = math.floor((int(integerPalette[i][2:]) / 7) * 255)
-        tempPalVals.append(hex(a)[2:])
-        if a == 0:
-            tempPalVals.append('0')
+        tc = int(integerPalette[i][0])
+        a = int((float(tc)/7)*255)
+        tempPalVals.append(format(a, '02x'))
+        tc = int(integerPalette[i][1])
+        a = int((float(tc)/7)*255)
+        tempPalVals.append(format(int(a), '02x'))
+        tc = int(integerPalette[i][2])
+        a = int((float(tc)/7)*255)
+        tempPalVals.append(format(int(a), '02x'))
         displayPalette.append(tempPalVals)
         displayPalette[i] = ''.join(displayPalette[i])
         i += 1
