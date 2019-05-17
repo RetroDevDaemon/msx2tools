@@ -144,21 +144,29 @@ draw_scroll_x.grid(row=21, column=0, columnspan=20, sticky='ew')
 
 drawCanvas.config(xscrollcommand=draw_scroll_x.set, yscrollcommand=draw_scroll_y.set)
 
-def print_loc(o):
+lastpx = (-1,-1)
+
+def clicked_loc(o):
     global drawCanvas 
     global app_scale 
-    global zoom_scale 
+    global zoom_scale
+    global lastpx  
     scr_x = draw_scroll_x.get() 
     fscr = drawCanvas.cget('scrollregion')
     fscr = fscr.split(' ')
     xofs = scr_x[0] * float(fscr[2])  # should be 1:1 px left bounding
-    px = math.floor((xofs+o.x) / (app_scale*zoom_scale))
+    #print(round(scr_x[0],2))
+    scale = app_scale*zoom_scale
+    px = math.floor((xofs+o.x) / scale)
     scr_y = draw_scroll_y.get()
     yofs = scr_y[0] * float(fscr[3])
-    py = math.floor((yofs + o.y) / (app_scale*zoom_scale*y_ratio))
-    print(px, py)
+    py = math.floor((yofs + o.y) / (scale*y_ratio))
+    if (px,py) != lastpx:
+        lastpx = (px, py)
+        color_pixel(px, py)
 
-drawCanvas.bind("<Button-1>", print_loc)
+drawCanvas.bind("<Button-1>", clicked_loc)
+drawCanvas.bind("<B1-Motion>", clicked_loc)
 
 def toggle_scale(scale=0):
     #used in 'd' and 'drawCanvas'
@@ -216,6 +224,20 @@ scalebutton = tk.Button(win, text='Toggle scale', command=toggle_scale)
 scalebutton.grid(row=1, column=21, sticky='n')
 zoombutton = tk.Button(win, text='Toggle zoom', command=toggle_zoom)
 zoombutton.grid(row=2, column=21, sticky='n')
+
+selected_palette_no = 1
+hex_palette = ['#000', '#fff']
+
+def color_pixel(x, y):
+    global screen_data
+    global screen_pixels 
+    global graphics_mode_width
+    global selected_palette_no
+    global hex_palette
+    tp = (y*graphics_mode_width) + x
+    screen_data[tp] = selected_palette_no 
+    drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
+    return
 
 init_screen_data(mode='G7', expanded=False)
 init_screen_pixels()
