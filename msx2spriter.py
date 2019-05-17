@@ -215,21 +215,20 @@ app.bind("<ButtonRelease-1>", stop_draw)
 
 # Converts a 3-bit RGB string value (e.g. 111) to html hex (e.g. #242424)
 def single_intcol_to_hex(col):
-    #global currentColor
     if col[:-2] == 'tra':
         return '#000000'
-    a = math.floor((int(col[:-2]) / 7) * 255)
-    b = hex(a)[2:]
-    if b == '0':
-        b = '00'
-    c = math.floor((int(col[1:-1]) / 7) * 255)
-    d = hex(c)[2:]
-    if d == '0':
-        d = '00'
-    e = math.floor((int(col[2:]) / 7) * 255)
-    f = hex(e)[2:]
-    if f == '0':
-        f = '00'
+    a = int(col[0])
+    a = float(a)/7
+    a = a*255
+    b = format(int(a), '02x')
+    c = int(col[1])
+    c = float(c)/7
+    c = c*255
+    d = format(int(c), '02x')
+    e = int(col[2])
+    e = float(e)/7
+    e = e*255
+    f = format(int(e), '02x')
     ret = '#'
     ret += b 
     ret += d 
