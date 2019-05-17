@@ -327,6 +327,7 @@ def erase_tile(obj):
         add_undo_point()
         button_not_released = True 
     screentiles[(oyt*32)+xt] = 0
+    tab_ofs = tab*256
     if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height():
         #and selected_tile_data[tab] != None:
         if screentiles[(oyt*32)+xt] == tile_data[(tab*256)+0] and last_tile_erased > -1:
@@ -335,7 +336,7 @@ def erase_tile(obj):
         while xp < 8:
             yp = 0
             while yp < 8:
-                paint = convertIntColorToHex(integerPalette[tile_data[(tab*256)+0][(yp*8)+xp]])
+                paint = convertIntColorToHex(integerPalette[tile_data[tab_ofs][(yp*8)+xp]])
                 screenCanvas.itemconfig(screenpixels[(tab*32*64*8)+(yt*32*64)+(xt*64)+(yp*8)+xp], fill=paint)
                 yp += 1
             xp += 1
@@ -424,16 +425,18 @@ def InitTilePalettes():
         # align
         tilePalettes[i].grid(row=4+(i*3), column=16)
         # then draw grid
+        scale = tileSize*iconScale
         x = 0
         while x < 32:
-            tile_pal_grid[i].append(tilePalettes[i].create_line(x*(tileSize*iconScale), 0, x*(tileSize*iconScale), (iconScale*tileSize*8), fill='grey'))
+            tile_pal_grid[i].append(tilePalettes[i].create_line(x*scale, 0, x*scale, scale*8, fill='grey'))
             x += 1
         y = 0 
         while y < 24:
-            tile_pal_grid[i].append(tilePalettes[i].create_line(0, y*(tileSize*iconScale), (tileSize*iconScale*32), y*(tileSize*iconScale), fill='grey'))
+            tile_pal_grid[i].append(tilePalettes[i].create_line(0, y*scale, scale*32, y*scale, fill='grey'))
             y += 1
         i += 1
     # and bind clicks
+    scale8 = iconScale*8
     i = 0
     while i < 3:
         # and populate it with 32x8x64 pixels
@@ -445,10 +448,10 @@ def InitTilePalettes():
                 while xp < 8:
                     yp = 0
                     while yp < 8: # assign to tilepixels
-                        tilepixels[i][(yt*32*64)+(xt*64)+(yp*8)+xp] = tilePalettes[i].create_rectangle( (xp*iconScale)+(xt*8*iconScale),\
-                             ((yp*iconScale)+(iconScale*8*yt),\
-                             ((xp*iconScale)+(xt*8*iconScale))+iconScale,\
-                             ((yp*iconScale)+(iconScale*8*yt))+iconScale), outline='')
+                        tilepixels[i][(yt*32*64)+(xt*64)+(yp*8)+xp] = tilePalettes[i].create_rectangle( (xp*iconScale)+(xt*scale8),\
+                             ((yp*iconScale)+(scale8*yt),\
+                             ((xp*iconScale)+(xt*scale8))+iconScale,\
+                             ((yp*iconScale)+(scale8*yt))+iconScale), outline='')
                         yp += 1
                     xp += 1
                 yt += 1
@@ -479,16 +482,17 @@ def InitScreenWindow():
     # set pos 
     screenCanvas.grid(row=3, column=3, rowspan=10, columnspan=10)
     # and draw 32x24 grid
+    scale = screenScale * tileSize
     x = 0
     while x < 32:
-        screen_grid.append(screenCanvas.create_line(x*(screenScale*tileSize), 0, x*(screenScale*tileSize), (tileSize*screenScale*24), fill='grey'))
+        screen_grid.append(screenCanvas.create_line(x*scale, 0, x*scale, (scale*24), fill='grey'))
         x += 1
     y = 0
     while y < 24:
         if y % 8 == 0:
-            screen_grid.append(screenCanvas.create_line(0, y*(screenScale*tileSize), (tileSize*screenScale*32), y*(screenScale*tileSize), fill='grey', width=2))    
+            screen_grid.append(screenCanvas.create_line(0, y*(scale), (scale*32), y*(scale), fill='grey', width=2))    
         else:
-            screen_grid.append(screenCanvas.create_line(0, y*(screenScale*tileSize), (tileSize*screenScale*32), y*(screenScale*tileSize), fill='grey'))
+            screen_grid.append(screenCanvas.create_line(0, y*(scale), (scale*32), y*(scale), fill='grey'))
         y += 1
     # then populate it with 3x32x8x(8x8) pixels
     i = 0
@@ -502,9 +506,9 @@ def InitScreenWindow():
                     yp = 0
                     while yp < 8: #assign to screenpixels
                         screenpixels[(i*256*64)+(yt*32*64)+(xt*64)+(yp*8)+xp] = screenCanvas.create_rectangle( (xp*screenScale)+(xt*8*screenScale),\
-                             ((yp*screenScale)+(screenScale*8*yt)+(i*screenScale*8*8),\
+                             ((yp*screenScale)+(screenScale*8*yt)+(i*screenScale*64),\
                              ((xp*screenScale)+(xt*8*screenScale))+screenScale,\
-                             ((yp*screenScale)+(screenScale*8*yt))+(i*screenScale*8*8)+screenScale), outline='')
+                             ((yp*screenScale)+(screenScale*8*yt))+(i*screenScale*64)+screenScale), outline='')
                         yp += 1
                     xp += 1
                 yt += 1

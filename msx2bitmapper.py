@@ -9,7 +9,7 @@ graphics_mode_192 = 192
 graphics_mode_212 = 212
 graphics_mode_height = graphics_mode_192
 app_scale = 1
-zoom_scale = 1
+zoom_scale = 8
 screen_data = []
 screen_pixels = []
 x_ratio = (4/3)
@@ -44,6 +44,53 @@ def init_screen_data(mode='G4', expanded=False):
         i += 1
     #init_screen_pixels()
 
+grid_lines=[]
+
+def init_canvas_grid():
+    global drawCanvas 
+    global app_scale 
+    global zoom_scale 
+    global grid_lines
+    w = (app_scale*zoom_scale)
+    h = (app_scale*zoom_scale)*y_ratio 
+    y2 = (app_scale*zoom_scale*graphics_mode_height)*y_ratio
+    l = graphics_mode_width
+    i = 0
+    while i < l:
+        p = drawCanvas.create_line(i*w, 0, i*w, y2, fill='grey')
+        grid_lines.append(p)
+        i += 1
+    l = graphics_mode_height 
+    x2 = (app_scale*zoom_scale*graphics_mode_width)
+    i = 0
+    while i < l:
+        p = drawCanvas.create_line(0, i*h, x2, i*h, fill='grey')
+        grid_lines.append(p)
+        i += 1
+    return
+
+def update_canvas_grid():
+    global drawCanvas 
+    global app_scale 
+    global zoom_scale 
+    global grid_lines 
+    w = (app_scale*zoom_scale)
+    h = (app_scale*zoom_scale)*y_ratio
+    y2 = (app_scale*zoom_scale*graphics_mode_height)*y_ratio
+    l = graphics_mode_width 
+    i = 0
+    while i < l:
+        drawCanvas.coords(grid_lines[i], i*w, 0, i*w, y2)
+        i += 1
+    #i = 0
+    l = graphics_mode_height 
+    x2 = (app_scale*zoom_scale*graphics_mode_width)
+    i = 0
+    while i < l:
+        drawCanvas.coords(grid_lines[i+graphics_mode_width], 0, i*h, x2, i*h)
+        i += 1
+    return
+
 def init_screen_pixels():
     global screen_pixels
     global drawCanvas
@@ -54,18 +101,19 @@ def init_screen_pixels():
     drawCanvas.delete("all")
     l = len(screen_data)
     i = 0
+    w = (app_scale*zoom_scale)
+    h = (app_scale*zoom_scale)*y_ratio
     while i < l:
-        w = (app_scale*zoom_scale)
-        h = (app_scale*zoom_scale)*y_ratio
         # draw every pixel to the canvas, and append its reference to the array.
         xp = i % graphics_mode_width
         xp = xp * app_scale * zoom_scale
         yp = math.floor(i/graphics_mode_width)
         yp = yp * app_scale * zoom_scale * y_ratio
         # x pos is (l % graphics_mode_width)*
-        p = drawCanvas.create_rectangle(xp, yp, xp+w, yp+h, outline='#222')
+        p = drawCanvas.create_rectangle(xp, yp, xp+w, yp+h, outline='')
         screen_pixels.append(p)
         i += 1
+    init_canvas_grid()
 
 # define TK
 app = tk.Tk()
@@ -86,8 +134,8 @@ d.grid(rowspan=20, columnspan=20)
 drawCanvas = tk.Canvas(d, width=256*app_scale, height=graphics_mode_height*app_scale*y_ratio, background='black', scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
 drawCanvas.grid(row=0, column=0, rowspan=20, columnspan=20)
 d.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale)
-drawCanvas.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale*y_ratio, scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
-app.geometry('{}x{}'.format(int(graphics_mode_width*app_scale+(80*app_scale)), int(graphics_mode_height*app_scale*y_ratio+(40*app_scale))))        
+#drawCanvas.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale*y_ratio, scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
+#app.geometry('{}x{}'.format(int(graphics_mode_width*app_scale+(80*app_scale)), int(graphics_mode_height*app_scale*y_ratio+(40*app_scale))))        
 
 draw_scroll_y = tk.Scrollbar(d, orient=tk.VERTICAL, command=drawCanvas.yview)
 draw_scroll_y.grid(row=0, rowspan=20, column=21, sticky='ns')
@@ -128,6 +176,7 @@ def toggle_scale(scale=0):
     d.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale)
     drawCanvas.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale*y_ratio, scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
     zoom_screen_pixels()
+    #update_canvas_grid()
     app.geometry('{}x{}'.format(int(graphics_mode_width*app_scale+(80*app_scale)), int(graphics_mode_height*app_scale*y_ratio+(40*app_scale))))
 
 def zoom_screen_pixels():
@@ -137,16 +186,17 @@ def zoom_screen_pixels():
     global zoom_scale 
     global screen_data
     l = len(screen_data)
+    w = (app_scale*zoom_scale)
+    h = (app_scale*zoom_scale)*y_ratio
     i = 0
     while i < l:
-        w = (app_scale*zoom_scale)
-        h = (app_scale*zoom_scale)*y_ratio
         xp = i % graphics_mode_width
         xp = xp * app_scale * zoom_scale
         yp = math.floor(i/graphics_mode_width)
         yp = yp * app_scale * zoom_scale * y_ratio
         drawCanvas.coords(screen_pixels[i], xp, yp, xp+w, yp+h)
         i += 1
+    update_canvas_grid()
 
 def toggle_zoom():
     global zoom_scale
@@ -167,9 +217,9 @@ scalebutton.grid(row=1, column=21, sticky='n')
 zoombutton = tk.Button(win, text='Toggle zoom', command=toggle_zoom)
 zoombutton.grid(row=2, column=21, sticky='n')
 
-init_screen_data(mode='G6', expanded=True)
+init_screen_data(mode='G7', expanded=False)
 init_screen_pixels()
-toggle_scale(2)
+toggle_scale(1)
 
 # run the app
 app.mainloop()

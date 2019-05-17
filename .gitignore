@@ -9,3 +9,4 @@ dist/
 inverter.py
 hexinverter.py
 .gitignore
+jsonwork.py
