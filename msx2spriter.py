@@ -2289,7 +2289,7 @@ def import_palette():
     global filename
     #global spriteSize
     #spriteSize = 16
-    filename = tk.filedialog.askopenfilename(title='Load MSX2 sprite/pattern file', filetypes=( ('MSX2 Spriter file', '*.m2s;*.m2p'),('All files', '*.*') ))
+    filename = tk.filedialog.askopenfilename(title='Load MSX2 sprite/pattern file', filetypes=( ('MSX2 Spriter file', '*.m2s'),('MSX2 Spriter file', '*.m2p'),('All files', '*.*') ))
     if filename == '':
         return 
     if type(filename) == tuple:
