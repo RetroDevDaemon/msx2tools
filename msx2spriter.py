@@ -1737,6 +1737,7 @@ def changemode_colorpicker(temp=False):
         interface_mode = 'COLORPICKER'
     drawpxbutton.configure(relief=tk.RAISED)
     dropperbutton.configure(relief=tk.SUNKEN)
+    fillpxbutton.configure(relief=tk.RAISED)
     drawCanvas.bind("<Button-1>", pick_color)
     drawCanvas.unbind("<B1-Motion>")#, color_pixel)
     drawCanvas.unbind("<Button-3>")#, erase_pixel)
@@ -1745,12 +1746,27 @@ def changemode_colorpicker(temp=False):
     drawCanvas.unbind("<ButtonRelease-3>")#, set_undo_release)
     return
 
+def changemode_fillpixel(temp=False):
+    global interface_mode
+    if temp==False:
+        interface_mode = 'FILLPIXEL'
+    drawpxbutton.configure(relief=tk.RAISED)
+    dropperbutton.configure(relief=tk.RAISED)  
+    fillpxbutton.configure(relief=tk.SUNKEN)
+    drawCanvas.bind("<Button-1>", perform_fill)
+    drawCanvas.bind("<B1-Motion>")
+    drawCanvas.bind("<Button-3>")
+    drawCanvas.bind("<B3-Motion>")
+    drawCanvas.bind("<ButtonRelease-1>")
+    drawCanvas.bind("<ButtonRelease-3>")
+
 def changemode_drawpixel(temp=False):
     global interface_mode
     if temp==False:
         interface_mode = 'DRAWPIXEL'
     drawpxbutton.configure(relief=tk.SUNKEN)
     dropperbutton.configure(relief=tk.RAISED)   
+    fillpxbutton.configure(relief=tk.RAISED)
     drawCanvas.bind("<Button-1>", color_pixel)
     drawCanvas.bind("<B1-Motion>", color_pixel)
     drawCanvas.bind("<Button-3>", erase_pixel)
@@ -2116,6 +2132,79 @@ def flip_vertical():
 
     refresh_display(True)
 
+def perform_fill(ob):
+    global last_color_used
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    x_px = math.floor(ob.x/pixelSize) 
+    y_px = math.floor(ob.y/pixelSize)
+
+    index = y_px*spriteSize+x_px
+
+    add_undo_point()
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+
+        if icon_selected == 0:
+            maskdata_ofs = 0+page_ofs+mask_ofs
+        elif icon_selected == 1:
+            maskdata_ofs = 2+page_ofs+mask_ofs
+        elif icon_selected == 2:
+            maskdata_ofs = 4+page_ofs+mask_ofs
+        elif icon_selected == 3:
+            maskdata_ofs = 6+page_ofs+mask_ofs
+
+        dataToFill = maskdata[maskdata_ofs].copy()
+        flood_fill(dataToFill, index, dataToFill[index], last_color_used)
+        maskdata[maskdata_ofs] = dataToFill.copy()
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        dataToFill = patterndata[icon_selected].copy()
+        flood_fill(dataToFill, index, dataToFill[index], last_color_used)
+        patterndata[icon_selected] = dataToFill.copy()
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
+
+def flood_fill(array, index, targetColor, replacementColor): 
+    if targetColor == replacementColor:
+        return
+
+    if index > len(array) - 1:
+        return
+
+    if array[index] != targetColor:
+        return
+
+    array[index] = replacementColor
+
+    north = index - spriteSize
+    south = index + spriteSize
+    east = index - 1
+    west = index + 1
+
+    if north > 0:
+        flood_fill(array, north, targetColor, replacementColor)
+    
+    if south < spriteSize * spriteSize:
+        flood_fill(array, south, targetColor, replacementColor)
+
+    if east / spriteSize >= 0:
+        flood_fill(array, east, targetColor, replacementColor)
+
+    if west % spriteSize <= spriteSize:
+        flood_fill(array, west, targetColor, replacementColor)
+
 def redo_last():
     global redo_history
     global maskdata 
@@ -2371,18 +2460,20 @@ horizbutton = tk.Button(toolbar, image=horiz_icon, width=20, height=20, command=
 vertbutton = tk.Button(toolbar, image=vert_icon, width=20, height=20, command=flip_vertical)
 invbutton = tk.Button(toolbar, image=inv_icon, width=20, height=20, command=invert_pixels)
 dropperbutton = tk.Button(toolbar, image=dropper_icon, width=20, height=20, command=changemode_colorpicker)
+fillpxbutton = tk.Button(toolbar, image=dropper_icon, width=20, height=20, command=changemode_fillpixel)
 
 savebutton.grid(row=0, column=0)
 drawpxbutton.grid(row=0, column=1, padx=(20,0))
 dropperbutton.grid(row=0, column=2)
-cutbutton.grid(row=0, column=3,padx=(20,0))
-copybutton.grid(row=0, column=4)
-pastebutton.grid(row=0, column=5)
-undobutton.grid(row=0, column=6, padx=(20,0))
-redobutton.grid(row=0, column=7)
-horizbutton.grid(row=0, column=8, padx=(20,0))
-vertbutton.grid(row=0, column=9)
-invbutton.grid(row=0, column=10)
+fillpxbutton.grid(row=0, column=3)
+cutbutton.grid(row=0, column=4,padx=(20,0))
+copybutton.grid(row=0, column=5)
+pastebutton.grid(row=0, column=6)
+undobutton.grid(row=0, column=7, padx=(20,0))
+redobutton.grid(row=0, column=8)
+horizbutton.grid(row=0, column=9, padx=(20,0))
+vertbutton.grid(row=0, column=10)
+invbutton.grid(row=0, column=11)
 
 toolbar.grid(row=0)
 
