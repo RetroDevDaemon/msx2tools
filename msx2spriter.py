@@ -200,11 +200,6 @@ def convert_int_pal_to_hex(integerPalette):
         i += 1
  #
 
-# To convert HTML color back to 3-bit RGB values
-def convert_hex_pal_to_binary():
-    return 0
-
-
 # some globals
 numSel = 0
 currentColor = '000'
@@ -428,14 +423,15 @@ def add_labels_andpalmod():
 def repaint_row(row):
     global currentColor
     i = 0
+    r = row * spriteSize
     while i < spriteSize:
         # TODO update 'grey' to transparent variable
         if mask.get() == 1:
-            if pixels_mask1[(row*spriteSize)+i] != 0: 
-                pixels_mask1[(row*spriteSize)+i] = currentPalNo
+            if pixels_mask1[r+i] != 0: 
+                pixels_mask1[r+i] = currentPalNo
         if mask.get() == 2:
-            if pixels_mask2[(row*spriteSize)+i] != 0:
-                pixels_mask2[(row*spriteSize)+i] = currentPalNo    
+            if pixels_mask2[r+i] != 0:
+                pixels_mask2[r+i] = currentPalNo    
         i += 1
 
 last_mask = -1
@@ -449,26 +445,28 @@ def color_pixel(ob):
     global last_color_used
     global last_mask
     global button_not_released
-    if (last_pixel_colored == ((y_px*spriteSize)+x_px)) and (last_color_used == currentPalNo) and (last_mask == mask.get()):
+    size = spriteSize*pixelSize
+    ysize = y_px * spriteSize
+    if (last_pixel_colored == (ysize+x_px)) and (last_color_used == currentPalNo) and (last_mask == mask.get()):
         return 
-    if (ob.x < 0) or (ob.x >= (spriteSize*pixelSize)) or (ob.y < 0) or (ob.y >= (spriteSize*pixelSize)):
+    if (ob.x < 0) or (ob.x >= size) or (ob.y < 0) or (ob.y >= size):
         return
-    last_pixel_colored = (y_px*spriteSize) + x_px 
+    last_pixel_colored = ysize + x_px 
     if button_not_released == False: 
         add_undo_point(icon_selected)
         button_not_released = True 
     if patternMode == False:
         if mask.get() == 1:
-            pixels_mask1[(y_px*spriteSize)+x_px] = currentPalNo
+            pixels_mask1[ysize+x_px] = currentPalNo
         if mask.get() == 2:
-            pixels_mask2[(y_px*spriteSize)+x_px] = currentPalNo
+            pixels_mask2[ysize+x_px] = currentPalNo
         if numSel != 0:# and currentColor != intpal[0]:#if numSel != 0:#if currentColor != 'trans':
             repaint_row(y_px)
         maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
         maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
     else:
-        prevcol = pixels_mask1[(y_px*spriteSize)+x_px]
-        pixels_mask1[(y_px*spriteSize)+x_px] = currentPalNo 
+        prevcol = pixels_mask1[ysize+x_px]
+        pixels_mask1[ysize+x_px] = currentPalNo 
         patterndata[icon_selected] = pixels_mask1.copy()
         repaint_pattern_row(y_px, prevcol)
         #a = 0
@@ -489,14 +487,15 @@ def get_palno_from_rgb(rgb):
     return None
 
 def repaint_pattern_row(yrow, prevcol):
-    color1 = patterndata[icon_selected][(yrow*8)]
+    row8 = yrow*8
+    color1 = patterndata[icon_selected][row8]
     color2 = None
     activecolor = currentPalNo#get_palno_from_rgb(currentColor) #single_intcol_to_hex(currentColor)
 
     threeflag = False 
     i = 0
     while i < 8:
-        thispx = patterndata[icon_selected][(yrow*8)+i]
+        thispx = patterndata[icon_selected][row8+i]
         if color2 == None:
             if thispx != color1:
                 color2 = thispx 
@@ -507,11 +506,11 @@ def repaint_pattern_row(yrow, prevcol):
         # now search the row for every instance of prevcol and overwrite it with activecolor by changing patterndata[icon_selected].
         i = 0
         while i < 8:
-            if patterndata[icon_selected][(yrow*8)+i] == prevcol:# and activecolor != None:
+            if patterndata[icon_selected][row8+i] == prevcol:# and activecolor != None:
                 if activecolor == None:
                     activecolor = 0
-                pixels_mask1[(yrow*8)+i] = activecolor
-                patterndata[icon_selected][(yrow*8)+i] = activecolor
+                pixels_mask1[row8+i] = activecolor
+                patterndata[icon_selected][row8+i] = activecolor
             i += 1
     
 def erase_pixel(ob):
@@ -555,8 +554,9 @@ def update_orlayer(px = -1):
     else:
         i = 0
         y = math.floor(px/spriteSize)
+        ysize = y*spriteSize
         while i < (spriteSize):
-            tpx = (y*spriteSize)+i
+            tpx = ysize+i
             if orpixels[tpx] != 0 and pixels_mask2[tpx] != 0:
                 orpixels[tpx] = orpixels[tpx] | pixels_mask2[tpx] 
             elif orpixels[tpx] == 0 and pixels_mask2[tpx] != 0:
@@ -591,8 +591,9 @@ def update_layermask_2(px = -1):
     else:
         i = 0
         y = math.floor(px/spriteSize)
+        ysize = y*spriteSize
         while i < spriteSize:
-            tpx = (y*spriteSize)+i
+            tpx = ysize+i
             topaint = single_intcol_to_hex(intpal[0])#'grey'
             cur_px = pixels_mask2[tpx]
             stip = 'gray75'
@@ -611,13 +612,14 @@ def update_layermask_1(px = -1):
     global palette_display
     if px == -1:
         while i < (spriteSize * spriteSize):
-            topaint = single_intcol_to_hex(intpal[0])#'grey'
             cur_px = pixels_mask1[i]
             stip = 'gray75'
             if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
                 stip = ''
                 intval = palette_display[cur_px].myVal
                 topaint = single_intcol_to_hex(intval)
+            else:
+                topaint = single_intcol_to_hex(intpal[0])#'grey'
             if patternMode == True:
                 stip = ''
             drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
@@ -625,15 +627,17 @@ def update_layermask_1(px = -1):
     else:
         i = 0
         y = math.floor(px/spriteSize)
+        ysize = y*spriteSize
         while i < spriteSize:
-            tpx = (y*spriteSize)+i
-            topaint = single_intcol_to_hex(intpal[0])#'grey'
+            tpx = ysize+i
             cur_px = pixels_mask1[tpx]
             stip = 'gray75'
             if cur_px != 0:
                 stip = ''
                 intval = palette_display[cur_px].myVal
                 topaint = single_intcol_to_hex(intval)
+            else:
+                topaint = single_intcol_to_hex(intpal[0])#'grey'
             if patternMode == True:
                 stip = ''
             drawCanvas.itemconfig(pixels[tpx], fill=topaint, stipple=stip)
@@ -923,13 +927,14 @@ def update_icon_window(win_no=None):
             elif orpixels[i] == 0 and or2pixels[i] != 0:
                 orpixels[i] = or2pixels[i] 
             #topaint = 'grey'
-            topaint = single_intcol_to_hex(intpal[0])
             cur_px = orpixels[i]
             stip = 'gray25'
             if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans':
                 intval = palette_display[cur_px].myVal
                 topaint = single_intcol_to_hex(intval)
                 stip = ''
+            else:
+                topaint = single_intcol_to_hex(intpal[0])
             if win_no == 0:
                 iconCanvas.itemconfig(smallpixels1[i], fill=topaint, stipple=stip)
             elif win_no == 1:
