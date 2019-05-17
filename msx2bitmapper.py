@@ -12,7 +12,7 @@ graphics_mode_192 = 192
 graphics_mode_212 = 212
 graphics_mode_height = graphics_mode_192
 app_scale = 1
-zoom_scale = 8
+zoom_scale = 1
 screen_data = []
 screen_pixels = []
 y_ratio = (3/4)
@@ -111,11 +111,124 @@ def update_canvas_grid():
         i += 1
     return
 
-palette_selectors = []
+# define base window dimensions
+#app.config(background='black')
 
-def populate_palette():
+win = tk.Frame(master=app)
+win.grid(row=0, column=0)
 
-    return
+class drawFrame(tk.Frame):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+
+d = drawFrame(win, padx=20, pady=20, width=256*app_scale, height=graphics_mode_height*app_scale*y_ratio)#, background='black')
+d.grid(row = 1, column=1, rowspan=20, columnspan=20)
+drawCanvas = tk.Canvas(d, width=256*app_scale, height=graphics_mode_height*app_scale*y_ratio, background='black', scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
+drawCanvas.grid(row=1, column=1, rowspan=20, columnspan=20)
+d.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale)
+
+draw_scroll_y = tk.Scrollbar(d, orient=tk.VERTICAL, command=drawCanvas.yview)
+draw_scroll_y.grid(row=1, rowspan=20, column=21, sticky='ns')
+draw_scroll_x = tk.Scrollbar(d, orient=tk.HORIZONTAL, command=drawCanvas.xview)
+draw_scroll_x.grid(row=21, column=1, columnspan=20, sticky='ew')
+
+drawCanvas.config(xscrollcommand=draw_scroll_x.set, yscrollcommand=draw_scroll_y.set)
+
+
+def unclick_all():
+    b = 0
+    while b < len(palette_display):
+        palette_display[b].unclicked()
+        b += 1
+ #
+#def set_text(obj, text):
+##    obj.delete(0,tk.END)
+#    obj.insert(0,text)
+#    return
+# Button size
+scale = 15*app_scale
+
+palette_display = []
+
+class PaletteButton(tk.Canvas):
+    def __init__(self, *args, **kwargs):
+        tk.Canvas.__init__(self, *args, **kwargs)
+        self.lbl = 0
+        self.lbl2 = 0
+        self.swapping = False
+        self.selector=[]
+        self.bind("<Enter>", self.on_enter)
+        self.bind("<Leave>", self.on_leave)
+        self.bind("<Button-1>", self.clicked)
+
+    def on_enter(self, event):
+        self.delete(self.lbl)
+        self.delete(self.lbl2)
+        #self.lbl2 = self.create_text(17, 17, text=self.myVal, fill='white')
+        #self.lbl = self.create_text(16, 16, text=self.myVal)
+            
+    def on_leave(self, enter):
+        self.delete(self.lbl)
+        self.delete(self.lbl2)
+    
+    def setVal(self, num):
+        self.myVal = num
+
+    def unclicked(self):
+        b = 0
+        while b < len(self.selector):
+            self.delete(self.selector[b])
+            b += 1
+
+    def clicked(self, event):
+        #global mbuttonup
+        #mbuttonup = False 
+        unclick_all()
+        self.selector.append(self.create_line(2, 2, scale, 2, width=3, fill='yellow'))
+        self.selector.append(self.create_line(2, 2, 2, scale, width=3, fill='yellow'))
+        self.selector.append(self.create_line(5, scale, scale, scale, width=3, fill='yellow'))
+        self.selector.append(self.create_line(scale, 5, scale, scale, width=3, fill='yellow'))
+        i = 0
+        global selected_palette_no
+        while i < len(palette_display):
+            if palette_display[i] == self:
+                selected_palette_no = i
+                break
+            i += 1
+        
+         #
+ #
+
+selected_palette_no = 15
+hex_palette = [ '#000', '#000', '#2C2', '#7F7',
+ '#22F', '#46F', '#B22', '#4CF',
+ '#F22', '#F66', '#CC2', '#CC9',
+ '#292', '#C4B', '#BBB', '#FFF' ]
+
+
+def add_palette_display():
+    global palette_display
+    global scale 
+    palette_display = []
+    i = 0
+    while i < 16:
+        palette_display.append(PaletteButton(win, width=scale, height=scale, background=hex_palette[i]))
+        palette_display[i].grid(row=i + 1, column=32, sticky='ne')
+        #palette_display[i].setVal(intpal[i])
+        i += 1
+
+def rescale_palette():
+    global palette_display
+    global scale
+    global win 
+    global selected_palette_no
+    scale = int(12*app_scale)
+    i = 0
+    while i < len(palette_display):
+        palette_display[i].config(width=scale, height=scale)
+        i += 1
+    #print(selected_palette_no)
+    palette_display[selected_palette_no].clicked(0)
 
 def init_screen_pixels():
     global screen_pixels
@@ -142,28 +255,6 @@ def init_screen_pixels():
     init_canvas_grid()
 
 
-# define base window dimensions
-#app.config(background='black')
-
-win = tk.Frame(master=app)
-win.grid(row=0, column=0)
-
-class drawFrame(tk.Frame):
-    def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
-
-d = drawFrame(win, padx=20, pady=20, width=256*app_scale, height=graphics_mode_height*app_scale*y_ratio)#, background='black')
-d.grid(row = 1, column=1, rowspan=20, columnspan=20)
-drawCanvas = tk.Canvas(d, width=256*app_scale, height=graphics_mode_height*app_scale*y_ratio, background='black', scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
-drawCanvas.grid(row=1, column=1, rowspan=20, columnspan=20)
-d.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale)
-
-draw_scroll_y = tk.Scrollbar(d, orient=tk.VERTICAL, command=drawCanvas.yview)
-draw_scroll_y.grid(row=1, rowspan=20, column=21, sticky='ns')
-draw_scroll_x = tk.Scrollbar(d, orient=tk.HORIZONTAL, command=drawCanvas.xview)
-draw_scroll_x.grid(row=21, column=1, columnspan=20, sticky='ew')
-
-drawCanvas.config(xscrollcommand=draw_scroll_x.set, yscrollcommand=draw_scroll_y.set)
 
 lastpx = (-1,-1)
 
@@ -188,7 +279,7 @@ def clicked_loc(o):
 drawCanvas.bind("<Button-1>", clicked_loc)
 drawCanvas.bind("<B1-Motion>", clicked_loc)
 
-max_scale = False
+max_scale = True
 
 def toggle_scale(scale=0):
     #used in 'd' and 'drawCanvas'
@@ -197,24 +288,26 @@ def toggle_scale(scale=0):
     #print(sx)
     global max_scale
     global app_scale 
+    tscale = app_scale+1
     if max_scale == True:
         app_scale = 1
+        tscale = 1
         max_scale = False 
-        drawCanvas.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale*y_ratio, scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
-        zoom_screen_pixels()
-        app.geometry('{}x{}'.format(int((graphics_mode_width*app_scale)+(150*app_scale)), int((graphics_mode_height*app_scale*y_ratio)+(150*app_scale))))
-        return
-
-    tscale = app_scale+1
-    if (graphics_mode_height*tscale*y_ratio)+(150*tscale) > sy:
-        app_scale = sy/((graphics_mode_height*y_ratio)+150)
+        #return
+    if (graphics_mode_height*tscale*y_ratio)+(80*tscale) > sy:
+        #print('broke y')
+        app_scale = sy/((graphics_mode_height*y_ratio)+80)
         max_scale = True
-    elif (graphics_mode_width*tscale)+(150*tscale) > sx:
-        app_scale = sx/((graphics_mode_width)+150)
+    elif (graphics_mode_width*tscale)+(200*tscale) > sx:
+        #print('broke x')
+        app_scale = sx/((graphics_mode_width)+200)
         max_scale = True
+    else:
+        app_scale = tscale
     drawCanvas.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale*y_ratio, scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
     zoom_screen_pixels()
-    app.geometry('{}x{}'.format(int((graphics_mode_width*app_scale)+(150*app_scale)), int((graphics_mode_height*app_scale*y_ratio)+(150*app_scale))))
+    rescale_palette()
+    app.geometry('{}x{}'.format(int((graphics_mode_width*app_scale)+(200)), int((graphics_mode_height*app_scale*y_ratio)+(80*app_scale))))
 
 def zoom_screen_pixels():
     global screen_pixels
@@ -247,15 +340,6 @@ def toggle_zoom():
         zoom_scale = 1
     drawCanvas.config(scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
     zoom_screen_pixels()
-    
-
-scalebutton = tk.Button(win, text='Toggle scale', command=toggle_scale)
-scalebutton.grid(row=1, column=21, sticky='n')
-zoombutton = tk.Button(win, text='Toggle zoom', command=toggle_zoom)
-zoombutton.grid(row=2, column=21, sticky='n')
-
-selected_palette_no = 1
-hex_palette = ['#000', '#fff']
 
 def color_pixel(x, y):
     global screen_data
@@ -272,6 +356,12 @@ def draw_mode():
 def client_exit():
     sys.exit()
 
+    
+
+scalebutton = tk.Button(win, text='W', command=toggle_scale)
+#scalebutton.grid(row=1, column=21, sticky='n')
+zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
+#zoombutton.grid(row=2, column=21, sticky='n')
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_separator()
@@ -284,9 +374,12 @@ menuBar.add_cascade(label="File", menu=fileMenu)
 app.config(menu=menuBar) 
 
 
-init_screen_data(mode='G6', expanded=True)
+init_screen_data(mode='G7', expanded=True)
 init_screen_pixels()
-toggle_scale(2)
-
+add_palette_display()
+toggle_scale(1)
+palette_display[15].clicked(0)
 # run the app
+app.resizable(False, False)
+app.protocol("WM_DELETE_WINDOW", client_exit)
 app.mainloop()
