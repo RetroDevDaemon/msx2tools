@@ -112,6 +112,7 @@ def init_canvas_grid():
     global app_scale 
     global zoom_scale 
     global grid_lines
+    grid_lines=[]
     w = (app_scale*zoom_scale)
     h = (app_scale*zoom_scale)*y_ratio 
     y2 = (app_scale*zoom_scale*graphics_mode_height)*y_ratio
@@ -193,12 +194,7 @@ def unclick_all():
     while b < len(palette_display):
         palette_display[b].unclicked()
         b += 1
- #
-#def set_text(obj, text):
-##    obj.delete(0,tk.END)
-#    obj.insert(0,text)
-#    return
-# Button size
+
 if graphic_mode == 'G4' or graphic_mode == 'G7':
     scale = 15*app_scale
 else:
@@ -349,20 +345,29 @@ scroll_orig = (0,0)
 
 def set_scroll_orig(o):
     global drawCanvas 
-    #global app_scale 
-    #global zoom_scale
-    #global lastpx  
-    #scr_x = draw_scroll_x.get() 
     fscr = drawCanvas.cget('scrollregion')
     fscr = fscr.split(' ')
-    #xofs = scr_x[0] * float(fscr[2])  # should be 1:1 px left bounding
-    #scr_y = draw_scroll_y.get()
-    #yofs = scr_y[0] * float(fscr[3])
     global scroll_orig
     scroll_orig = (o.x, o.y)
     return scroll_orig
 
 new_scrollbarpos = (0,0)
+
+class xypos(object):
+    def __init__(self, x, y):
+        self.x = x 
+        self.y = y 
+
+def set_drawwindow_pos(o):
+    global drawCanvas 
+    fscr = drawCanvas.cget('scrollregion')
+    fscr = fscr.split(' ')
+    scr_rt = o.x / float(fscr[2])
+    scr_rty = o.y / float(fscr[3])
+    drawCanvas.xview(tk.MOVETO, scr_rt)
+    drawCanvas.yview(tk.MOVETO, scr_rty)
+    # o.x and o.y contains new PIXEL offset.
+    #print(o.x, o.y) 
 
 def scroll_drawwindow(o):
     global scroll_orig
@@ -400,26 +405,7 @@ def scroll_drawwindow(o):
     scr_rty = yo / float(fscr[3])
     drawCanvas.xview(tk.MOVETO, scr_rt)
     drawCanvas.yview(tk.MOVETO, scr_rty)
-    #print('scrollbar left edge: ', scr_rt)
-    # lo = scr_rt 
-    # if zoom_scale == 4:
-    #     hi = lo + 0.25
-    # elif zoom_scale == 2:
-    #     hi = lo + 0.5
-    # elif zoom_scale == 8:
-    #     hi = lo + 0.125
-    # loy = scr_rty 
-    # if zoom_scale == 4:
-    #     hiy = loy + 0.25
-    # elif zoom_scale == 2:
-    #     hiy = loy + 0.5
-    # elif zoom_scale == 8:
-    #     hiy = loy + 0.125
-    # global new_scrollbarpos
-    # new_scrollbarpos = (lo, hi, loy, hiy)
-    
-    # #draw_scroll_x.set(lo,hi)
-    # #scroll_orig = set_scroll_orig(o)
+    scroll_orig = set_scroll_orig(o)
     return
 
 
@@ -463,6 +449,27 @@ def toggle_scale(scale=0):
     rescale_palette()
     app.geometry('{}x{}'.format(int((graphics_mode_width*app_scale)+(200)), int((graphics_mode_height*app_scale*y_ratio)+(ys*app_scale))))
 
+def get_newzoom_offset(plusminus):
+    global draw_scroll_x
+    global draw_scroll_y
+    global drawCanvas 
+    scr_x = draw_scroll_x.get()
+    scr_y = draw_scroll_y.get() 
+    fscr = drawCanvas.cget('scrollregion')
+    fscr = fscr.split(' ')
+    xofs = scr_x[0] * float(fscr[2])
+    yofs = scr_y[0] * float(fscr[3])
+    # xofs and yofs give us the x/y offset of the canvas after zoom. on a normal zoom,
+    # this is the top left corner (quarter) of the viewable window.
+    # we want to offset this by half of the current canvas w/ h.
+    if plusminus == '+':
+        xofs += drawCanvas.winfo_width()/2
+        yofs += drawCanvas.winfo_height()/2
+    else:
+        xofs -= drawCanvas.winfo_width()/2
+        yofs -= drawCanvas.winfo_height()/2
+    return xofs,yofs
+
 def zoom_screen_pixels():
     global screen_pixels
     global drawCanvas
@@ -481,6 +488,8 @@ def zoom_screen_pixels():
         drawCanvas.coords(screen_pixels[i], xp, yp, xp+w, yp+h)
         i += 1
     update_canvas_grid()
+   
+zoomplusminus = '+'
 
 def depress_zooms(z):
     global zoom1button
@@ -503,20 +512,37 @@ def zoom_1x():
     global zoom_scale
     depress_zooms(1)
     if zoom_scale != 1:
+        global zoomplusminus
+        zoomplusminus = '-'
         toggle_zoom(1)
 def zoom_2x():
     global zoom_scale
     depress_zooms(2)
+    global zoomplusminus
+    if zoom_scale > 2:
+        zoomplusminus = '-'
+    else:
+        zoomplusminus = '+'
     if zoom_scale != 2:
         toggle_zoom(2)
 def zoom_4x():
     global zoom_scale
     depress_zooms(4)
+    global zoomplusminus
+    if zoom_scale > 4:
+        zoomplusminus = '-'
+    else:
+        zoomplusminus = '+'
     if zoom_scale != 4:
         toggle_zoom(4)
 def zoom_8x():
     global zoom_scale
     depress_zooms(8)
+    global zoomplusminus
+    if zoom_scale > 8:
+        zoomplusminus = '-'
+    else:
+        zoomplusminus = '+'
     if zoom_scale != 8:
         toggle_zoom(8)
 def toggle_zoom(z=0):
@@ -534,6 +560,9 @@ def toggle_zoom(z=0):
         zoom_scale = z
     drawCanvas.config(scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
     zoom_screen_pixels()
+    global zoomplusminus
+    newx, newy = get_newzoom_offset(zoomplusminus)
+    set_drawwindow_pos(xypos(newx,newy))
 
 def color_pixel(x, y):
     global drawCanvas
@@ -552,61 +581,61 @@ def color_pixel(x, y):
 
 def draw_mode():
     return 
+
 def client_exit():
     sys.exit()
-
     
 def newg4():
     global app_scale
     init_screen_data(mode='G4', expanded=False)
+    #toggle_zoom(1)
     init_screen_pixels()
     toggle_scale(app_scale-1)
 def newg4e():
     global app_scale
     init_screen_data(mode='G4', expanded=True)
+    #toggle_zoom(1)
     init_screen_pixels()
     toggle_scale(app_scale-1)
-
 def newg5():
     global app_scale
     init_screen_data(mode='G5', expanded=False)
+    #toggle_zoom(1)
     init_screen_pixels()
     toggle_scale(app_scale-1)
-
 def newg5e():
     global app_scale
     init_screen_data(mode='G5', expanded=True)
+    #toggle_zoom(1)
     init_screen_pixels()
     toggle_scale(app_scale-1)
-
 def newg6():
     global app_scale
     init_screen_data(mode='G6', expanded=False)
+    #toggle_zoom(1)
     init_screen_pixels()
     toggle_scale(app_scale-1)
-
 def newg6e():
     global app_scale
     init_screen_data(mode='G6', expanded=True)
+    #toggle_zoom(1)
     init_screen_pixels()
     toggle_scale(app_scale-1)
-
 def newg7():
     global app_scale
     init_screen_data(mode='G7', expanded=False)
+    #toggle_zoom(1)
     init_screen_pixels()
     toggle_scale(app_scale-1)
-
 def newg7e():
     global app_scale
     init_screen_data(mode='G7', expanded=True)
+    #toggle_zoom(1)
     init_screen_pixels()
     toggle_scale(app_scale-1)
 
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
-#scalebutton.grid(row=1, column=21, sticky='n')
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
-#zoombutton.grid(row=2, column=21, sticky='n')
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label='New G4 bitmap (192)', command=newg4)
@@ -633,14 +662,11 @@ zoom4button.grid(row=0, column=5, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
 zoom8button.grid(row=0, column=6, sticky='w')
 
-
-
 toolbar.grid(row=0, columnspan=5)
 menuBar.add_cascade(label="File", menu=fileMenu)
 app.config(menu=menuBar) 
 
-
-init_screen_data(mode='G6', expanded=True)
+init_screen_data(mode='G4', expanded=False)
 init_screen_pixels()
 add_palette_display()
 toggle_scale(1)
