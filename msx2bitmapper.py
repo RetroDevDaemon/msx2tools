@@ -398,10 +398,10 @@ class PaletteButton(tk.Canvas):
  #
 
 selected_palette_no = 15
-hex_palette = [ '#000', '#222', '#4C4', '#6C8',
- '#66F', '#88F', '#A66', '#6CF',
- '#C66', '#F88', '#CC6', '#CC8',
- '#4A4', '#A6A', '#CCC', '#FFF' ]
+hex_palette = [ '#000', '#000', '#2C2', '#6F6',
+ '#22F', '#46F', '#A22', '#4CF',
+ '#F22', '#F66', '#CC2', '#CC8',
+ '#282', '#C4A', '#AAA', '#FFF' ]
  #0/2/4/6/8/A/C/F
 
 
