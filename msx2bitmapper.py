@@ -248,8 +248,10 @@ class palwin_popup(tk.Tk):
         global palette_display
         global graphic_mode
         if graphic_mode != 'G7':
-            find_and_replace(self.palnum, palette_display[self.palnum].myVal, self.colors[(y*16)+x])
-        palette_display[self.palnum].setVal(self.colors[(y*16)+x])
+            find_and_replace(self.palnum, palette_display[self.palnum].myVal, self.colors[(y*32)+x])
+            palette_display[self.palnum].setVal(self.colors[(y*32)+x])
+        else:
+            palette_display[self.palnum].setVal(self.colors[(y*16)+x])
         self.withdraw()
         
 
@@ -306,15 +308,15 @@ class palwin_popup(tk.Tk):
         self.myscale = app_scale * 8
         global graphic_mode 
         if graphic_mode == 'G7':
-            myw = 32
-        else: 
             myw = 16
+        else: 
+            myw = 32
         s = self.myscale
         j = 0
         while j < 16:
             i = 0
             while i < myw:
-                self.canvas.coords(self.coloricons[(j*16)+i], i*s, j*s, (i*s)+s, (j*s)+s)
+                self.canvas.coords(self.coloricons[(j*myw)+i], i*s, j*s, (i*s)+s, (j*s)+s)
                 i += 1
             j += 1
 
@@ -458,6 +460,7 @@ def init_screen_pixels():
     global screen_data
     if palwin:
         palwin.populate_colors()
+        palwin.withdraw()
     screen_pixels = []
     drawCanvas.delete("all")
     l = len(screen_data)
@@ -758,42 +761,52 @@ def newg4():
     global app_scale
     init_screen_data(mode='G4', expanded=False)
     init_screen_pixels()
-    toggle_scale(app_scale-1)
+    app_scale -= 1
+    toggle_scale()
 def newg4e():
     global app_scale
     init_screen_data(mode='G4', expanded=True)
     init_screen_pixels()
-    toggle_scale(app_scale-1)
+    app_scale -= 1
+    toggle_scale()
 def newg5():
     global app_scale
     init_screen_data(mode='G5', expanded=False)
     init_screen_pixels()
-    toggle_scale(app_scale-1)
+    app_scale -= 1
+    toggle_scale()
+
 def newg5e():
     global app_scale
     init_screen_data(mode='G5', expanded=True)
     init_screen_pixels()
-    toggle_scale(app_scale-1)
+    app_scale -= 1
+    toggle_scale()
+
 def newg6():
     global app_scale
     init_screen_data(mode='G6', expanded=False)
     init_screen_pixels()
-    toggle_scale(app_scale-1)
+    app_scale -= 1
+    toggle_scale()
 def newg6e():
     global app_scale
     init_screen_data(mode='G6', expanded=True)
     init_screen_pixels()
-    toggle_scale(app_scale-1)
+    app_scale -= 1
+    toggle_scale()
 def newg7():
     global app_scale
     init_screen_data(mode='G7', expanded=False)
     init_screen_pixels()
-    toggle_scale(app_scale-1)
+    app_scale -= 1
+    toggle_scale()
 def newg7e():
     global app_scale
     init_screen_data(mode='G7', expanded=True)
     init_screen_pixels()
-    toggle_scale(app_scale-1)
+    app_scale -= 1
+    toggle_scale()
 
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
