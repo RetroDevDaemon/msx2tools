@@ -240,18 +240,21 @@ class palwin_popup(tk.Tk):
         self.canvas.grid(row=0,column=0)
         self.populate_colors()
         self.bind("<Button-1>", self.clicked_color)
-
+        
     def clicked_color(self,o):
         x = math.floor(o.x/(self.myscale))
         y = math.floor(o.y/self.myscale)
-        #print('changing pal' + str(self.palnum) + ' to color ' + str(self.colors[(y*16)+x]))
         global palette_display
         global graphic_mode
+        global selected_palette_no
+        global hex_palette
         if graphic_mode != 'G7':
             find_and_replace(self.palnum, palette_display[self.palnum].myVal, self.colors[(y*32)+x])
             palette_display[self.palnum].setVal(self.colors[(y*32)+x])
+            hex_palette[selected_palette_no] = palette_display[self.palnum].myVal
         else:
             palette_display[self.palnum].setVal(self.colors[(y*16)+x])
+            hex_palette[selected_palette_no] = palette_display[self.palnum].myVal
         self.withdraw()
         
 
@@ -304,6 +307,8 @@ class palwin_popup(tk.Tk):
             j += 1
 
     def resize(self):
+        if self.state() == 'withdrawn':
+            self.deiconify()
         global app_scale
         self.myscale = app_scale * 8
         global graphic_mode 
@@ -322,9 +327,9 @@ class palwin_popup(tk.Tk):
 
     def change_palnum(self, col):
         self.palnum = col 
-        self.resize()
         global palette_display
         palette_display[self.palnum].clicked(0)
+        self.resize()
         self.move_to_mouse()
     
     def move_to_mouse(self):
@@ -373,7 +378,7 @@ class PaletteButton(tk.Canvas):
         else:
             palwin.deiconify()
             palwin.change_palnum(col)
-
+            
     def on_enter(self, event):
         self.delete(self.lbl)
         self.delete(self.lbl2)
@@ -386,8 +391,8 @@ class PaletteButton(tk.Canvas):
     
     def setVal(self, num):
         self.myVal = num
-        global hex_palette
-        hex_palette[selected_palette_no] = self.myVal
+        #global hex_palette
+        #hex_palette[selected_palette_no] = self.myVal
         self.config(background=self.myVal)
 
     def unclicked(self):
@@ -397,8 +402,6 @@ class PaletteButton(tk.Canvas):
             b += 1
 
     def clicked(self, event):
-        #global mbuttonup
-        #mbuttonup = False 
         unclick_all()
         self.selector.append(self.create_line(2, 2, scale, 2, width=3, fill='yellow'))
         self.selector.append(self.create_line(2, 2, 2, scale, width=3, fill='yellow'))
@@ -411,6 +414,10 @@ class PaletteButton(tk.Canvas):
                 selected_palette_no = i
                 break
             i += 1
+        global palwin
+        if palwin:
+            if palwin.state() == "normal":
+                palwin.withdraw()
          #
  #
 
@@ -421,20 +428,34 @@ hex_palette = [ '#000', '#000', '#2C2', '#6F6',
  '#282', '#C4A', '#AAA', '#FFF' ]
  #0/2/4/6/8/A/C/F
 
+palette_display = []
+
+i = 0
+while i < 16:
+    palette_display.append(PaletteButton(win, width=scale, height=scale, background=hex_palette[i]))
+    i += 1
 
 def add_palette_display():
     global palette_display
     global scale 
     global hex_palette
-    palette_display = []
+    global graphic_mode
+    global win 
+    if graphic_mode != 'G5':
+        palnums = 16
+    else:
+        palnums = 4
     i = 0
-    while i < 16:
-        palette_display.append(PaletteButton(win, width=scale, height=scale, background=hex_palette[i]))
+    while i < len(palette_display):
+        if palette_display[i]:
+            palette_display[i].grid_forget()
+        i += 1
+    i = 0
+    while i < palnums:
         palette_display[i].grid(row=i + 1, column=32, sticky='ne')
         palette_display[i].setVal(hex_palette[i])
         i += 1
-    #palette_display[15].setVal(hex_palette[15])
-
+    
 def rescale_palette():
     global palette_display
     global scale
@@ -478,6 +499,7 @@ def init_screen_pixels():
         screen_pixels.append(p)
         i += 1
     init_canvas_grid()
+    add_palette_display()
 
 def reset_screen_pixels():
     global screen_data
@@ -508,7 +530,6 @@ def clicked_loc(o):
     py = math.floor((yofs + o.y) / (scale*y_ratio))
     if (px,py) != lastpx:
         lastpx = (px, py)
-        #print(px, py)
         color_pixel(px, py)
 
 scroll_orig = (0,0)
@@ -536,9 +557,7 @@ def set_drawwindow_pos(o):
     scr_rty = o.y / float(fscr[3])
     drawCanvas.xview(tk.MOVETO, scr_rt)
     drawCanvas.yview(tk.MOVETO, scr_rty)
-    # o.x and o.y contains new PIXEL offset.
-    #print(o.x, o.y) 
-
+    
 def scroll_drawwindow(o):
     global scroll_orig
     global drawCanvas
@@ -583,7 +602,6 @@ drawCanvas.bind("<Button-1>", clicked_loc)
 drawCanvas.bind("<B1-Motion>", clicked_loc)
 drawCanvas.bind("<Button-3>", set_scroll_orig)
 drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
-#drawCanvas.bind("<ButtonRelease-3>", update_scroll)
 
 max_scale = True
 
@@ -591,33 +609,32 @@ def toggle_scale(scale=0):
     #used in 'd' and 'drawCanvas'
     sx = app.winfo_screenwidth()
     sy = app.winfo_screenheight()
-    #print(sx)
     global max_scale
     global app_scale 
     global graphic_mode 
     if graphic_mode == 'G4' or graphic_mode == 'G7':
-        ys = 80
+        ys = 30
     else:
-        ys = 120
+        ys = 50
     tscale = app_scale+1
     if max_scale == True:
         app_scale = 1
         tscale = 1
         max_scale = False 
-    if (graphics_mode_height*tscale*y_ratio)+(ys*tscale) > sy:
+    if (graphics_mode_height*tscale*y_ratio)+(ys*tscale)+30 > sy:
         #print('broke y')
-        app_scale = sy/((graphics_mode_height*y_ratio)+ys)
+        app_scale = sy/(((graphics_mode_height*y_ratio)+30)+ys)
         max_scale = True
-    elif (graphics_mode_width*tscale)+(200*tscale) > sx:
+    elif (graphics_mode_width*tscale)+(150*tscale) > sx:
         #print('broke x')
-        app_scale = sx/((graphics_mode_width)+200)
+        app_scale = sx/((graphics_mode_width)+150)
         max_scale = True
     else:
         app_scale = tscale
     drawCanvas.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale*y_ratio, scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
     zoom_screen_pixels()
     rescale_palette()
-    app.geometry('{}x{}'.format(int((graphics_mode_width*app_scale)+(200)), int((graphics_mode_height*app_scale*y_ratio)+(ys*app_scale))))
+    app.geometry('{}x{}'.format(int((graphics_mode_width*app_scale)+(150)), int((graphics_mode_height*app_scale*y_ratio)+(ys*app_scale)+60)))
 
 def get_newzoom_offset(plusminus):
     global draw_scroll_x
@@ -633,7 +650,6 @@ def get_newzoom_offset(plusminus):
     # xofs and yofs give us the x/y offset of the canvas after zoom. on a normal zoom,
     # this is the top left corner (quarter) of the viewable window.
     if plusminus == '+':
-        #print(zoom_scale)
         xofs += float(fscr[2])/(zoom_scale*2)
         yofs += float(fscr[3])/(zoom_scale*2)
     else:
@@ -808,6 +824,13 @@ def newg7e():
     app_scale -= 1
     toggle_scale()
 
+def save_bitmap():
+    global graphic_mode
+    #if graphic_mode != 'G7':
+        # output palette vals
+   # else:
+        #output hex vals 
+
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
 menuBar = tk.Menu(app)
@@ -842,10 +865,10 @@ app.config(menu=menuBar)
 
 init_screen_data(mode='G4', expanded=False)
 init_screen_pixels()
-add_palette_display()
+#add_palette_display()
 toggle_scale(1)
-selected_palette_no = 15
-palette_display[selected_palette_no].setVal('#FFF')
+#selected_palette_no = 15
+#palette_display[selected_palette_no].setVal('#FFF')
 # run the app
 app.resizable(False, False)
 app.protocol("WM_DELETE_WINDOW", client_exit)
