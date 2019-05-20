@@ -223,15 +223,20 @@ class palwin_popup(tk.Tk):
             return
         super().__init__()
         global app_scale 
+        global graphic_mode
+        if graphic_mode == 'G7':
+            myw = 128
+        else:
+            myw = 256
         self.myscale = app_scale * 8
         self.palnum = col 
         global palette_display
         palette_display[self.palnum].clicked(0)
         self.overrideredirect(1)
         self.move_to_mouse()
-        self.frame = tk.Frame(master=self,width=128*self.myscale, height=128*self.myscale, background='black')
+        self.frame = tk.Frame(master=self,width=myw*self.myscale, height=128*self.myscale, background='black')
         self.frame.grid(row=0,column=0)
-        self.canvas = tk.Canvas(self.frame, background='black',width=128*self.myscale, height=128*self.myscale)
+        self.canvas = tk.Canvas(self.frame, background='black',width=myw*self.myscale, height=128*self.myscale)
         self.canvas.grid(row=0,column=0)
         self.populate_colors()
         self.bind("<Button-1>", self.clicked_color)
@@ -254,42 +259,42 @@ class palwin_popup(tk.Tk):
     def populate_colors(self):
         self.colors=[]
         self.coloricons=[]
+        global graphic_mode
+        if graphic_mode == 'G7':
+            blues = 4
+            prows = 16
+        else:
+            blues = 8
+            prows = 32
         c1 = 0
         while c1 < 8:
             c2 = 0
             while c2 < 8:
                 c3 = 0
-                while c3 < 4: #0/2/4/7/9/A/C/F
+                while c3 < blues: #0/2/4/7/9/A/C/F
                     a = math.floor((c1/7)*15 )
                     b = math.floor((c2/7)*15)
+                    if blues == 4:
+                        m = 2
+                    else:
+                        m = 1
                     if c3 != 3:
-                        c = math.floor(((c3*2)/7)*15)
+                        c = math.floor(((c3*m)/7)*15)
                     else:
                         c = 15
-                    #if a == 6:
-                    #    a = 7
-                    #if b == 6:
-                    #    b = 7
-                    #if c == 6:
-                    #    c = 7
-                    #if a == 8:
-                    #    a = 9
-                    #if b == 8:
-                    #    b = 9
-                    #if c == 8:
-                    #    c = 9
                     self.colors.append('#'+format(a,'1x') + format(b,'1x')+format(c,'1x'))
                     c3 +=1
                 c2 += 1
             c1 += 1
         # now put them on the window
         #global app_scale
+        self.canvas.delete("all")
         s = self.myscale
         t = 0
         j = 0
         while j < 16:
             i = 0
-            while i < 16:
+            while i < prows:
                 f = self.colors[t]
                 self.coloricons.append(self.canvas.create_rectangle(i*s, j*s, (i*s)+s, (j*s)+s, fill=f))
                 t += 1
@@ -299,11 +304,16 @@ class palwin_popup(tk.Tk):
     def resize(self):
         global app_scale
         self.myscale = app_scale * 8
+        global graphic_mode 
+        if graphic_mode == 'G7':
+            myw = 32
+        else: 
+            myw = 16
         s = self.myscale
         j = 0
         while j < 16:
             i = 0
-            while i < 16:
+            while i < myw:
                 self.canvas.coords(self.coloricons[(j*16)+i], i*s, j*s, (i*s)+s, (j*s)+s)
                 i += 1
             j += 1
@@ -318,7 +328,12 @@ class palwin_popup(tk.Tk):
     def move_to_mouse(self):
         global app
         x,y=app.winfo_pointerxy()
-        pos=[self.myscale*16, self.myscale*16, x+5, y+5]
+        global graphic_mode
+        if graphic_mode == 'G7':
+            myw = 16
+        else:
+            myw = 32
+        pos=[self.myscale*myw, self.myscale*16, x+5, y+5]
         sx = app.winfo_screenwidth()
         sy = app.winfo_screenheight()
         if ((pos[0] + pos[2]) > sx):
@@ -441,6 +456,8 @@ def init_screen_pixels():
     global app_scale 
     global zoom_scale 
     global screen_data
+    if palwin:
+        palwin.populate_colors()
     screen_pixels = []
     drawCanvas.delete("all")
     l = len(screen_data)
