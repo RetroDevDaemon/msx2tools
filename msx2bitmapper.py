@@ -824,13 +824,88 @@ def newg7e():
     app_scale -= 1
     toggle_scale()
 
-def save_bitmap():
-    global graphic_mode
-    #if graphic_mode != 'G7':
-        # output palette vals
-   # else:
-        #output hex vals 
+m2bfilename = ''
 
+from tkinter import filedialog, messagebox
+
+def save_normal():
+    global m2bfilename 
+    if m2bfilename == '':
+        m2bfilename = tk.filedialog.asksaveasfilename(title='Save MSX2 Bitmapper file', filetypes=( ('MSX2 Bitmapper file', '*.m2b'),('All files', '*.*') ))
+    if m2bfilename == '' or type(m2bfilename) == tuple:
+        return
+    save_bitmap()
+
+def save_bitmap():
+    global m2bfilename
+    global graphic_mode
+    global screen_pixels
+    global graphics_mode_height
+    global drawCanvas
+    if graphic_mode == 'G7':
+        # output palette vals
+        f = None 
+        #m2bfilename = 'test.m2b'
+        try:
+            f = open(m2bfilename, "w")
+            f.write(graphic_mode+'\n')
+            f.write(str(graphics_mode_height)+'\n')
+            i = 0
+            while i < len(screen_pixels):
+                f.write(drawCanvas.itemcget(screen_pixels[i], 'fill') + ',')
+                i += 1
+            tk.messagebox.showinfo('Save successful!', message='Bitmap file saved successfully.')
+        except:
+            tk.messagebox.showerror('Error', message='Error while saving file.')
+        finally:
+            f.close()
+    else:
+        f = None 
+        #m2bfilename = 'test.m2b'
+        try:
+            f = open(m2bfilename, 'w')
+            f.write(graphic_mode + '\n')
+            f.write(str(graphics_mode_height)+'\n')
+            for c in screen_data:
+                f.write(str(c)+',')
+            tk.messagebox.showinfo('Save successful!', message='Bitmap file saved successfully.')
+        except:
+            tk.messagebox.showerror('Error', message='Error while saving file.')
+        finally:
+            f.close()
+
+def load_m2b():
+    global m2bfilename
+    m2bfilename = ''
+    global graphic_mode
+    global graphics_mode_height
+    global screen_data
+    f = None 
+    m2bfilename = tk.filedialog.askopenfilename(title='Load MSX2 Bitmapper file', filetypes=( ('MSX2 Bitmapper file', '*.m2b'),('All files', '*.*') ))
+    if m2bfilename == '' or type(m2bfilename) == tuple:
+        return 
+    try: 
+        f = open(m2bfilename, 'r')
+        gm = f.readline()
+        pw = f.readline()
+        if (gm == 'G4') or (gm == 'G5') or (gm == 'G6') or (gm == 'G7'):
+            graphic_mode = gm
+        if (pw == 212) or (pw == 192):
+            graphics_mode_height = pw 
+        indata = f.readline()
+        indata = indata.split(',')
+        indata.pop()
+        screen_data = []
+        screen_data = list(indata)
+        #tk.messagebox.showinfo('Load successful', message='')
+    except:
+        tk.messagebox.showerror('Error loading', message='File could not be loaded.')
+    finally:
+        f.close()
+    #print(screen_data)
+    #init_screen_pixels()
+    #print(gm,indata)
+        
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
 menuBar = tk.Menu(app)
@@ -843,6 +918,8 @@ fileMenu.add_command(label='New G6 bitmap (192)', command=newg6)
 fileMenu.add_command(label='New G6 bitmap (212)', command=newg6e)
 fileMenu.add_command(label='New G7 bitmap (192)', command=newg7)
 fileMenu.add_command(label='New G7 bitmap (212)', command=newg7e)
+fileMenu.add_command(label='Save', command=save_normal)
+fileMenu.add_command(label='Load...', command=load_m2b)
 fileMenu.add_separator()
 fileMenu.add_command(label='Quit', command=client_exit)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)

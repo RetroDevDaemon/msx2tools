@@ -10,3 +10,5 @@ inverter.py
 hexinverter.py
 .gitignore
 jsonwork.py
+*.m2b
+*.7z
