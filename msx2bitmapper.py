@@ -832,6 +832,8 @@ def save_normal():
         m2bfilename = tk.filedialog.asksaveasfilename(title='Save MSX2 Bitmapper file', filetypes=( ('MSX2 Bitmapper file', '*.m2b'),('All files', '*.*') ))
     if m2bfilename == '' or type(m2bfilename) == tuple:
         return
+    if m2bfilename[-4:].upper() != '.M2B':
+        m2bfilename = m2bfilename + '.M2B'
     save_bitmap()
 
 def save_bitmap():
