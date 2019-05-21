@@ -2156,6 +2156,8 @@ def perform_fill(ob):
 
     add_undo_point()
 
+    filled_rows = []
+
     if patternMode == False:
         mask_ofs = mask.get() - 1
 
@@ -2169,7 +2171,17 @@ def perform_fill(ob):
             maskdata_ofs = 6+page_ofs+mask_ofs
 
         dataToFill = maskdata[maskdata_ofs].copy()
-        flood_fill(dataToFill, index, dataToFill[index], currentPalNo)
+        flood_fill(dataToFill, index, dataToFill[index], currentPalNo, filled_rows)
+
+        if len(filled_rows) > 0:
+            rows_to_update = []
+
+            for i in filled_rows:
+                if i not in rows_to_update:
+                    rows_to_update.append(i)
+
+            update_filled_rows(dataToFill, rows_to_update, currentPalNo)
+
         maskdata[maskdata_ofs] = dataToFill.copy()
 
         if mask_ofs == 0:
@@ -2178,13 +2190,33 @@ def perform_fill(ob):
             pixels_mask2 = maskdata[maskdata_ofs].copy()
     else:
         dataToFill = patterndata[icon_selected].copy()
-        flood_fill(dataToFill, index, dataToFill[index], currentPalNo)
+        flood_fill(dataToFill, index, dataToFill[index], currentPalNo, filled_rows)
+
+        if len(filled_rows) > 0:
+            rows_to_update = []
+
+            for i in filled_rows:
+                if i not in rows_to_update:
+                    rows_to_update.append(i)
+
+            update_filled_rows(dataToFill, rows_to_update, currentPalNo)
+
         patterndata[icon_selected] = dataToFill.copy()
         pixels_mask1 = patterndata[icon_selected].copy()
 
     refresh_display(True)
 
-def flood_fill(array, index, targetColor, replacementColor): 
+def update_filled_rows(array, rows, replacementColor):
+    for i in rows:
+        currentIndex = i * spriteSize
+        endIndex = currentIndex + spriteSize
+
+        while currentIndex < endIndex:
+            if array[currentIndex] > 0:
+                array[currentIndex] = replacementColor
+            currentIndex += 1
+
+def flood_fill(array, index, targetColor, replacementColor, filled_rows): 
     if targetColor == replacementColor:
         return
 
@@ -2196,22 +2228,26 @@ def flood_fill(array, index, targetColor, replacementColor):
 
     array[index] = replacementColor
 
+    # keep track of which rows had a fill performed in them
+    rowNum = math.floor(index / spriteSize)
+    filled_rows.append(rowNum) 
+
     north = index - spriteSize
     south = index + spriteSize
     east = index + 1
     west = index - 1
 
     if north > 0:
-        flood_fill(array, north, targetColor, replacementColor)
+        flood_fill(array, north, targetColor, replacementColor, filled_rows)
     
     if south < spriteSize * spriteSize:
-        flood_fill(array, south, targetColor, replacementColor)
+        flood_fill(array, south, targetColor, replacementColor, filled_rows)
 
     if west % spriteSize < spriteSize - 1:
-        flood_fill(array, west, targetColor, replacementColor)
+        flood_fill(array, west, targetColor, replacementColor, filled_rows)
 
     if east % spriteSize > 0:
-        flood_fill(array, east, targetColor, replacementColor)
+        flood_fill(array, east, targetColor, replacementColor, filled_rows)
 
 def redo_last():
     global redo_history
