@@ -2169,7 +2169,7 @@ def perform_fill(ob):
             maskdata_ofs = 6+page_ofs+mask_ofs
 
         dataToFill = maskdata[maskdata_ofs].copy()
-        flood_fill(dataToFill, index, dataToFill[index], last_color_used)
+        flood_fill(dataToFill, index, dataToFill[index], currentPalNo)
         maskdata[maskdata_ofs] = dataToFill.copy()
 
         if mask_ofs == 0:
@@ -2178,7 +2178,7 @@ def perform_fill(ob):
             pixels_mask2 = maskdata[maskdata_ofs].copy()
     else:
         dataToFill = patterndata[icon_selected].copy()
-        flood_fill(dataToFill, index, dataToFill[index], last_color_used)
+        flood_fill(dataToFill, index, dataToFill[index], currentPalNo)
         patterndata[icon_selected] = dataToFill.copy()
         pixels_mask1 = patterndata[icon_selected].copy()
 
