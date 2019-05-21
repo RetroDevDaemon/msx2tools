@@ -1021,6 +1021,7 @@ def paint_line(o):
             while z < len(iteration):
                 if iteration[z] == drawing_line:
                     drawCanvas.itemconfig(pxbb[i], fill=hex_palette[selected_palette_no])
+                    #app.update_idletasks()
                     break
                 z += 1
         i += 1
