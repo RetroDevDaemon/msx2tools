@@ -2198,8 +2198,8 @@ def flood_fill(array, index, targetColor, replacementColor):
 
     north = index - spriteSize
     south = index + spriteSize
-    east = index - 1
-    west = index + 1
+    east = index + 1
+    west = index - 1
 
     if north > 0:
         flood_fill(array, north, targetColor, replacementColor)
@@ -2207,11 +2207,11 @@ def flood_fill(array, index, targetColor, replacementColor):
     if south < spriteSize * spriteSize:
         flood_fill(array, south, targetColor, replacementColor)
 
-    if east / spriteSize >= 0:
-        flood_fill(array, east, targetColor, replacementColor)
-
-    if west % spriteSize <= spriteSize:
+    if west % spriteSize < spriteSize - 1:
         flood_fill(array, west, targetColor, replacementColor)
+
+    if east % spriteSize > 0:
+        flood_fill(array, east, targetColor, replacementColor)
 
 def redo_last():
     global redo_history
