@@ -791,14 +791,12 @@ def newg5():
     init_screen_pixels()
     app_scale -= 1
     toggle_scale()
-
 def newg5e():
     global app_scale
     init_screen_data(mode='G5', expanded=True)
     init_screen_pixels()
     app_scale -= 1
     toggle_scale()
-
 def newg6():
     global app_scale
     init_screen_data(mode='G6', expanded=False)
@@ -842,37 +840,78 @@ def save_bitmap():
     global screen_pixels
     global graphics_mode_height
     global drawCanvas
-    if graphic_mode == 'G7':
-        # output palette vals
-        f = None 
-        #m2bfilename = 'test.m2b'
-        try:
-            f = open(m2bfilename, "w")
-            f.write(graphic_mode+'\n')
-            f.write(str(graphics_mode_height)+'\n')
+    #if graphic_mode == 'G7':
+        # output hex color vals
+    f = None 
+    try:
+        f = open(m2bfilename, "w")
+        f.write(graphic_mode+'\n')
+        f.write(str(graphics_mode_height)+'\n')
+        for c in palette_display:
+            f.write(str(c.myVal)+',')
+        f.write('\n')
+        if graphic_mode == 'G7':
             i = 0
             while i < len(screen_pixels):
                 f.write(drawCanvas.itemcget(screen_pixels[i], 'fill') + ',')
-                i += 1
-            tk.messagebox.showinfo('Save successful!', message='Bitmap file saved successfully.')
-        except:
-            tk.messagebox.showerror('Error', message='Error while saving file.')
-        finally:
-            f.close()
-    else:
-        f = None 
-        #m2bfilename = 'test.m2b'
-        try:
-            f = open(m2bfilename, 'w')
-            f.write(graphic_mode + '\n')
-            f.write(str(graphics_mode_height)+'\n')
+            i += 1
+        else:
             for c in screen_data:
-                f.write(str(c)+',')
-            tk.messagebox.showinfo('Save successful!', message='Bitmap file saved successfully.')
-        except:
-            tk.messagebox.showerror('Error', message='Error while saving file.')
-        finally:
-            f.close()
+                f.write(str(c)+',')         
+        tk.messagebox.showinfo('Save successful!', message='Bitmap file saved successfully.')
+    except:
+        tk.messagebox.showerror('Error', message='Error while saving file.')
+    finally:
+        f.close()
+    # else:
+    #     f = None 
+    #     # output palette itself
+    #     try:
+    #         f = open(m2bfilename, 'w')
+    #         f.write(graphic_mode + '\n')
+    #         f.write(str(graphics_mode_height)+'\n')
+    #         for c in palette_display:
+    #             f.write(str(c.myVal)+',')
+    #         f.write('\n')
+    #         for c in screen_data:
+    #             f.write(str(c)+',')
+    #         tk.messagebox.showinfo('Save successful!', message='Bitmap file saved successfully.')
+    #     except:
+    #         tk.messagebox.showerror('Error', message='Error while saving file.')
+    #     finally:
+    #         f.close()
+
+def refresh_entire_screen(exp, newdata):
+    global graphic_mode
+    global screen_data
+    global graphics_mode_width
+    global graphics_mode_height 
+    global graphics_mode_192 
+    global graphics_mode_212 
+    global y_ratio
+    global graphic_mode
+    if (graphic_mode == 'G4') or (graphic_mode == 'G7'):
+        graphics_mode_width = 256
+        y_ratio = 1
+    elif (graphic_mode == 'G5') or (graphic_mode == 'G6'):
+        graphics_mode_width = 512
+        y_ratio = 2
+    if exp == False:
+        graphics_mode_height = graphics_mode_192 
+    else:
+        graphics_mode_height = graphics_mode_212
+    screen_data = list(newdata)
+    init_screen_pixels()    # erases canvas and creates rectangles
+    # now all we have to do is fill the rectangles!
+    i = 0
+    while i < len(screen_data):
+        if graphic_mode != 'G7':
+            screen_data[i] = int(screen_data[i])
+            drawCanvas.itemconfig(screen_pixels[i], fill=hex_palette[screen_data[i]])
+        else:
+            drawCanvas.itemconfig(screen_pixels[i], fill=screen_data[i])
+        i += 1
+    return
 
 def load_m2b():
     global m2bfilename
@@ -880,6 +919,7 @@ def load_m2b():
     global graphic_mode
     global graphics_mode_height
     global screen_data
+    global palette_display
     f = None 
     m2bfilename = tk.filedialog.askopenfilename(title='Load MSX2 Bitmapper file', filetypes=( ('MSX2 Bitmapper file', '*.m2b'),('All files', '*.*') ))
     if m2bfilename == '' or type(m2bfilename) == tuple:
@@ -887,24 +927,33 @@ def load_m2b():
     try: 
         f = open(m2bfilename, 'r')
         gm = f.readline()
+        gm = gm[0:2]
         pw = f.readline()
+        pw = pw[0:3]
         if (gm == 'G4') or (gm == 'G5') or (gm == 'G6') or (gm == 'G7'):
             graphic_mode = gm
-        if (pw == 212) or (pw == 192):
-            graphics_mode_height = pw 
+        if (pw == 212):
+            expanded = True 
+        else:
+            expanded = False
+        # i forgot to do palette!
+        pl = f.readline()
+        pl = pl.split(',')
+        pl.pop()
+        global hex_palette
+        i = 0
+        while i < (len(pl)):
+            hex_palette[i] = pl[i]
+            i += 1
+        add_palette_display()
         indata = f.readline()
         indata = indata.split(',')
         indata.pop()
-        screen_data = []
-        screen_data = list(indata)
-        #tk.messagebox.showinfo('Load successful', message='')
+        refresh_entire_screen(expanded, indata)
     except:
         tk.messagebox.showerror('Error loading', message='File could not be loaded.')
     finally:
         f.close()
-    #print(screen_data)
-    #init_screen_pixels()
-    #print(gm,indata)
         
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
