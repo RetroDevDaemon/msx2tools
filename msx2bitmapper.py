@@ -20,6 +20,8 @@ screen_data = []
 screen_pixels = []
 y_ratio = (3/4)
 graphic_mode = 'G4'
+draw_mode = 'PX'
+# 'LINE', 'CIRCLE', 'SQUARE', 'SELECT'
 
 ###### BIT MAP DATA #######
 dotdata = """
@@ -767,8 +769,13 @@ def color_pixel(x, y):
     screen_data[tp] = selected_palette_no
     drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
 
-def draw_mode():
-    return 
+def px_mode():
+    global pxbutton 
+    pxbutton.config(relief=tk.RAISED)
+    global linebutton 
+    linebutton.config(relief=tk.SUNKEN)
+    global draw_mode
+    draw_mode = 'PX'
 
 def client_exit():
     sys.exit()
@@ -956,6 +963,36 @@ def load_m2b():
         tk.messagebox.showerror('Error loading', message='File could not be loaded.')
     finally:
         f.close()
+
+drawing_line = None
+line_startpos = (-1,-1)
+
+def start_line(o):
+    global drawing_line
+    global drawCanvas
+    global line_startpos
+    line_startpos = (o.x, o.y)
+    drawing_line = drawCanvas.create_line(o.x, o.y, o.x, o.y, fill='white')
+
+def move_line(o):
+    global drawing_line
+    global drawCanvas
+    global line_startpos
+    drawCanvas.coords(drawing_line, line_startpos[0], line_startpos[1], o.x, o.y)
+
+def line_mode():
+    global pxbutton 
+    pxbutton.config(relief=tk.RAISED)
+    global linebutton 
+    linebutton.config(relief=tk.SUNKEN)
+    global draw_mode
+    draw_mode = 'LINE'
+    global drawCanvas
+    drawCanvas.unbind("<Button-1>")
+    drawCanvas.unbind("<B1-Motion>")
+    drawCanvas.bind("<Button-1>", start_line)
+    drawCanvas.bind("<B1-Motion>", move_line)
+
         
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
@@ -976,16 +1013,18 @@ fileMenu.add_command(label='Quit', command=client_exit)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
 pxbutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, relief=tk.SUNKEN, command=draw_mode)
 pxbutton.grid(row=0, column=1, padx=(20,0), sticky='w')
+linebutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, command=line_mode)
+linebutton.grid(row=0, column=2)
 scalebutton = tk.Button(toolbar, image=scale_icon, width=20, height=20, command=toggle_scale)
-scalebutton.grid(row=0, column=2, padx=(20,0), sticky='w')
+scalebutton.grid(row=0, column=3, padx=(20,0), sticky='w')
 zoom1button = tk.Button(toolbar, image=zoom1_icon, width=20, height=20, command=zoom_1x, relief=tk.SUNKEN)
-zoom1button.grid(row=0, column=3, sticky='w')
+zoom1button.grid(row=0, column=4, sticky='w')
 zoom2button = tk.Button(toolbar, image=zoom2_icon, width=20, height=20, command=zoom_2x)
-zoom2button.grid(row=0, column=4, sticky='w')
+zoom2button.grid(row=0, column=5, sticky='w')
 zoom4button = tk.Button(toolbar, image=zoom4_icon, width=20, height=20, command=zoom_4x)
-zoom4button.grid(row=0, column=5, sticky='w')
+zoom4button.grid(row=0, column=6, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
-zoom8button.grid(row=0, column=6, sticky='w')
+zoom8button.grid(row=0, column=7, sticky='w')
 
 toolbar.grid(row=0, columnspan=5)
 menuBar.add_cascade(label="File", menu=fileMenu)
