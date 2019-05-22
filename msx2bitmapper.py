@@ -1,9 +1,23 @@
-# bitmat wip
+#########################################################
+# MSX2 Bitmapper
+#
+# (c) 2019 Ben Ferguson
+#  (w/contributions from jlbeard83)
+# Use Python 3! (Coded in 3.7.1)
+# 
+# v1.0: Initial release
+#           
+# Assembles z80 byte data for GRAPHIC4-7 (SCREEN5-8)
+#  bitmap graphics for use with compilers.
+# Easy point-and-click interface.
+# 
+##########################################################
 
 import tkinter as tk 
 import sys 
 import math 
-
+import os 
+import zipfile 
 # before anything else:
 
 
@@ -849,11 +863,10 @@ def save_bitmap():
     global screen_pixels
     global graphics_mode_height
     global drawCanvas
-    #if graphic_mode == 'G7':
-        # output hex color vals
     f = None 
+    outbuffer = 'm2b'
     try:
-        f = open(m2bfilename, "w")
+        f = open(outbuffer, 'w')
         f.write(graphic_mode+'\n')
         f.write(str(graphics_mode_height)+'\n')
         for c in palette_display:
@@ -866,29 +879,17 @@ def save_bitmap():
             i += 1
         else:
             for c in screen_data:
-                f.write(str(c)+',')         
+                f.write(str(c)+',')
+        f.close()
+        with zipfile.ZipFile(m2bfilename, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.write(outbuffer)    
         tk.messagebox.showinfo('Save successful!', message='Bitmap file saved successfully.')
     except:
         tk.messagebox.showerror('Error', message='Error while saving file.')
     finally:
-        f.close()
-    # else:
-    #     f = None 
-    #     # output palette itself
-    #     try:
-    #         f = open(m2bfilename, 'w')
-    #         f.write(graphic_mode + '\n')
-    #         f.write(str(graphics_mode_height)+'\n')
-    #         for c in palette_display:
-    #             f.write(str(c.myVal)+',')
-    #         f.write('\n')
-    #         for c in screen_data:
-    #             f.write(str(c)+',')
-    #         tk.messagebox.showinfo('Save successful!', message='Bitmap file saved successfully.')
-    #     except:
-    #         tk.messagebox.showerror('Error', message='Error while saving file.')
-    #     finally:
-    #         f.close()
+        #f.close()
+        os.remove('m2b')
+
 
 def refresh_entire_screen(exp, newdata):
     global graphic_mode
@@ -930,14 +931,28 @@ def load_m2b():
     global screen_data
     global palette_display
     f = None 
+    z = None 
+    zipped = False
+    inbuffer = 'm2b'
     m2bfilename = tk.filedialog.askopenfilename(title='Load MSX2 Bitmapper file', filetypes=( ('MSX2 Bitmapper file', '*.m2b'),('All files', '*.*') ))
     if m2bfilename == '' or type(m2bfilename) == tuple:
         return 
     try: 
-        f = open(m2bfilename, 'r')
-        gm = f.readline()
+        if zipfile.is_zipfile(m2bfilename):
+            zipped = True 
+            z = zipfile.ZipFile(m2bfilename)
+            f = z.open(inbuffer, 'r')
+            #data = f.readline().decode("utf-8")
+            gm = f.readline().decode("utf-8")
+            pw = f.readline().decode("utf-8")
+            pl = f.readline().decode("utf-8")
+        else:
+            f = open(m2bfilename, 'r')
+            #data = f.readline()
+            gm = f.readline()
+            pw = f.readline()
+            pl = f.readline()
         gm = gm[0:2]
-        pw = f.readline()
         pw = pw[0:3]
         if (gm == 'G4') or (gm == 'G5') or (gm == 'G6') or (gm == 'G7'):
             graphic_mode = gm
@@ -946,7 +961,7 @@ def load_m2b():
         else:
             expanded = False
         # i forgot to do palette!
-        pl = f.readline()
+       
         pl = pl.split(',')
         pl.pop()
         global hex_palette
@@ -955,14 +970,20 @@ def load_m2b():
             hex_palette[i] = pl[i]
             i += 1
         add_palette_display()
-        indata = f.readline()
+        if not zipped:
+            indata = f.readline()
+        else:
+            indata = f.readline().decode("utf-8")
         indata = indata.split(',')
         indata.pop()
         refresh_entire_screen(expanded, indata)
     except:
         tk.messagebox.showerror('Error loading', message='File could not be loaded.')
     finally:
-        f.close()
+        if (f):
+            f.close()
+        if(z):
+            z.close()
 
 drawing_line = None
 line_startpos = (-1,-1)
@@ -1062,33 +1083,7 @@ def paint_line(o):
             else:
                 cur_y += 1
         drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
-        
-    #drawCanvas.itemconfig(screen_pixels[tilepx_end], fill=hex_palette[selected_palette_no])
-
-####### THROW THIS SHIT AWAY ######
-    # pxbbt = drawCanvas.find_overlapping(line_startpos[0], line_startpos[1], line_endpos[0], line_endpos[1])
-    # pxbb = list(pxbbt)
-    # #topaint = []
-    # i = 0
-    # #print(len(pxbb))
-    # while i < len(pxbb):
-    #     if drawCanvas.type(pxbb[i]) == 'rectangle':
-    #         co = drawCanvas.coords(pxbb[i])
-    #         iteration = drawCanvas.find_overlapping(co[0], co[1], co[2], co[3])
-    #         z = 0
-    #         while z < len(iteration):
-    #             found = False
-    #             if iteration[z] == drawing_line:
-    #                 color = drawCanvas.itemcget(pxbb[i], 'fill')
-    #                 if color != hex_palette[selected_palette_no]:
-    #                     drawCanvas.itemconfig(pxbb[i], fill=hex_palette[selected_palette_no])
-    #                     app.update_idletasks()
-    #                 found = True
-    #             if found:
-    #                 break
-    #             z += 1
-    #     i += 1
-#### GARBAGE CODE ABOVE #####
+    drawCanvas.delete(drawing_line)
     
 def line_mode():
     global pxbutton 
