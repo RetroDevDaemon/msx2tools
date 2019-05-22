@@ -1037,12 +1037,14 @@ def paint_line(o):
     xofs = scr_x[0] * float(fscr[2])
     yofs = scr_y[0] * float(fscr[3])
     line_endpos = (o.x+xofs, o.y+yofs)
+    global y_ratio
     xpx_start = math.floor( line_startpos[0] / (zoom_scale*app_scale) )
-    ypx_start = math.floor( line_startpos[1] / (zoom_scale*app_scale) )
+    ypx_start = math.floor( line_startpos[1] / (zoom_scale*app_scale*y_ratio) )
     #tilepx_start = (ypx_start * graphics_mode_width) + xpx_start
     xpx_end = math.floor( line_endpos[0] / (zoom_scale*app_scale) )
-    ypx_end = math.floor( line_endpos[1] / (zoom_scale*app_scale) )
+    ypx_end = math.floor( line_endpos[1] / (zoom_scale*app_scale*y_ratio) )
     #tilepx_end = (ypx_end * graphics_mode_width) + xpx_end
+    #print(xpx_start, ypx_start, xpx_end, ypx_end)
     x_step = xpx_end - xpx_start
     y_step = ypx_end - ypx_start
     step_left = False 
@@ -1066,7 +1068,7 @@ def paint_line(o):
         else:
             step_up = False 
     step_counter = 0
-    print(step_left, step_up, step)
+    #print(step_left, step_up, step)
     cur_x = xpx_start 
     cur_y = ypx_start 
     while ((cur_x != xpx_end) or (xpx_start == xpx_end)) and ((cur_y != ypx_end) or (ypx_start == ypx_end)):
@@ -1083,6 +1085,10 @@ def paint_line(o):
             else:
                 cur_y += 1
         drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
+        if graphic_mode != 'G7':
+            screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
+        else:
+            screen_data[(cur_y*graphics_mode_width)+cur_x] = hex_palette[selected_palette_no]
     drawCanvas.delete(drawing_line)
     
 def line_mode():
