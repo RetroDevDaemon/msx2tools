@@ -1107,7 +1107,7 @@ def export_asm_pattern():
     if asmfile == '' or type(asmfile) == tuple:
         return 
     if asmfile[-4:].upper() != '.Z80':
-            asmfile = asmfile + '.z80'
+        asmfile = asmfile + '.z80'
     outdata = []
     outdata_c = []
     colors_array = []

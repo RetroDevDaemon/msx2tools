@@ -854,7 +854,7 @@ def save_normal():
     if m2bfilename == '' or type(m2bfilename) == tuple:
         return
     if m2bfilename[-4:].upper() != '.M2B':
-        m2bfilename = m2bfilename + '.M2B'
+        m2bfilename = m2bfilename + '.m2b'
     save_bitmap()
 
 def save_bitmap():
@@ -1099,6 +1099,89 @@ def line_mode():
     drawCanvas.bind("<B1-Motion>", move_line)
     drawCanvas.bind("<ButtonRelease-1>", paint_line)
 
+
+
+def export_z80():
+    asmfile = ''
+    asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 bitmap assembler data', filetypes=(('Z80 assembly data', '*.Z80'), ('All files', '*.*')))
+    if asmfile == '' or type(asmfile) == tuple:
+        return 
+    if asmfile[-4:].upper() != '.Z80':
+        asmfile = asmfile + '.z80'
+    outdata = []
+    outdata.append('; Made with MSX2 Bitmapper')
+    outdata.append(';')
+    global graphic_mode
+    global graphics_mode_height
+    outdata.append('; Graphic mode: ' + graphic_mode)
+    outdata.append('; Vertical res: ' + str(graphics_mode_height))
+    if graphics_mode_height == 212:
+        outdata.append(';  (Be sure to set bit 7 of R#9!)')
+    if (graphic_mode == 'G4') or (graphic_mode == 'G5'):
+        if graphics_mode_height == 212:
+            outdata.append('; Size in hex: $7000')
+        else:
+            outdata.append('; Size in hex: $6000')
+    else:
+        if graphics_mode_height == 212:
+            outdata.append('; Size in hex: $D400')
+        else:
+            outdata.append("; Size in hex: $C000")
+    if (graphic_mode == 'G4') or (graphic_mode == 'G6'):
+        y = 0
+        while y < graphics_mode_height:
+            x = 0
+            thisrowout = ' DB  '
+            while x < graphics_mode_width:
+                thisbyteout = ''
+                px_a = screen_data[(y*graphics_mode_width)+x]
+                px_a = str(px_a).format('1x')
+                x += 1
+                px_b = screen_data[(y*graphics_mode_width)+x]
+                px_b = str(px_b).format('1x')
+                thisbyteout += '$' + px_a + px_b + ', '
+                thisrowout += thisbyteout
+                x += 1
+            outdata.append(thisrowout)
+            y += 1
+    elif (graphic_mode == 'G5'):
+        y = 0
+        while y < graphics_mode_height:
+            x = 0
+            thisrowout = ' DB  '
+            while x < graphics_mode_width:
+                thisbyteout = ''
+                
+    try:
+        if asmfile[-4:].upper() != '.Z80':
+            asmfile = asmfile + '.z80'
+        f = open(asmfile, 'w')
+        for s in outdata:
+            f.write(s)
+            f.write('\n')
+        messagebox.showinfo('Export OK!', message='Z80 export successful.')
+    except:
+        messagebox.showerror('Export failed', message='Something went wrong!\nExport failed.')
+    finally:
+        if(f):
+            f.close()
+    ### G4 SPECS
+    # 0x7000 length in hex (27,136 bytes) for 256x212
+    # each pixel is 4 bits x> yv based on palette number.
+    # e.g. $42, $1b = 4, 2, 1, 11 (MSB > LSB)
+    ### G5 SPECS
+    # 0x7000 in hex (27,136 bytes) for 512x212
+    # each pixel is 2 bits per color based on palette index
+    # e.g. $55, $DC = 1, 1, 1, 1, 3, 1, 3, 0 (MSB > LSB)
+    ### G6 SPECS
+    # 0xD400 in hex (54,272 bytes) for 512x212
+    # as G4, each pixel is 4 bits, but width is double res.
+    # e.g. $42, $1b = 4, 2, 1, 11
+    ### G7 SPECS
+    # 0xD400 in hex (54,272 bytes) for 256x212
+    # each pixel is 1 full byte RGB332.
+    # e.g. $5B = #26F
+
         
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
@@ -1114,6 +1197,8 @@ fileMenu.add_command(label='New G7 bitmap (192)', command=newg7)
 fileMenu.add_command(label='New G7 bitmap (212)', command=newg7e)
 fileMenu.add_command(label='Save', command=save_normal)
 fileMenu.add_command(label='Load...', command=load_m2b)
+fileMenu.add_separator()
+fileMenu.add_command(label='Export as z80 assembly...', command=export_z80)
 fileMenu.add_separator()
 fileMenu.add_command(label='Quit', command=client_exit)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
