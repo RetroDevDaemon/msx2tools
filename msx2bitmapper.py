@@ -1084,6 +1084,9 @@ def paint_line(o):
                 cur_y -= 1
             else:
                 cur_y += 1
+        if ((cur_y*graphics_mode_width)+cur_x) > len(screen_pixels):
+            drawCanvas.delete(drawing_line)
+            return
         drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
         if graphic_mode != 'G7':
             screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
