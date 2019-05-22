@@ -1069,7 +1069,7 @@ def paint_line(o):
     print(step_left, step_up, step)
     cur_x = xpx_start 
     cur_y = ypx_start 
-    while (cur_x != xpx_end) and (cur_y != ypx_end):
+    while ((cur_x != xpx_end) or (xpx_start == xpx_end)) and ((cur_y != ypx_end) or (ypx_start == ypx_end)):
         if step_counter < step:
             if step_left:
                 cur_x -= 1
