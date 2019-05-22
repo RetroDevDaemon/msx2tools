@@ -1,10 +1,11 @@
-# MSX2 Spriter v1.30 / Screener v1.2
+# MSX2 Spriter v1.31 / Screener v1.21
 
 Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts.
 
 
 ### Release notes:
 
+1.31/1.21: Added compression to M2S/M2P/M2C file formats. Files should now rarely exceed 1kB in size.<br>
 1.30: Added fill tool. NOTE: Since palette colors are entirely seperate from sprite masks, the fill tool effectively fills 0s in with 1s. Colors per-mask will reflect this, so don't be surprised when the tool changes your entire mask to one color! :)<br> 
 1.29: Added color picker to sprite/pattern tool.<br>
 1.28: Added icon toolbar to both tools, box select to screen tool, and horizontal/vertical flip for sprite tool.<br>

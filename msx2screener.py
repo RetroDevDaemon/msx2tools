@@ -5,7 +5,7 @@
 #
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.2: Box selection, copy, paste, hotbar
+# v1.21: Added compression to file format.
 # 
 #
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
@@ -19,6 +19,8 @@ from tkinter import filedialog
 from tkinter import messagebox 
 import math 
 import sys 
+import os 
+import zipfile
 
 # MSX2 default 16-color palette, in integer strings
 defaultIntegerPalette = [
@@ -556,14 +558,23 @@ def import_m2p():
     global m2pfilename 
     m2pfilename = ''
     f = None 
+    z = None 
     m2pfilename = tk.filedialog.askopenfilename(title='Load MSX2 Spriter file', filetypes=( ('MSX2 Spriter pattern file', '*.m2p'),('All files', '*.*') ))
     if m2pfilename == '' or type(m2pfilename) == tuple:
         return
     else:
+        inbuffer = 'm2p'
+        zipped = False 
         try:
-            f=open(m2pfilename,'r')
+            if zipfile.is_zipfile(m2pfilename):
+                zipped = True
+                z = zipfile.ZipFile(m2pfilename)
+                f = z.open(inbuffer, 'r')
+                data = f.readline().decode("utf-8")
+            else:
+                f=open(m2pfilename,'r')
             # read in palette
-            data = f.readline()
+                data = f.readline()
             global integerPalette
             palette_vals = data.split(',')
             i = 0
@@ -577,13 +588,16 @@ def import_m2p():
             while n < 3:
                 s = 0
                 while s < 256:
-                    data = f.readline()
-                    tdat = data.split(',')
+                    if zipped:
+                        data = f.readline().decode("utf-8").split(',')
+                    else:
+                        data = f.readline().split(',')
+                    #tdat = data.split(',')
                     p = 0
                     while p < 64:
-                        tdat[p] = int(tdat[p])
+                        data[p] = int(data[p])
                         p += 1
-                    tile_data[(n*256)+s] = tdat
+                    tile_data[(n*256)+s] = data
                     s += 1
                 selected_tile_data[n] = []
                 n += 1
@@ -593,11 +607,13 @@ def import_m2p():
             loaded_tiles = True 
         except IOError:
             messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-        except:
-            messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
+        #except:
+        #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
         finally:
             if(f):
                 f.close()
+            if(z):
+                z.close()
     refresh_whole_screen()
 
 def launch_app():
@@ -663,6 +679,7 @@ def new_screen():
     redo_history = []
     refresh_whole_screen()
     return 
+
 def load_m2c():
     # ask to change imported m2p
     # if none is imported, show warning
@@ -685,9 +702,19 @@ def load_m2c():
     if m2cfilename == '' or type(m2cfilename) == tuple:
         return
     f = None 
+    z = None 
+    #zipped = False 
+    inbuffer = 'm2c'
     try:
-        f = open(m2cfilename, 'r')
-        indata = f.readline()
+        if zipfile.is_zipfile(m2cfilename):
+            #zipped = True 
+            z = zipfile.ZipFile(m2cfilename)
+            f = z.open(inbuffer, 'r')
+            indata = f.readline().decode("utf-8")
+        else:
+            f = open(m2cfilename, 'r')
+            indata = f.readline()
+        #indata = f.readline()
         indata = indata.split(',')
         indata.pop()
         global screentiles
@@ -706,6 +733,8 @@ def load_m2c():
     finally:
         if f != None:
             f.close()
+        if(z):
+            z.close()
     # now that tiles are confirmed, open m2c dialog
 
 def export_z80():
@@ -751,10 +780,16 @@ def save_m2c():
     # save with global filename already set.
     # it's just a csv of 768 values.
     f = None
+    z = None 
+    outbuffer = 'm2c'
     try:
-        f = open(m2cfilename, 'w')
+        f = open(outbuffer, 'w')
+        #f = open(m2cfilename, 'w')
         for s in screentiles:
             f.write(str(s) +',')
+        f.close()
+        with zipfile.ZipFile(m2cfilename, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.write(outbuffer)
         global saved 
         saved = True 
         messagebox.showinfo("Save OK", message='Save successful!')
@@ -763,8 +798,9 @@ def save_m2c():
     except:
         messagebox.showerror("Save failed", message="Unknown error saving file. This might be a bug!")
     finally:
-        if f != None:
-            f.close()
+        os.remove('m2c')
+        #if f != None:
+        #    f.close()
 
 def save_normal():
     global m2cfilename
