@@ -981,16 +981,9 @@ def start_line(o):
     xofs = scr_x[0] * float(fscr[2])
     yofs = scr_y[0] * float(fscr[3])
     line_startpos = (o.x+xofs, o.y+yofs)
-    drawing_line = drawCanvas.create_line(o.x, o.y, o.x, o.y, fill='white')
+    drawing_line = drawCanvas.create_line(line_startpos[0], line_startpos[1], line_startpos[0], line_startpos[1], fill='white')
 
 def move_line(o):
-    global drawing_line
-    global drawCanvas
-    global line_startpos
-    drawCanvas.coords(drawing_line, line_startpos[0], line_startpos[1], o.x, o.y)
-
-def paint_line(o):
-    global line_startpos 
     global drawing_line
     global drawCanvas
     global line_startpos
@@ -1003,29 +996,84 @@ def paint_line(o):
     fscr = fscr.split(' ')
     xofs = scr_x[0] * float(fscr[2])
     yofs = scr_y[0] * float(fscr[3])
-    line_endpos = (o.x+xofs, o.y+yofs)
-    #x = 0
-    #y = 0
+    drawCanvas.coords(drawing_line, line_startpos[0], line_startpos[1], o.x+xofs, o.y+yofs)
+
+def paint_line(o):
+    global line_startpos 
+    global drawing_line
+    global drawCanvas
+    global line_startpos
+    global draw_scroll_x
+    global draw_scroll_y
+    global zoom_scale
+    global graphics_mode_width
     global hex_palette
     global selected_palette_no
-    pxbbt = drawCanvas.find_overlapping(line_startpos[0], line_startpos[1], line_endpos[0], line_endpos[1])
-    pxbb = list(pxbbt)
-    #topaint = []
-    i = 0
-    #print(len(pxbb))
-    while i < len(pxbb):
-        if drawCanvas.type(pxbb[i]) == 'rectangle':
-            co = drawCanvas.coords(pxbb[i])
-            iteration = drawCanvas.find_overlapping(co[0], co[1], co[2], co[3])
-            z = 0
-            while z < len(iteration):
-                if iteration[z] == drawing_line:
-                    drawCanvas.itemconfig(pxbb[i], fill=hex_palette[selected_palette_no])
-                    #app.update_idletasks()
-                    break
-                z += 1
-        i += 1
+    scr_x = draw_scroll_x.get()
+    scr_y = draw_scroll_y.get() 
+    fscr = drawCanvas.cget('scrollregion')
+    fscr = fscr.split(' ')
+    xofs = scr_x[0] * float(fscr[2])
+    yofs = scr_y[0] * float(fscr[3])
+    line_endpos = (o.x+xofs, o.y+yofs)
+    xpx_start = math.floor( line_startpos[0] / (zoom_scale*app_scale) )
+    ypx_start = math.floor( line_startpos[1] / (zoom_scale*app_scale) )
+    #tilepx_start = (ypx_start * graphics_mode_width) + xpx_start
+    xpx_end = math.floor( line_endpos[0] / (zoom_scale*app_scale) )
+    ypx_end = math.floor( line_endpos[1] / (zoom_scale*app_scale) )
+    #tilepx_end = (ypx_end * graphics_mode_width) + xpx_end
+    x_step = xpx_end - xpx_start
+    y_step = ypx_end - ypx_start
+    step_left = False 
+    if x_step < 0:
+        step_left = True
+    step = x_step/y_step
+    step_up = False 
+    if step < 0:
+        step_up = True
+        step = step * -1 
+    step_counter = 0
+    print(step_left, step_up, step)
+    cur_x = xpx_start 
+    cur_y = ypx_start 
+    while (cur_x != xpx_end) and (cur_y != ypx_end):
+        drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
+        if step_left:
+            cur_x -= 1
+        else:
+            cur_x += 1
+        step_counter += 1
+        if step_counter >= step:
+            step_counter -= step
+            if step_up:
+                cur_y -= 1
+            else:
+                cur_y += 1
 
+####### THROW THIS SHIT AWAY ######
+    # pxbbt = drawCanvas.find_overlapping(line_startpos[0], line_startpos[1], line_endpos[0], line_endpos[1])
+    # pxbb = list(pxbbt)
+    # #topaint = []
+    # i = 0
+    # #print(len(pxbb))
+    # while i < len(pxbb):
+    #     if drawCanvas.type(pxbb[i]) == 'rectangle':
+    #         co = drawCanvas.coords(pxbb[i])
+    #         iteration = drawCanvas.find_overlapping(co[0], co[1], co[2], co[3])
+    #         z = 0
+    #         while z < len(iteration):
+    #             found = False
+    #             if iteration[z] == drawing_line:
+    #                 color = drawCanvas.itemcget(pxbb[i], 'fill')
+    #                 if color != hex_palette[selected_palette_no]:
+    #                     drawCanvas.itemconfig(pxbb[i], fill=hex_palette[selected_palette_no])
+    #                     app.update_idletasks()
+    #                 found = True
+    #             if found:
+    #                 break
+    #             z += 1
+    #     i += 1
+#### GARBAGE CODE ABOVE #####
     
 def line_mode():
     global pxbutton 
