@@ -1025,30 +1025,45 @@ def paint_line(o):
     x_step = xpx_end - xpx_start
     y_step = ypx_end - ypx_start
     step_left = False 
-    if x_step < 0:
-        step_left = True
-    step = x_step/y_step
+    if y_step != 0:
+        step = x_step/y_step
+    else:
+        step = x_step
     step_up = False 
     if step < 0:
-        step_up = True
         step = step * -1 
+    if x_step < 0:
+        step_left = True
+        if y_step < 0:
+            step_up = True
+        else:
+            step_up = False
+    else:
+        step_left = False 
+        if y_step < 0:
+            step_up = True
+        else:
+            step_up = False 
     step_counter = 0
     print(step_left, step_up, step)
     cur_x = xpx_start 
     cur_y = ypx_start 
     while (cur_x != xpx_end) and (cur_y != ypx_end):
-        drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
-        if step_left:
-            cur_x -= 1
-        else:
-            cur_x += 1
-        step_counter += 1
+        if step_counter < step:
+            if step_left:
+                cur_x -= 1
+            else:
+                cur_x += 1
+            step_counter += 1
         if step_counter >= step:
             step_counter -= step
             if step_up:
                 cur_y -= 1
             else:
                 cur_y += 1
+        drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
+        
+    #drawCanvas.itemconfig(screen_pixels[tilepx_end], fill=hex_palette[selected_palette_no])
 
 ####### THROW THIS SHIT AWAY ######
     # pxbbt = drawCanvas.find_overlapping(line_startpos[0], line_startpos[1], line_endpos[0], line_endpos[1])
