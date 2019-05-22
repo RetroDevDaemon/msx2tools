@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.30: Added fill tool*.
+# v1.31: Added compression to file format.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -17,6 +17,9 @@
 import tkinter as tk
 import sys 
 import math 
+import zipfile 
+import os 
+#import zlib
 
 patternMode = False
 
@@ -1483,10 +1486,30 @@ def loadm2p():
     global filename 
     global spriteSize
     spriteSize = 8
-    f = None 
+    f = None
+    z = None 
+    zipped = False 
+    inbuffer = 'm2p'
     try: 
-        f = open(filename, 'r')
-        data = f.readline()
+        if zipfile.is_zipfile(filename):
+            zipped = True 
+            z = zipfile.ZipFile(filename)
+            f = z.open(inbuffer, 'r')
+            data = f.readline().decode("utf-8")
+        else:
+            f = open(filename, 'r')
+            data = f.readline()
+        
+#         if zipfile.is_zipfile(filename):
+#             zipped = True
+#             z = zipfile.ZipFile(filename)
+#             f = z.open(inbuffer, 'r')
+#             data = f.readline().decode("utf-8")
+#         else:
+#             f = open(filename, 'r')
+#             data = f.readline()
+        #f = open(filename, 'r')
+        #data = f.readline()
         global palette_display
         global currentColor 
         palette_vals = data.split(',')
@@ -1501,7 +1524,10 @@ def loadm2p():
         currentColor = intpal[0]
         j = 0
         while j < (3*256):
-            data = f.readline().split(',')
+            if zipped:
+                data = f.readline().decode("utf-8").split(',')
+            else:
+                data = f.readline().split(',')
             data.pop()
             data_int=[]
             i = 0
@@ -1526,16 +1552,27 @@ def loadm2p():
     finally:
         if(f):
             f.close()
+        if(z):
+            z.close()
 
 
 def loadm2s():
     global filename
     global spriteSize
     spriteSize = 16
-    f = None 
+    f = None
+    z = None 
+    inbuffer = 'm2s' 
+    zipped = False
     try:
-        f = open(filename, 'r')
-        data = f.readline()
+        if zipfile.is_zipfile(filename):
+            zipped = True
+            z = zipfile.ZipFile(filename)
+            f = z.open(inbuffer, 'r')
+            data = f.readline().decode("utf-8")
+        else:
+            f = open(filename, 'r')
+            data = f.readline()
         # reset palette data
         global palette_display
         global currentColor
@@ -1552,7 +1589,10 @@ def loadm2s():
         # load in mf'in maskdata
         j = 0
         while j < 32:
-            data = f.readline().split(',')
+            if zipped:
+                data = f.readline().decode("utf-8").split(',')
+            else:
+                data = f.readline().split(',')
             data.pop()
             data_int = []
             i = 0 
@@ -1574,6 +1614,8 @@ def loadm2s():
     finally:
         if(f):
             f.close()
+        if(z):
+            z.close()
 
 def resetPalette(newpal):
     global intpal 
@@ -1589,18 +1631,23 @@ def savem2p():
         return
     p = []
     f = None 
+    outbuffer = 'm2p'
     for n in palette_display:
         p.append(n.myVal)
     try:
         if filename[-4:].upper() != '.M2P':
             filename = filename + '.m2p'
-        f = open(filename, 'w')
+        #f = open(filename, 'w')
+        f = open(outbuffer, 'w')
         for item in p: 
             f.write('%s,' % item)
         for n in patterndata:
             f.write('\n')
             for item in n:
                 f.write('%s,' % item)
+        f.close()
+        with zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.write(outbuffer)
         messagebox.showinfo("Save OK", message="Save successful.")
         global saved 
         saved = True 
@@ -1613,39 +1660,40 @@ def savem2p():
         filename = ''
         messagebox.showerror("Unexpected error", message="Unknown error saving file. This might be a bug!!")
     finally:
-        if(f):
-            f.close()
+        os.remove('m2p')
     return
 
 def savem2s():
     global filename
     p = []
     f = None 
+    outbuffer = 'm2s'
     for n in palette_display:
         p.append(n.myVal)
     try:
         if filename[-4:].upper() != '.M2S':
             filename = filename + '.m2s'
-        f = open(filename, 'w')
+        f = open(outbuffer, 'w')
         for item in p: 
             f.write('%s,' % item)
         for n in maskdata:
             f.write('\n')
             for item in n:
                 f.write('%s,'%item)
+        f.close()
+        with zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.write(outbuffer)
         messagebox.showinfo("Save OK", message="Save successful.")
         global saved 
         saved = True 
     except IOError:
-        #global filename 
         filename = ''
         messagebox.showerror("I/O error", message="Output error saving file. Check drives and permissions and try again.")
     except:
         messagebox.showerror("Unexpected error", message="Unknown error saving file. This might be a bug!!")
     finally:
-        if(f):
-            f.close()
-
+        os.remove('m2s')
+        
 saved = False
 # define menus
 def client_exit():
