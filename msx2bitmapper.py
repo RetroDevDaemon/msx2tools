@@ -1395,22 +1395,42 @@ def paint_circle(o):
     global y_ratio 
     mp_xy = (math.floor((mp[0] / (app_scale*zoom_scale))), math.floor((mp[1] / (app_scale*zoom_scale*y_ratio))))
     print('circle midpoint (px): ', mp_xy[0], mp_xy[1])
-    x_rad = math.floor(abs(circ_coords[2] - circ_coords[0]) / (app_scale*zoom_scale))
-    y_rad = math.floor(abs(circ_coords[3] - circ_coords[1]) / (app_scale*zoom_scale*y_ratio))
+    x_rad = math.floor(abs(circ_coords[2] - circ_coords[0]) / (app_scale*zoom_scale)/2)
+    y_rad = math.floor(abs(circ_coords[3] - circ_coords[1]) / (app_scale*zoom_scale*y_ratio)/2)
     print('circle radii: ', x_rad, y_rad)
     global hex_palette 
     global selected_palette_no
     global graphics_mode_width
-    i = -x_rad 
+    i =  0
     while i < x_rad:
         # i is now the x position - e.g. negative 20 to positive 20
-        y = (1 - (i/x_rad))*y_rad 
-        print (i, y)
-        #px_index = math.floor((y*graphics_mode_width)+i)
-        #drawCanvas.itemconfig(screen_pixels[px_index], fill=hex_palette[selected_palette_no])
+        dif_y = math.floor( math.sqrt( (1 - (i/x_rad)**2)*y_rad**2) )
+        #print (i, dif_y)
+        cur_xpx = mp_xy[0] + i
+        cur_ypx = mp_xy[1] - dif_y 
+        p = tileindex(cur_xpx, cur_ypx)
+        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        cur_xpx = mp_xy[0] - i
+        cur_ypx = mp_xy[1] - dif_y 
+        p = tileindex(cur_xpx, cur_ypx)
+        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        cur_xpx = mp_xy[0] + i
+        cur_ypx = mp_xy[1] + dif_y 
+        p = tileindex(cur_xpx, cur_ypx)
+        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        cur_xpx = mp_xy[0] - i
+        cur_ypx = mp_xy[1] + dif_y 
+        p = tileindex(cur_xpx, cur_ypx)
+        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        
+        
         i += 1
     drawCanvas.delete(drawing_circle)
     return
+
+def tileindex(x, y):
+    global graphics_mode_width
+    return (y*graphics_mode_width)+x 
 
 def circle_mode():
     global pxbutton 
