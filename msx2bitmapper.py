@@ -118,7 +118,10 @@ def init_screen_data(mode='G4', expanded=False):
     screen_data = []
     i = 0
     while i < (graphics_mode_width*graphics_mode_height):
-        screen_data.append(0)
+        if mode != 'G7':
+            screen_data.append(0)
+        else:
+            screen_data.append('#000')
         i += 1
 
 grid_lines=[]
@@ -780,68 +783,87 @@ def color_pixel(x, y):
     global selected_palette_no
     global hex_palette
     tp = (y*graphics_mode_width) + x
-    screen_data[tp] = selected_palette_no
+    global graphic_mode
+    if graphic_mode != 'G7':
+        screen_data[tp] = selected_palette_no
+    else:
+        screen_data[tp] = hex_palette[selected_palette_no]
     drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
 
 def px_mode():
     global pxbutton 
-    pxbutton.config(relief=tk.RAISED)
+    pxbutton.config(relief=tk.SUNKEN)
     global linebutton 
-    linebutton.config(relief=tk.SUNKEN)
+    linebutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'PX'
+    global drawCanvas
+    #drawCanvas.unbind("<Button-1>")
+    #drawCanvas.unbind("<B1-Motion>")
+    drawCanvas.unbind("<ButtonRelease-1>")
+    drawCanvas.bind("<Button-1>", clicked_loc)
+    drawCanvas.bind("<B1-Motion>", clicked_loc)
+    drawCanvas.bind("<Button-3>", set_scroll_orig)
+    drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
+
 
 def client_exit():
     sys.exit()
     
-def newg4():
+# def newg4():
+#     return
+# def newg4e():
+#     global app_scale
+#     init_screen_data(mode='G4', expanded=True)
+#     init_screen_pixels()
+#     app_scale -= 1
+#     toggle_scale()
+# def newg5():
+#     global app_scale
+#     init_screen_data(mode='G5', expanded=False)
+#     init_screen_pixels()
+#     app_scale -= 1
+#     toggle_scale()
+# def newg5e():
+#     global app_scale
+#     init_screen_data(mode='G5', expanded=True)
+#     init_screen_pixels()
+#     app_scale -= 1
+#     toggle_scale()
+# def newg6():
+#     global app_scale
+#     init_screen_data(mode='G6', expanded=False)
+#     init_screen_pixels()
+#     app_scale -= 1
+#     toggle_scale()
+# def newg6e():
+#     global app_scale
+#     init_screen_data(mode='G6', expanded=True)
+#     init_screen_pixels()
+#     app_scale -= 1
+#     toggle_scale()
+# def newg7():
+#     global app_scale
+#     init_screen_data(mode='G7', expanded=False)
+#     init_screen_pixels()
+#     app_scale -= 1
+#     toggle_scale()
+# def newg7e():
+#     global app_scale
+#     init_screen_data(mode='G7', expanded=True)
+#     init_screen_pixels()
+#     app_scale -= 1
+#     toggle_scale()
+
+def new_file(mode, expanded):
     global app_scale
-    init_screen_data(mode='G4', expanded=False)
+    init_screen_data(mode=mode, expanded=expanded)
     init_screen_pixels()
     app_scale -= 1
     toggle_scale()
-def newg4e():
-    global app_scale
-    init_screen_data(mode='G4', expanded=True)
-    init_screen_pixels()
-    app_scale -= 1
-    toggle_scale()
-def newg5():
-    global app_scale
-    init_screen_data(mode='G5', expanded=False)
-    init_screen_pixels()
-    app_scale -= 1
-    toggle_scale()
-def newg5e():
-    global app_scale
-    init_screen_data(mode='G5', expanded=True)
-    init_screen_pixels()
-    app_scale -= 1
-    toggle_scale()
-def newg6():
-    global app_scale
-    init_screen_data(mode='G6', expanded=False)
-    init_screen_pixels()
-    app_scale -= 1
-    toggle_scale()
-def newg6e():
-    global app_scale
-    init_screen_data(mode='G6', expanded=True)
-    init_screen_pixels()
-    app_scale -= 1
-    toggle_scale()
-def newg7():
-    global app_scale
-    init_screen_data(mode='G7', expanded=False)
-    init_screen_pixels()
-    app_scale -= 1
-    toggle_scale()
-def newg7e():
-    global app_scale
-    init_screen_data(mode='G7', expanded=True)
-    init_screen_pixels()
-    app_scale -= 1
-    toggle_scale()
+    global m2bfilename
+    m2bfilename = ''
+    return
 
 m2bfilename = ''
 
@@ -876,7 +898,7 @@ def save_bitmap():
             i = 0
             while i < len(screen_pixels):
                 f.write(drawCanvas.itemcget(screen_pixels[i], 'fill') + ',')
-            i += 1
+                i += 1
         else:
             for c in screen_data:
                 f.write(str(c)+',')
@@ -919,6 +941,8 @@ def refresh_entire_screen(exp, newdata):
             screen_data[i] = int(screen_data[i])
             drawCanvas.itemconfig(screen_pixels[i], fill=hex_palette[screen_data[i]])
         else:
+            if screen_data[i] == '':
+                screen_data[i] = '#000'
             drawCanvas.itemconfig(screen_pixels[i], fill=screen_data[i])
         i += 1
     return
@@ -960,8 +984,6 @@ def load_m2b():
             expanded = True 
         else:
             expanded = False
-        # i forgot to do palette!
-       
         pl = pl.split(',')
         pl.pop()
         global hex_palette
@@ -1112,7 +1134,7 @@ def line_mode():
 
 def export_z80():
     asmfile = ''
-    asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 bitmap assembler data', filetypes=(('Z80 assembly data', '*.Z80'), ('All files', '*.*')))
+    asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 bitmap assembler data', filetypes=(('Z80 assembly data', '*.z80'),('Z80 assembly data', '*.Z80'), ('All files', '*.*')))
     if asmfile == '' or type(asmfile) == tuple:
         return 
     if asmfile[-4:].upper() != '.Z80':
@@ -1137,6 +1159,14 @@ def export_z80():
         else:
             outdata.append("; Size in hex: $C000")
     if (graphic_mode == 'G4') or (graphic_mode == 'G6'):
+        ### G4 SPECS
+        # 0x7000 length in hex (27,136 bytes) for 256x212
+        # each pixel is 4 bits x> yv based on palette number.
+        # e.g. $42, $1b = 4, 2, 1, 11 (MSB > LSB)
+        ### G6 SPECS
+        # 0xD400 in hex (54,272 bytes) for 512x212
+        # as G4, each pixel is 4 bits, but width is double res.
+        # e.g. $42, $1b = 4, 2, 1, 11
         y = 0
         while y < graphics_mode_height:
             x = 0
@@ -1154,13 +1184,63 @@ def export_z80():
             outdata.append(thisrowout)
             y += 1
     elif (graphic_mode == 'G5'):
+        ### G5 SPECS
+        # 0x7000 in hex (27,136 bytes) for 512x212
+        # each pixel is 2 bits per color based on palette index
+        # e.g. $55, $DC = 1, 1, 1, 1, 3, 1, 3, 0 (MSB > LSB)
+        y = 0
+        while y < graphics_mode_height:
+            x = 0
+            thisrowout = ' DB  '
+            incr = (y*graphics_mode_width)
+            while x < graphics_mode_width:
+                thisbyteout = ''
+                px_a = screen_data[incr+x]
+                px_a = format(px_a,'02b')
+                x += 1
+                px_b = screen_data[incr+x]
+                px_b = format(px_b,'02b')
+                x += 1
+                px_c = screen_data[incr+x]
+                px_c = format(px_c,'02b')
+                x += 1
+                px_d = screen_data[incr+x]
+                px_d = format(px_d,'02b')
+                x += 1
+                fullbyte = px_a + px_b + px_c + px_d 
+                fullbyte = format(int(fullbyte,2),'02x')
+                thisbyteout += '$' + fullbyte + ', '
+                thisrowout += thisbyteout 
+            outdata.append(thisrowout)
+            y += 1
+    elif (graphic_mode == 'G7'):
+        ### G7 SPECS
+        # 0xD400 in hex (54,272 bytes) for 256x212
+        # each pixel is 1 full byte RGB332.
+        # e.g. $5B = #26F
         y = 0
         while y < graphics_mode_height:
             x = 0
             thisrowout = ' DB  '
             while x < graphics_mode_width:
-                thisbyteout = ''
-                
+                px = screen_data[(y*graphics_mode_width)+x]
+                px_a = px[1]
+                px_b = px[2]
+                px_c = px[3]
+                px_a = round(int(px_a,16)*(7/15))
+                px_b = round(int(px_b,16)*(7/15))
+                px_c = int(px_c,16)*(7/15)
+                px_c = round(px_c * (3/7))
+                px_a = format(px_a, '03b')
+                px_b = format(px_b, '03b')
+                px_c = format(px_c, '02b')
+                fullbyte = px_a + px_b + px_c 
+                fullbyte = format(int(fullbyte,2), '02x')
+                fullbyte = '$' + fullbyte + ', '
+                thisrowout += fullbyte 
+                x += 1
+            outdata.append(thisrowout)
+            y += 1
     try:
         if asmfile[-4:].upper() != '.Z80':
             asmfile = asmfile + '.z80'
@@ -1174,36 +1254,19 @@ def export_z80():
     finally:
         if(f):
             f.close()
-    ### G4 SPECS
-    # 0x7000 length in hex (27,136 bytes) for 256x212
-    # each pixel is 4 bits x> yv based on palette number.
-    # e.g. $42, $1b = 4, 2, 1, 11 (MSB > LSB)
-    ### G5 SPECS
-    # 0x7000 in hex (27,136 bytes) for 512x212
-    # each pixel is 2 bits per color based on palette index
-    # e.g. $55, $DC = 1, 1, 1, 1, 3, 1, 3, 0 (MSB > LSB)
-    ### G6 SPECS
-    # 0xD400 in hex (54,272 bytes) for 512x212
-    # as G4, each pixel is 4 bits, but width is double res.
-    # e.g. $42, $1b = 4, 2, 1, 11
-    ### G7 SPECS
-    # 0xD400 in hex (54,272 bytes) for 256x212
-    # each pixel is 1 full byte RGB332.
-    # e.g. $5B = #26F
-
         
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
-fileMenu.add_command(label='New G4 bitmap (192)', command=newg4)
-fileMenu.add_command(label='New G4 bitmap (212)', command=newg4e)
-fileMenu.add_command(label='New G5 bitmap (192)', command=newg5)
-fileMenu.add_command(label='New G5 bitmap (212)', command=newg5e)
-fileMenu.add_command(label='New G6 bitmap (192)', command=newg6)
-fileMenu.add_command(label='New G6 bitmap (212)', command=newg6e)
-fileMenu.add_command(label='New G7 bitmap (192)', command=newg7)
-fileMenu.add_command(label='New G7 bitmap (212)', command=newg7e)
+fileMenu.add_command(label='New G4 bitmap (192)', command=lambda:new_file('G4', False))
+fileMenu.add_command(label='New G4 bitmap (212)', command=lambda:new_file('G4', True))
+fileMenu.add_command(label='New G5 bitmap (192)', command=lambda:new_file('G5', False))
+fileMenu.add_command(label='New G5 bitmap (212)', command=lambda:new_file('G5', True))
+fileMenu.add_command(label='New G6 bitmap (192)', command=lambda:new_file('G6', False))
+fileMenu.add_command(label='New G6 bitmap (212)', command=lambda:new_file('G6', True))
+fileMenu.add_command(label='New G7 bitmap (192)', command=lambda:new_file('G7', False))
+fileMenu.add_command(label='New G7 bitmap (212)', command=lambda:new_file('G7', True))
 fileMenu.add_command(label='Save', command=save_normal)
 fileMenu.add_command(label='Load...', command=load_m2b)
 fileMenu.add_separator()
@@ -1211,7 +1274,7 @@ fileMenu.add_command(label='Export as z80 assembly...', command=export_z80)
 fileMenu.add_separator()
 fileMenu.add_command(label='Quit', command=client_exit)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
-pxbutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, relief=tk.SUNKEN, command=draw_mode)
+pxbutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, relief=tk.SUNKEN, command=px_mode)
 pxbutton.grid(row=0, column=1, padx=(20,0), sticky='w')
 linebutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, command=line_mode)
 linebutton.grid(row=0, column=2)
