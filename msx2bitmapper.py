@@ -1070,6 +1070,8 @@ def paint_line(o):
     global graphics_mode_width
     global hex_palette
     global selected_palette_no
+    global y_ratio
+
     scr_x = draw_scroll_x.get()
     scr_y = draw_scroll_y.get() 
     fscr = drawCanvas.cget('scrollregion')
@@ -1077,25 +1079,15 @@ def paint_line(o):
     xofs = scr_x[0] * float(fscr[2])
     yofs = scr_y[0] * float(fscr[3])
     line_endpos = (o.x+xofs, o.y+yofs)
-    global y_ratio
+
     xpx_start = math.floor( line_startpos[0] / (zoom_scale*app_scale) )
     ypx_start = math.floor( line_startpos[1] / (zoom_scale*app_scale*y_ratio) )
-    #tilepx_start = (ypx_start * graphics_mode_width) + xpx_start
     xpx_end = math.floor( line_endpos[0] / (zoom_scale*app_scale) )
     ypx_end = math.floor( line_endpos[1] / (zoom_scale*app_scale*y_ratio) )
-    #tilepx_end = (ypx_end * graphics_mode_width) + xpx_end
-    #print(xpx_start, ypx_start, xpx_end, ypx_end)
+
     x_step = xpx_end - xpx_start
     y_step = ypx_end - ypx_start
     
-    if y_step != 0:
-        step = x_step/y_step
-    else:
-        step = x_step
-
-    if step < 0:
-        step = step * -1 
-
     step_up = False 
     step_down = False
     step_left = False 
@@ -1111,31 +1103,99 @@ def paint_line(o):
     elif y_step > 0:
         step_down = True
 
-    step_counter = 0
-    
-    cur_x = xpx_start 
-    cur_y = ypx_start 
-    while ((cur_x != xpx_end) or (xpx_start == xpx_end)) and ((cur_y != ypx_end) or (ypx_start == ypx_end)):
-        if step_counter < step:
-            if step_left:
-                cur_x -= 1
-            elif step_right:
-                cur_x += 1
-            step_counter += 1
-        if step_counter >= step:
-            step_counter -= step
-            if step_up:
-                cur_y -= 1
-            elif step_down:
-                cur_y += 1
-        if ((cur_y*graphics_mode_width)+cur_x) > len(screen_pixels):
-            drawCanvas.delete(drawing_line)
-            return
-        drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
-        if graphic_mode != 'G7':
-            screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
+    if step_up == False and step_down == False:
+        # horizontal line
+
+        if xpx_start > xpx_end:
+            temp = xpx_start
+            xpx_start = xpx_end
+            xpx_end = temp
+
+        cur_x = xpx_start
+        cur_y = ypx_start
+
+        # prevent traversal off of left of screen bounds
+        if cur_x < 0:
+            cur_x = 0
+
+        while cur_x <= xpx_end:
+
+            # prevent traversal off right of screen bounds
+            if cur_x > graphics_mode_width:
+                break
+
+            drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
+            cur_x += 1
+    elif step_left == False and step_right == False:
+        # vertical line
+
+        if ypx_start > ypx_end:
+            temp = ypx_start
+            ypx_start = ypx_end
+            ypx_end = temp
+
+        cur_x = xpx_start
+        cur_y = ypx_start
+
+        # prevent traversal off top of screen bounds
+        if cur_y < 0:
+            cur_y = 0
+
+        while cur_y <= ypx_end:
+            
+            current_index = (cur_y * graphics_mode_width) + cur_x
+
+            # Prevent traversal off bottom of screen bounds
+            if current_index > len(screen_pixels):
+                break
+
+            drawCanvas.itemconfig(screen_pixels[current_index], fill=hex_palette[selected_palette_no])
+            cur_y += 1
+    else:
+        # angle of some sort
+
+        if y_step != 0:
+            step = x_step/y_step
         else:
-            screen_data[(cur_y*graphics_mode_width)+cur_x] = hex_palette[selected_palette_no]
+            step = x_step
+
+        if step < 0:
+            step = step * -1 
+
+        step_counter = 0
+
+        cur_x = xpx_start
+        cur_y = ypx_start
+
+        while cur_x != xpx_end or cur_y != ypx_end:
+            if step_counter < step:
+                if cur_x != xpx_end:
+                    if step_left:
+                        cur_x -= 1
+                    elif step_right:
+                        cur_x += 1
+
+                step_counter += 1
+            if step_counter >= step:
+                if cur_y != ypx_end:
+                    if step_up:
+                        cur_y -= 1
+                    elif step_down:
+                        cur_y += 1
+
+                step_counter -= step
+
+            # Check if off screen bounds
+            current_index = (cur_y*graphics_mode_width)+cur_x
+            if current_index > len(screen_pixels) or current_index < 0:
+                drawCanvas.delete(drawing_line)
+                return
+
+            drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
+            else:
+                screen_data[(cur_y*graphics_mode_width)+cur_x] = hex_palette[selected_palette_no]
     drawCanvas.delete(drawing_line)
     
 def line_mode():
