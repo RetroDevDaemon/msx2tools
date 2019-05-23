@@ -1,6 +1,7 @@
-# MSX2 Spriter v1.31 / Screener v1.21
+# MSX2 Tools
+# MSX2 Spriter v1.31 / MSX2 Screener v1.21
 
-Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts.
+Python3 toolset for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts, plus GRAPHIC4-7 (screen 5-8) bitmaps.
 
 
 ### Release notes:
@@ -67,7 +68,7 @@ As of 1.1, you can also create pattern sets for backgrounds!
 
 To switch to pattern mode, select **New pattern file** from the File menu. You will be greeted with a screen similar to the following (screenshot slightly out of date):
 
-![ss2](m2s6.png)
+![ss2](m2s3.png)
 
 Instructions for **Pattern mode**:<br>
 -As above, the left mouse button draws a color, the right mouse button draws transparent.<br>
