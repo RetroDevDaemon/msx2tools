@@ -6,6 +6,7 @@ __pycache__/
 build/
 dist/
 *.z80
+*.Z80
 inverter.py
 hexinverter.py
 .gitignore
