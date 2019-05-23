@@ -1329,10 +1329,27 @@ def paint_circle(o):
     global drawCanvas
     global drawing_circle 
     circ_coords = drawCanvas.coords(drawing_circle)
-    mp = ((circ_coords[0]+circ_coords[2])/2, (circ_coords[1]+circ_coords[2])/2) #midpoint in expanded point size
-    # relatively mp should be zero.
-    ofs = get_canvas_offset()
-    print(mp[0]+ofs[0], mp[1]+ofs[1])
+    mp = ((circ_coords[0]+circ_coords[2])/2, (circ_coords[1]+circ_coords[3])/2) #midpoint in expanded point size
+    global app_scale 
+    global zoom_scale 
+    global y_ratio 
+    mp_xy = (math.floor((mp[0] / (app_scale*zoom_scale))), math.floor((mp[1] / (app_scale*zoom_scale*y_ratio))))
+    print('circle midpoint (px): ', mp_xy[0], mp_xy[1])
+    x_rad = math.floor(abs(circ_coords[2] - circ_coords[0]) / (app_scale*zoom_scale))
+    y_rad = math.floor(abs(circ_coords[3] - circ_coords[1]) / (app_scale*zoom_scale*y_ratio))
+    print('circle radii: ', x_rad, y_rad)
+    global hex_palette 
+    global selected_palette_no
+    global graphics_mode_width
+    i = -x_rad 
+    while i < x_rad:
+        # i is now the x position - e.g. negative 20 to positive 20
+        y = (1 - (i/x_rad))*y_rad 
+        print (i, y)
+        #px_index = math.floor((y*graphics_mode_width)+i)
+        #drawCanvas.itemconfig(screen_pixels[px_index], fill=hex_palette[selected_palette_no])
+        i += 1
+    drawCanvas.delete(drawing_circle)
     return
 
 def circle_mode():
