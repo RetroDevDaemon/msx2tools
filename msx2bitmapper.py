@@ -1147,19 +1147,23 @@ def paint_line(o):
         cur_x = xpx_start
         cur_y = ypx_start
 
-        while ((cur_x != xpx_end) or (xpx_start == xpx_end)) and ((cur_y != ypx_end) or (ypx_start == ypx_end)):
+        while cur_x != xpx_end or cur_y != ypx_end:
             if step_counter < step:
-                if step_left:
-                    cur_x -= 1
-                elif step_right:
-                    cur_x += 1
+                if cur_x != xpx_end:
+                    if step_left:
+                        cur_x -= 1
+                    elif step_right:
+                        cur_x += 1
+
                 step_counter += 1
             if step_counter >= step:
+                if cur_y != ypx_end:
+                    if step_up:
+                        cur_y -= 1
+                    elif step_down:
+                        cur_y += 1
+
                 step_counter -= step
-                if step_up:
-                    cur_y -= 1
-                elif step_down:
-                    cur_y += 1
             if ((cur_y*graphics_mode_width)+cur_x) > len(screen_pixels):
                 drawCanvas.delete(drawing_line)
                 return
