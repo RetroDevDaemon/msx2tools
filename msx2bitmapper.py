@@ -1114,7 +1114,16 @@ def paint_line(o):
         cur_x = xpx_start
         cur_y = ypx_start
 
+        # prevent traversal off of left of screen bounds
+        if cur_x < 0:
+            cur_x = 0
+
         while cur_x <= xpx_end:
+
+            # prevent traversal off right of screen bounds
+            if cur_x > graphics_mode_width:
+                break
+
             drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
             cur_x += 1
     elif step_left == False and step_right == False:
@@ -1128,8 +1137,19 @@ def paint_line(o):
         cur_x = xpx_start
         cur_y = ypx_start
 
+        # prevent traversal off top of screen bounds
+        if cur_y < 0:
+            cur_y = 0
+
         while cur_y <= ypx_end:
-            drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
+            
+            current_index = (cur_y * graphics_mode_width) + cur_x
+
+            # Prevent traversal off bottom of screen bounds
+            if current_index > len(screen_pixels):
+                break
+
+            drawCanvas.itemconfig(screen_pixels[current_index], fill=hex_palette[selected_palette_no])
             cur_y += 1
     else:
         # angle of some sort
@@ -1164,9 +1184,13 @@ def paint_line(o):
                         cur_y += 1
 
                 step_counter -= step
-            if ((cur_y*graphics_mode_width)+cur_x) > len(screen_pixels):
+
+            # Check if off screen bounds
+            current_index = (cur_y*graphics_mode_width)+cur_x
+            if current_index > len(screen_pixels) or current_index < 0:
                 drawCanvas.delete(drawing_line)
                 return
+
             drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
             if graphic_mode != 'G7':
                 screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
