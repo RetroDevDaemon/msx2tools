@@ -68,7 +68,7 @@ As of 1.1, you can also create pattern sets for backgrounds!
 
 To switch to pattern mode, select **New pattern file** from the File menu. You will be greeted with a screen similar to the following (screenshot slightly out of date):
 
-![ss2](m2s6.png)
+![ss2](m2s3.png)
 
 Instructions for **Pattern mode**:<br>
 -As above, the left mouse button draws a color, the right mouse button draws transparent.<br>
