@@ -86,14 +86,30 @@ static char im_bits[] = {
 };
 """
 
+line_icon_data= """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x14, 0x00, 0x08, 0x00, 0x14, 0x00, 0x20, 0x00, 0x40, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x04, 0x00, 0x08, 0x00, 0x50, 0x00, 0x20, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00,
+};
+"""
+
+circle_icon_data= """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xe0, 0x07, 0x10, 0x08, 0x08, 0x10, 0x04, 0x28, 0x02, 0x44, 0x02, 0x42, 0x82, 0x41, 0x82, 0x41, 0x02, 0x40, 0x04, 0x20, 0x08, 0x10, 0x10, 0x08, 0xe0, 0x07, 0x00, 0x00, 0x00, 0x00
+};
+"""
+
 dotbmp = tk.BitmapImage(data=dotdata)
 scale_icon = tk.BitmapImage(data=scale_icon_data)
 zoom1_icon = tk.BitmapImage(data=zoom1_icon_data)
 zoom2_icon = tk.BitmapImage(data=zoom2_icon_data)
 zoom4_icon = tk.BitmapImage(data=zoom4_icon_data)
 zoom8_icon = tk.BitmapImage(data=zoom8_icon_data)
-
-
+line_icon = tk.BitmapImage(data=line_icon_data)
+circle_icon = tk.BitmapImage(data=circle_icon_data)
 # init screen data
 def init_screen_data(mode='G4', expanded=False):
     global screen_data
@@ -795,6 +811,8 @@ def px_mode():
     pxbutton.config(relief=tk.SUNKEN)
     global linebutton 
     linebutton.config(relief=tk.RAISED)
+    global circlebutton
+    circlebutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'PX'
     global drawCanvas
@@ -1157,6 +1175,8 @@ def line_mode():
     pxbutton.config(relief=tk.RAISED)
     global linebutton 
     linebutton.config(relief=tk.SUNKEN)
+    global circlebutton
+    circlebutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'LINE'
     global drawCanvas
@@ -1290,6 +1310,81 @@ def export_z80():
     finally:
         if(f):
             f.close()
+
+drawing_circle = None
+circle_origin = [-1,-1]
+
+'''returns tuple of 0,0 based x,y offset of drawCanvas'''
+def get_canvas_offset():
+    #global line_startpos 
+    #global drawing_line
+    global drawCanvas
+    #global line_startpos
+    global draw_scroll_x
+    global draw_scroll_y
+    global zoom_scale
+    global graphics_mode_width
+    #global hex_palette
+    #global selected_palette_no
+    scr_x = draw_scroll_x.get()
+    scr_y = draw_scroll_y.get() 
+    fscr = drawCanvas.cget('scrollregion')
+    fscr = fscr.split(' ')
+    xofs = scr_x[0] * float(fscr[2])
+    yofs = scr_y[0] * float(fscr[3])
+    return (xofs, yofs)
+
+def start_circle(o):
+    global drawCanvas
+    global drawing_circle
+    ofs = get_canvas_offset()
+    x = o.x+ofs[0]
+    y = o.y+ofs[1]
+    global circle_origin
+    circle_origin[0] = x 
+    circle_origin[1] = y
+    drawing_circle = drawCanvas.create_oval(x, y, x, y, fill='', outline='white')
+    return 
+def move_circle(o):
+    global drawCanvas 
+    global drawing_circle 
+    global circle_origin
+    ofs = get_canvas_offset()
+    x = o.x+ofs[0]
+    y = o.y+ofs[1]
+    #drawing_circle = drawCanvas.itemconfig(drawing_circle, x2=x, y2=y)
+    drawCanvas.coords(drawing_circle, circle_origin[0], circle_origin[1], x, y)
+    return 
+def paint_circle(o):
+    ## if center is 0,0:
+    # y = (1 - xpos/xrad)*yrad
+    global drawCanvas
+    global drawing_circle 
+    circ_coords = drawCanvas.coords(drawing_circle)
+    mp = ((circ_coords[0]+circ_coords[2])/2, (circ_coords[1]+circ_coords[2])/2) #midpoint in expanded point size
+    # relatively mp should be zero.
+    ofs = get_canvas_offset()
+    print(mp[0]+ofs[0], mp[1]+ofs[1])
+    return
+
+def circle_mode():
+    global pxbutton 
+    pxbutton.config(relief=tk.RAISED)
+    global linebutton 
+    linebutton.config(relief=tk.RAISED)
+    global circlebutton
+    circlebutton.config(relief=tk.SUNKEN)
+    global draw_mode
+    draw_mode = 'CIRCLE'
+    global drawCanvas
+    drawCanvas.unbind("<Button-1>")
+    drawCanvas.unbind("<B1-Motion>")
+    drawCanvas.bind("<Button-1>", start_circle)
+    drawCanvas.bind("<B1-Motion>", move_circle)
+    drawCanvas.bind("<ButtonRelease-1>", paint_circle)
+    return
+
+
         
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
@@ -1312,18 +1407,20 @@ fileMenu.add_command(label='Quit', command=client_exit)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
 pxbutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, relief=tk.SUNKEN, command=px_mode)
 pxbutton.grid(row=0, column=1, padx=(20,0), sticky='w')
-linebutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, command=line_mode)
+linebutton = tk.Button(toolbar, image=line_icon, width=20, height=20, command=line_mode)
 linebutton.grid(row=0, column=2)
+circlebutton = tk.Button(toolbar, image=circle_icon, width=20, height=20, command=circle_mode)
+circlebutton.grid(row=0, column=3)
 scalebutton = tk.Button(toolbar, image=scale_icon, width=20, height=20, command=toggle_scale)
-scalebutton.grid(row=0, column=3, padx=(20,0), sticky='w')
+scalebutton.grid(row=0, column=4, padx=(20,0), sticky='w')
 zoom1button = tk.Button(toolbar, image=zoom1_icon, width=20, height=20, command=zoom_1x, relief=tk.SUNKEN)
-zoom1button.grid(row=0, column=4, sticky='w')
+zoom1button.grid(row=0, column=5, sticky='w')
 zoom2button = tk.Button(toolbar, image=zoom2_icon, width=20, height=20, command=zoom_2x)
-zoom2button.grid(row=0, column=5, sticky='w')
+zoom2button.grid(row=0, column=6, sticky='w')
 zoom4button = tk.Button(toolbar, image=zoom4_icon, width=20, height=20, command=zoom_4x)
-zoom4button.grid(row=0, column=6, sticky='w')
+zoom4button.grid(row=0, column=7, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
-zoom8button.grid(row=0, column=7, sticky='w')
+zoom8button.grid(row=0, column=8, sticky='w')
 
 toolbar.grid(row=0, columnspan=5)
 menuBar.add_cascade(label="File", menu=fileMenu)
