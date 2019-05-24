@@ -1610,7 +1610,7 @@ def paint_rect(o, shouldFill = False):
             x_start += 1
 
     drawCanvas.delete(drawing_rect) 
-    
+
 def paint_and_fill_rect(o):
     paint_rect(o, True)
 
@@ -1631,6 +1631,10 @@ def rect_mode():
     drawCanvas.bind("<Button-1>", start_rect)
     drawCanvas.bind("<B1-Motion>", move_rect)
     drawCanvas.bind("<ButtonRelease-1>", paint_rect)
+
+    drawCanvas.bind("<Button-3>", start_rect)
+    drawCanvas.bind("<B3-Motion>", move_rect)
+    drawCanvas.bind("<ButtonRelease-3>", paint_and_fill_rect)
     
         
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
