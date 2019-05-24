@@ -101,6 +101,13 @@ static char im_bits[] = {
 0x00, 0x00, 0xe0, 0x07, 0x10, 0x08, 0x08, 0x10, 0x04, 0x28, 0x02, 0x44, 0x02, 0x42, 0x82, 0x41, 0x82, 0x41, 0x02, 0x40, 0x04, 0x20, 0x08, 0x10, 0x10, 0x08, 0xe0, 0x07, 0x00, 0x00, 0x00, 0x00
 };
 """
+rect_icon_data= """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xfe, 0x3f, 0x02, 0x20, 0x02, 0x20, 0x02, 0x20, 0x02, 0x20, 0x82, 0x7f, 0x82, 0x40, 0x82, 0x40, 0xfe, 0x40, 0x80, 0x40, 0xfc, 0x43, 0x04, 0x42, 0x04, 0x7e, 0xfc, 0x03, 0x00, 0x00
+};
+"""
 
 dotbmp = tk.BitmapImage(data=dotdata)
 scale_icon = tk.BitmapImage(data=scale_icon_data)
@@ -110,6 +117,7 @@ zoom4_icon = tk.BitmapImage(data=zoom4_icon_data)
 zoom8_icon = tk.BitmapImage(data=zoom8_icon_data)
 line_icon = tk.BitmapImage(data=line_icon_data)
 circle_icon = tk.BitmapImage(data=circle_icon_data)
+rect_icon = tk.BitmapImage(data=rect_icon_data)
 # init screen data
 def init_screen_data(mode='G4', expanded=False):
     global screen_data
@@ -813,11 +821,11 @@ def px_mode():
     linebutton.config(relief=tk.RAISED)
     global circlebutton
     circlebutton.config(relief=tk.RAISED)
+    global rectbutton
+    rectbutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'PX'
     global drawCanvas
-    #drawCanvas.unbind("<Button-1>")
-    #drawCanvas.unbind("<B1-Motion>")
     drawCanvas.unbind("<ButtonRelease-1>")
     drawCanvas.bind("<Button-1>", clicked_loc)
     drawCanvas.bind("<B1-Motion>", clicked_loc)
@@ -828,50 +836,6 @@ def px_mode():
 def client_exit():
     sys.exit()
     
-# def newg4():
-#     return
-# def newg4e():
-#     global app_scale
-#     init_screen_data(mode='G4', expanded=True)
-#     init_screen_pixels()
-#     app_scale -= 1
-#     toggle_scale()
-# def newg5():
-#     global app_scale
-#     init_screen_data(mode='G5', expanded=False)
-#     init_screen_pixels()
-#     app_scale -= 1
-#     toggle_scale()
-# def newg5e():
-#     global app_scale
-#     init_screen_data(mode='G5', expanded=True)
-#     init_screen_pixels()
-#     app_scale -= 1
-#     toggle_scale()
-# def newg6():
-#     global app_scale
-#     init_screen_data(mode='G6', expanded=False)
-#     init_screen_pixels()
-#     app_scale -= 1
-#     toggle_scale()
-# def newg6e():
-#     global app_scale
-#     init_screen_data(mode='G6', expanded=True)
-#     init_screen_pixels()
-#     app_scale -= 1
-#     toggle_scale()
-# def newg7():
-#     global app_scale
-#     init_screen_data(mode='G7', expanded=False)
-#     init_screen_pixels()
-#     app_scale -= 1
-#     toggle_scale()
-# def newg7e():
-#     global app_scale
-#     init_screen_data(mode='G7', expanded=True)
-#     init_screen_pixels()
-#     app_scale -= 1
-#     toggle_scale()
 
 def new_file(mode, expanded):
     global app_scale
@@ -1059,6 +1023,8 @@ def move_line(o):
     yofs = scr_y[0] * float(fscr[3])
     drawCanvas.coords(drawing_line, line_startpos[0], line_startpos[1], o.x+xofs, o.y+yofs)
 
+'''To use this generically, pass a new xypos class, and set globally line_startpos)'''
+
 def paint_line(o):
     global line_startpos 
     global drawing_line
@@ -1072,13 +1038,14 @@ def paint_line(o):
     global selected_palette_no
     global y_ratio
 
-    scr_x = draw_scroll_x.get()
-    scr_y = draw_scroll_y.get() 
-    fscr = drawCanvas.cget('scrollregion')
-    fscr = fscr.split(' ')
-    xofs = scr_x[0] * float(fscr[2])
-    yofs = scr_y[0] * float(fscr[3])
-    line_endpos = (o.x+xofs, o.y+yofs)
+    #scr_x = draw_scroll_x.get()
+    #scr_y = draw_scroll_y.get() 
+    #fscr = drawCanvas.cget('scrollregion')
+    #fscr = fscr.split(' ')
+    #xofs = scr_x[0] * float(fscr[2])
+    #yofs = scr_y[0] * float(fscr[3])
+    ofs = get_canvas_offset()
+    line_endpos = (o.x+ofs[0], o.y+ofs[1])
 
     xpx_start = math.floor( line_startpos[0] / (zoom_scale*app_scale) )
     ypx_start = math.floor( line_startpos[1] / (zoom_scale*app_scale*y_ratio) )
@@ -1187,7 +1154,9 @@ def paint_line(o):
 
             # Check if off screen bounds
             current_index = (cur_y*graphics_mode_width)+cur_x
-            if current_index > len(screen_pixels) or current_index < 0:
+            if ((current_index > len(screen_pixels)) or (current_index < 0))\
+                or (cur_y > graphics_mode_height) or (cur_x > graphics_mode_width)\
+                    or (cur_y < 0) or (cur_x < 0):
                 drawCanvas.delete(drawing_line)
                 return
 
@@ -1205,6 +1174,8 @@ def line_mode():
     linebutton.config(relief=tk.SUNKEN)
     global circlebutton
     circlebutton.config(relief=tk.RAISED)
+    global rectbutton
+    rectbutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'LINE'
     global drawCanvas
@@ -1467,17 +1438,60 @@ def circle_mode():
     linebutton.config(relief=tk.RAISED)
     global circlebutton
     circlebutton.config(relief=tk.SUNKEN)
+    global rectbutton
+    rectbutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'CIRCLE'
     global drawCanvas
-    drawCanvas.unbind("<Button-1>")
-    drawCanvas.unbind("<B1-Motion>")
+    #drawCanvas.unbind("<Button-1>")
+    #drawCanvas.unbind("<B1-Motion>")
     drawCanvas.bind("<Button-1>", start_circle)
     drawCanvas.bind("<B1-Motion>", move_circle)
     drawCanvas.bind("<ButtonRelease-1>", paint_circle)
     return
 
+drawing_rect = None 
+rect_start = [-1,-1]
 
+def start_rect(o):
+    global drawCanvas 
+    global rect_start
+    global drawing_rect 
+    ofs = get_canvas_offset()
+    rect_start[0] = o.x + ofs[0] 
+    rect_start[1] = o.y + ofs[1]
+    drawing_rect = drawCanvas.create_rectangle(rect_start[0], rect_start[1], rect_start[0], rect_start[1], outline='white')
+def move_rect(o):
+    global drawCanvas
+    global rect_start 
+    global drawing_rect 
+    ofs = get_canvas_offset()
+    nx = o.x + ofs[0]
+    ny = o.y + ofs[1]
+    drawCanvas.coords(drawing_rect, rect_start[0], rect_start[1], nx, ny)
+    return 
+def paint_rect(o):
+
+    return 
+
+def rect_mode():
+    global pxbutton 
+    pxbutton.config(relief=tk.RAISED)
+    global linebutton 
+    linebutton.config(relief=tk.RAISED)
+    global circlebutton
+    circlebutton.config(relief=tk.RAISED)
+    global rectbutton
+    rectbutton.config(relief=tk.SUNKEN)
+    global draw_mode
+    draw_mode = 'RECT'
+    global drawCanvas
+    #drawCanvas.unbind("<Button-1>")
+    #drawCanvas.unbind("<B1-Motion>")
+    drawCanvas.bind("<Button-1>", start_rect)
+    drawCanvas.bind("<B1-Motion>", move_rect)
+    drawCanvas.bind("<ButtonRelease-1>", paint_rect)
+    
         
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
@@ -1504,16 +1518,18 @@ linebutton = tk.Button(toolbar, image=line_icon, width=20, height=20, command=li
 linebutton.grid(row=0, column=2)
 circlebutton = tk.Button(toolbar, image=circle_icon, width=20, height=20, command=circle_mode)
 circlebutton.grid(row=0, column=3)
+rectbutton = tk.Button(toolbar, image=rect_icon, width=20, height=20, command=rect_mode)
+rectbutton.grid(row=0, column=4)
 scalebutton = tk.Button(toolbar, image=scale_icon, width=20, height=20, command=toggle_scale)
-scalebutton.grid(row=0, column=4, padx=(20,0), sticky='w')
+scalebutton.grid(row=0, column=5, padx=(20,0), sticky='w')
 zoom1button = tk.Button(toolbar, image=zoom1_icon, width=20, height=20, command=zoom_1x, relief=tk.SUNKEN)
-zoom1button.grid(row=0, column=5, sticky='w')
+zoom1button.grid(row=0, column=6, sticky='w')
 zoom2button = tk.Button(toolbar, image=zoom2_icon, width=20, height=20, command=zoom_2x)
-zoom2button.grid(row=0, column=6, sticky='w')
+zoom2button.grid(row=0, column=7, sticky='w')
 zoom4button = tk.Button(toolbar, image=zoom4_icon, width=20, height=20, command=zoom_4x)
-zoom4button.grid(row=0, column=7, sticky='w')
+zoom4button.grid(row=0, column=8, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
-zoom8button.grid(row=0, column=8, sticky='w')
+zoom8button.grid(row=0, column=9, sticky='w')
 
 toolbar.grid(row=0, columnspan=5)
 menuBar.add_cascade(label="File", menu=fileMenu)
@@ -1521,10 +1537,8 @@ app.config(menu=menuBar)
 
 init_screen_data(mode='G4', expanded=False)
 init_screen_pixels()
-#add_palette_display()
 toggle_scale(1)
-#selected_palette_no = 15
-#palette_display[selected_palette_no].setVal('#FFF')
+
 # run the app
 app.resizable(False, False)
 app.protocol("WM_DELETE_WINDOW", client_exit)

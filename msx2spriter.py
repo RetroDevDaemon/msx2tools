@@ -2885,9 +2885,11 @@ def swap_palette(obj):
     updatePaletteDisplay()
     refresh_display(True)
     
+lastmode = False 
 
 def initialize_new(patternMode, loading=False):
     global intpal 
+    global lastmode
     intpal = defaultIntegerPalette.copy()
     convert_int_pal_to_hex(intpal)
     global palette_display
@@ -3143,7 +3145,10 @@ def initialize_new(patternMode, loading=False):
     app.bind("<Button-1>", grab_palette)
     app.bind("<B1-Motion>", drag_palette)
     app.bind("<ButtonRelease-1>", swap_palette)
-
+    global copybuffer 
+    if lastmode != patternMode:
+        copybuffer = []
+    lastmode = patternMode
     return
 
 initialize_new(False)
