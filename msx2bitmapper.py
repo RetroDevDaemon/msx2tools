@@ -1086,11 +1086,7 @@ def paint_line(o):
                 break
             cur_index = (cur_y*graphics_mode_width)+cur_x
             draw_pixel_atindex(cur_index)
-            #drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
-            #if graphic_mode != 'G7':
-            #    screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
-            #else:
-            #    screen_data[(cur_y*graphics_mode_width)+cur_x] = hex_palette[selected_palette_no]
+
             cur_x += 1
     elif step_left == False and step_right == False:
         # vertical line
@@ -1115,11 +1111,7 @@ def paint_line(o):
             if current_index > len(screen_pixels):
                 break
             draw_pixel_atindex(current_index)
-            #drawCanvas.itemconfig(screen_pixels[current_index], fill=hex_palette[selected_palette_no])
-            #if graphic_mode != 'G7':
-            #    screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
-            #else:
-            #    screen_data[(cur_y*graphics_mode_width)+cur_x] = hex_palette[selected_palette_no]
+            
             cur_y += 1
     else:
         # angle of some sort
@@ -1163,11 +1155,7 @@ def paint_line(o):
                 drawCanvas.delete(drawing_line)
                 return
             draw_pixel_atindex(current_index)
-            #drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
-            #if graphic_mode != 'G7':
-            #    screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
-            #else:
-            #    screen_data[(cur_y*graphics_mode_width)+cur_x] = hex_palette[selected_palette_no]
+            
     drawCanvas.delete(drawing_line)
     
 def line_mode():
@@ -1322,6 +1310,10 @@ def draw_pixel_atindex(p):
     global selected_palette_no 
     global graphic_mode 
     global screen_data
+    if p > len(screen_pixels):
+        return
+    if p < 0:
+        return 
     drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
     if graphic_mode != 'G7':
         screen_data[p] = selected_palette_no
@@ -1510,6 +1502,7 @@ def start_rect(o):
     rect_start[0] = o.x + ofs[0] 
     rect_start[1] = o.y + ofs[1]
     drawing_rect = drawCanvas.create_rectangle(rect_start[0], rect_start[1], rect_start[0], rect_start[1], outline='white')
+
 def move_rect(o):
     global drawCanvas
     global rect_start 
@@ -1518,10 +1511,33 @@ def move_rect(o):
     nx = o.x + ofs[0]
     ny = o.y + ofs[1]
     drawCanvas.coords(drawing_rect, rect_start[0], rect_start[1], nx, ny)
-    return 
+    
 def paint_rect(o):
-
-    return 
+    global line_startpos # tuple so OK !
+    global rect_start
+    global drawCanvas
+    global drawing_rect
+    global zoom_scale 
+    global app_scale 
+    # need four lines
+    p1 = xypos(rect_start[0], rect_start[1])
+    ofs = get_canvas_offset()
+    tx = o.x + ofs[0]
+    ty = o.y + ofs[1] 
+    boundx = drawCanvas.winfo_width() * zoom_scale * app_scale 
+    p2 = xypos(tx, rect_start[1])
+    p3 = xypos(rect_start[0], ty)
+    p4 = xypos(tx, ty)
+    line_startpos = (p1.x, p1.y)
+    paint_line(p2) # top
+    line_startpos = (p2.x, p2.y)
+    if o.x >= 0 and o.x < boundx:
+        paint_line(p4) # right... OR LEFT
+    line_startpos = (p1.x, p1.y)
+    paint_line(p3) # left 
+    line_startpos = (p3.x, p3.y)
+    paint_line(p4) # bottom
+    drawCanvas.delete(drawing_rect) 
 
 def rect_mode():
     global pxbutton 
