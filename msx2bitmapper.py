@@ -1569,7 +1569,7 @@ def move_rect(o):
     ny = o.y + ofs[1]
     drawCanvas.coords(drawing_rect, rect_start[0], rect_start[1], nx, ny)
     
-def paint_rect(o):
+def paint_rect(o, shouldFill = False):
     global line_startpos # tuple so OK !
     global rect_start
     global drawCanvas
@@ -1594,7 +1594,25 @@ def paint_rect(o):
     paint_line(p3) # left 
     line_startpos = (p3.x, p3.y)
     paint_line(p4) # bottom
+
+    if shouldFill: 
+        x_start = p1.x
+        x_end = p2.x
+
+        if x_start > x_end:
+            temp = x_start
+            x_start = x_end
+            x_end = temp
+        
+        while x_start < x_end:
+            line_startpos = (x_start, p1.y)
+            paint_line(xypos(x_start, p3.y))
+            x_start += 1
+
     drawCanvas.delete(drawing_rect) 
+    
+def paint_and_fill_rect(o):
+    paint_rect(o, True)
 
 def rect_mode():
     global pxbutton 
