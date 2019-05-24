@@ -1038,12 +1038,6 @@ def paint_line(o):
     global selected_palette_no
     global y_ratio
 
-    #scr_x = draw_scroll_x.get()
-    #scr_y = draw_scroll_y.get() 
-    #fscr = drawCanvas.cget('scrollregion')
-    #fscr = fscr.split(' ')
-    #xofs = scr_x[0] * float(fscr[2])
-    #yofs = scr_y[0] * float(fscr[3])
     ofs = get_canvas_offset()
     line_endpos = (o.x+ofs[0], o.y+ofs[1])
 
@@ -1092,6 +1086,10 @@ def paint_line(o):
                 break
             
             drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
+            else:
+                screen_data[(cur_y*graphics_mode_width)+cur_x] = hex_palette[selected_palette_no]
             cur_x += 1
     elif step_left == False and step_right == False:
         # vertical line
@@ -1117,6 +1115,10 @@ def paint_line(o):
                 break
 
             drawCanvas.itemconfig(screen_pixels[current_index], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[(cur_y*graphics_mode_width)+cur_x] = selected_palette_no
+            else:
+                screen_data[(cur_y*graphics_mode_width)+cur_x] = hex_palette[selected_palette_no]
             cur_y += 1
     else:
         # angle of some sort
@@ -1184,7 +1186,6 @@ def line_mode():
     drawCanvas.bind("<Button-1>", start_line)
     drawCanvas.bind("<B1-Motion>", move_line)
     drawCanvas.bind("<ButtonRelease-1>", paint_line)
-
 
 
 def export_z80():
@@ -1373,24 +1374,44 @@ def paint_circle(o):
         if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
             (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
             drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[p] = selected_palette_no
+            else:
+                screen_data[p] = hex_palette[selected_palette_no]
+
         cur_xpx = mp_xy[0] - i
         cur_ypx = mp_xy[1] - dif_y 
         p = tileindex(cur_xpx, cur_ypx)
         if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
             (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
             drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[p] = selected_palette_no
+            else:
+                screen_data[p] = hex_palette[selected_palette_no]
+
         cur_xpx = mp_xy[0] + i
         cur_ypx = mp_xy[1] + dif_y 
         p = tileindex(cur_xpx, cur_ypx)
         if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
             (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
             drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[p] = selected_palette_no
+            else:
+                screen_data[p] = hex_palette[selected_palette_no]
+
         cur_xpx = mp_xy[0] - i
         cur_ypx = mp_xy[1] + dif_y 
         p = tileindex(cur_xpx, cur_ypx)
         if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
             (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
             drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[p] = selected_palette_no
+            else:
+                screen_data[p] = hex_palette[selected_palette_no]
+
         ystep = last_y - dif_y
         skip = 1
         while ystep > 1:
@@ -1401,11 +1422,20 @@ def paint_circle(o):
             if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
             (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
                 drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+                if graphic_mode != 'G7':
+                    screen_data[p] = selected_palette_no
+                else:
+                    screen_data[p] = hex_palette[selected_palette_no]
+
             cur_xpx = mp_xy[0] - i
             cur_ypx = (mp_xy[1]-skip) - dif_y 
             p = tileindex(cur_xpx, cur_ypx)
             if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
             (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
+                if graphic_mode != 'G7':
+                    screen_data[p] = selected_palette_no
+                else:
+                    screen_data[p] = hex_palette[selected_palette_no]
                 drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
             cur_xpx = mp_xy[0] + i
             cur_ypx = (mp_xy[1]+skip) + dif_y 
@@ -1413,12 +1443,22 @@ def paint_circle(o):
             if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
             (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
                 drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+                if graphic_mode != 'G7':
+                    screen_data[p] = selected_palette_no
+                else:
+                    screen_data[p] = hex_palette[selected_palette_no]
+
             cur_xpx = mp_xy[0] - i
             cur_ypx = (mp_xy[1]+skip) + dif_y 
             p = tileindex(cur_xpx, cur_ypx)
             if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
             (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
                 drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+                if graphic_mode != 'G7':
+                    screen_data[p] = selected_palette_no
+                else:
+                    screen_data[p] = hex_palette[selected_palette_no]
+
             skip += 1
             ystep -= 1
         last_y = dif_y 
@@ -1434,19 +1474,39 @@ def paint_circle(o):
         if (txa < graphics_mode_width) and (ty < graphics_mode_height) and \
             (txa >= 0) and (ty >= 0) and (p >=0) and (p < len(screen_pixels)):
             drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[p] = selected_palette_no
+            else:
+                screen_data[p] = hex_palette[selected_palette_no]
+
         p = tileindex(txb, ty)
         if (txb < graphics_mode_width) and (ty < graphics_mode_height) and \
             (txb >= 0) and (ty >= 0) and (p >=0) and (p < len(screen_pixels)):
             drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[p] = selected_palette_no
+            else:
+                screen_data[p] = hex_palette[selected_palette_no]
+
         ty = mp_xy[1] - i 
         p = tileindex(txa, ty)
         if (txa < graphics_mode_width) and (ty < graphics_mode_height) and \
             (txa >= 0) and (ty >= 0) and (p >=0) and (p < len(screen_pixels)):
             drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[p] = selected_palette_no
+            else:
+                screen_data[p] = hex_palette[selected_palette_no]
+
         p = tileindex(txb, ty)
         if (txb < graphics_mode_width) and (ty < graphics_mode_height) and \
             (txb >= 0) and (ty >= 0) and (p >=0) and (p < len(screen_pixels)):
             drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])    
+            if graphic_mode != 'G7':
+                screen_data[p] = selected_palette_no
+            else:
+                screen_data[p] = hex_palette[selected_palette_no]
+
         i += 1
     drawCanvas.delete(drawing_circle)
     return
