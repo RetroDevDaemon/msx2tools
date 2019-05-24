@@ -821,8 +821,6 @@ def px_mode():
     linebutton.config(relief=tk.RAISED)
     global circlebutton
     circlebutton.config(relief=tk.RAISED)
-    global fillcirclebutton
-    fillcirclebutton.config(relief=tk.RAISED)
     global rectbutton
     rectbutton.config(relief=tk.RAISED)
     global draw_mode
@@ -1167,8 +1165,6 @@ def line_mode():
     linebutton.config(relief=tk.SUNKEN)
     global circlebutton
     circlebutton.config(relief=tk.RAISED)
-    global fillcirclebutton
-    fillcirclebutton.config(relief=tk.RAISED)
     global rectbutton
     rectbutton.config(relief=tk.RAISED)
     global draw_mode
@@ -1517,8 +1513,6 @@ def circle_mode():
     linebutton.config(relief=tk.RAISED)
     global circlebutton
     circlebutton.config(relief=tk.SUNKEN)
-    global fillcirclebutton
-    fillcirclebutton.config(relief=tk.RAISED)
     global rectbutton
     rectbutton.config(relief=tk.RAISED)
     global draw_mode
@@ -1527,25 +1521,11 @@ def circle_mode():
     drawCanvas.bind("<Button-1>", start_circle)
     drawCanvas.bind("<B1-Motion>", move_circle)
     drawCanvas.bind("<ButtonRelease-1>", paint_circle)
-    return
 
-def fill_circle_mode():
-    global pxbutton 
-    pxbutton.config(relief=tk.RAISED)
-    global linebutton 
-    linebutton.config(relief=tk.RAISED)
-    global circlebutton
-    circlebutton.config(relief=tk.RAISED)
-    global fillcirclebutton
-    fillcirclebutton.config(relief=tk.SUNKEN)
-    global rectbutton
-    rectbutton.config(relief=tk.RAISED)
-    global draw_mode
-    draw_mode = 'CIRCLE'
-    global drawCanvas
-    drawCanvas.bind("<Button-1>", start_circle)
-    drawCanvas.bind("<B1-Motion>", move_circle)
-    drawCanvas.bind("<ButtonRelease-1>", paint_and_fill_circle)
+    drawCanvas.bind("<Button-3>", start_circle)
+    drawCanvas.bind("<B3-Motion>", move_circle)
+    drawCanvas.bind("<ButtonRelease-3>", paint_and_fill_circle)
+
     return
 
 drawing_rect = None 
@@ -1621,8 +1601,6 @@ def rect_mode():
     linebutton.config(relief=tk.RAISED)
     global circlebutton
     circlebutton.config(relief=tk.RAISED)
-    global fillcirclebutton
-    fillcirclebutton.config(relief=tk.RAISED)
     global rectbutton
     rectbutton.config(relief=tk.SUNKEN)
     global draw_mode
@@ -1662,20 +1640,18 @@ linebutton = tk.Button(toolbar, image=line_icon, width=20, height=20, command=li
 linebutton.grid(row=0, column=2)
 circlebutton = tk.Button(toolbar, image=circle_icon, width=20, height=20, command=circle_mode)
 circlebutton.grid(row=0, column=3)
-fillcirclebutton = tk.Button(toolbar, image=circle_icon, width=20, height=20, command=fill_circle_mode)
-fillcirclebutton.grid(row=0, column=4)
 rectbutton = tk.Button(toolbar, image=rect_icon, width=20, height=20, command=rect_mode)
-rectbutton.grid(row=0, column=5)
+rectbutton.grid(row=0, column=4)
 scalebutton = tk.Button(toolbar, image=scale_icon, width=20, height=20, command=toggle_scale)
-scalebutton.grid(row=0, column=6, padx=(20,0), sticky='w')
+scalebutton.grid(row=0, column=5, padx=(20,0), sticky='w')
 zoom1button = tk.Button(toolbar, image=zoom1_icon, width=20, height=20, command=zoom_1x, relief=tk.SUNKEN)
-zoom1button.grid(row=0, column=7, sticky='w')
+zoom1button.grid(row=0, column=6, sticky='w')
 zoom2button = tk.Button(toolbar, image=zoom2_icon, width=20, height=20, command=zoom_2x)
-zoom2button.grid(row=0, column=8, sticky='w')
+zoom2button.grid(row=0, column=7, sticky='w')
 zoom4button = tk.Button(toolbar, image=zoom4_icon, width=20, height=20, command=zoom_4x)
-zoom4button.grid(row=0, column=9, sticky='w')
+zoom4button.grid(row=0, column=8, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
-zoom8button.grid(row=0, column=10, sticky='w')
+zoom8button.grid(row=0, column=9, sticky='w')
 
 toolbar.grid(row=0, columnspan=5)
 menuBar.add_cascade(label="File", menu=fileMenu)
