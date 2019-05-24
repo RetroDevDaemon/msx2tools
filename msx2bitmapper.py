@@ -1365,6 +1365,8 @@ def paint_circle(o):
     global graphics_mode_width
     last_y = math.floor( math.sqrt( (1 - (0/x_rad)**2)*y_rad**2) )
     i =  0
+    shouldFill = True
+
     while i < x_rad:
         # i is now the x position - e.g. negative 20 to positive 20
         dif_y = math.floor( math.sqrt( (1 - (i/x_rad)**2)*y_rad**2) )
@@ -1508,6 +1510,34 @@ def paint_circle(o):
                 screen_data[p] = hex_palette[selected_palette_no]
 
         i += 1
+
+    # Do fill?
+    if shouldFill:
+        height = math.floor(((mp_xy[1] + y_rad) - (mp_xy[1] - y_rad)) / 2)
+        width = math.floor(((mp_xy[0] + x_rad) - ( mp_xy[0] - x_rad)) / 2)
+
+        y_pos = height * -1
+        x_pos = width * -1
+
+        while y_pos <= height:
+            while x_pos <= width:
+                if (x_pos * x_pos * height * height) + (y_pos * y_pos * width * width) <= (height * height * width * width):
+                    x = mp_xy[0] + x_pos
+                    y = mp_xy[1] + y_pos
+
+                    if x >= 0 and x < graphics_mode_width:
+                        p = tileindex(x, y)
+
+                        # prevent drawing off bounds
+                        if p >= 0 and p < len(screen_pixels):
+                            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+
+                x_pos += 1
+
+            x_pos = width * -1
+            y_pos += 1
+
+
     drawCanvas.delete(drawing_circle)
     return
 
