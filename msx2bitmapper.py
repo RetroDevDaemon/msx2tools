@@ -1086,11 +1086,11 @@ def paint_line(o):
             cur_x = 0
 
         while cur_x <= xpx_end:
-
+            
             # prevent traversal off right of screen bounds
-            if cur_x > graphics_mode_width:
+            if cur_x > (graphics_mode_width-1):
                 break
-
+            
             drawCanvas.itemconfig(screen_pixels[(cur_y*graphics_mode_width)+cur_x], fill=hex_palette[selected_palette_no])
             cur_x += 1
     elif step_left == False and step_right == False:
@@ -1370,19 +1370,27 @@ def paint_circle(o):
         cur_xpx = mp_xy[0] + i
         cur_ypx = mp_xy[1] - dif_y 
         p = tileindex(cur_xpx, cur_ypx)
-        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
+            (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
         cur_xpx = mp_xy[0] - i
         cur_ypx = mp_xy[1] - dif_y 
         p = tileindex(cur_xpx, cur_ypx)
-        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
+            (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
         cur_xpx = mp_xy[0] + i
         cur_ypx = mp_xy[1] + dif_y 
         p = tileindex(cur_xpx, cur_ypx)
-        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
+            (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
         cur_xpx = mp_xy[0] - i
         cur_ypx = mp_xy[1] + dif_y 
         p = tileindex(cur_xpx, cur_ypx)
-        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
+            (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
         ystep = last_y - dif_y
         skip = 1
         while ystep > 1:
@@ -1390,19 +1398,27 @@ def paint_circle(o):
             cur_xpx = mp_xy[0] + i
             cur_ypx = (mp_xy[1]-skip) - dif_y 
             p = tileindex(cur_xpx, cur_ypx)
-            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
+            (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
+                drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
             cur_xpx = mp_xy[0] - i
             cur_ypx = (mp_xy[1]-skip) - dif_y 
             p = tileindex(cur_xpx, cur_ypx)
-            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
+            (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
+                drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
             cur_xpx = mp_xy[0] + i
             cur_ypx = (mp_xy[1]+skip) + dif_y 
             p = tileindex(cur_xpx, cur_ypx)
-            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
+            (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
+                drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
             cur_xpx = mp_xy[0] - i
             cur_ypx = (mp_xy[1]+skip) + dif_y 
             p = tileindex(cur_xpx, cur_ypx)
-            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            if (cur_xpx < graphics_mode_width) and (cur_ypx < graphics_mode_height) and \
+            (cur_xpx >= 0) and (cur_ypx >= 0) and (p >=0) and (p < len(screen_pixels)):
+                drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
             skip += 1
             ystep -= 1
         last_y = dif_y 
@@ -1415,14 +1431,22 @@ def paint_circle(o):
         # +/-0 indicates the X axis.
         ty = mp_xy[1] + i 
         p = tileindex(txa, ty)
-        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        if (txa < graphics_mode_width) and (ty < graphics_mode_height) and \
+            (txa >= 0) and (ty >= 0) and (p >=0) and (p < len(screen_pixels)):
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
         p = tileindex(txb, ty)
-        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        if (txb < graphics_mode_width) and (ty < graphics_mode_height) and \
+            (txb >= 0) and (ty >= 0) and (p >=0) and (p < len(screen_pixels)):
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
         ty = mp_xy[1] - i 
         p = tileindex(txa, ty)
-        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        if (txa < graphics_mode_width) and (ty < graphics_mode_height) and \
+            (txa >= 0) and (ty >= 0) and (p >=0) and (p < len(screen_pixels)):
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
         p = tileindex(txb, ty)
-        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])    
+        if (txb < graphics_mode_width) and (ty < graphics_mode_height) and \
+            (txb >= 0) and (ty >= 0) and (p >=0) and (p < len(screen_pixels)):
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])    
         i += 1
     drawCanvas.delete(drawing_circle)
     return
