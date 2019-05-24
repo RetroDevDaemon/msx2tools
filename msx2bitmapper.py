@@ -1344,16 +1344,11 @@ circle_origin = [-1,-1]
 
 '''returns tuple of 0,0 based x,y offset of drawCanvas'''
 def get_canvas_offset():
-    #global line_startpos 
-    #global drawing_line
     global drawCanvas
-    #global line_startpos
     global draw_scroll_x
     global draw_scroll_y
     global zoom_scale
     global graphics_mode_width
-    #global hex_palette
-    #global selected_palette_no
     scr_x = draw_scroll_x.get()
     scr_y = draw_scroll_y.get() 
     fscr = drawCanvas.cget('scrollregion')
@@ -1380,12 +1375,9 @@ def move_circle(o):
     ofs = get_canvas_offset()
     x = o.x+ofs[0]
     y = o.y+ofs[1]
-    #drawing_circle = drawCanvas.itemconfig(drawing_circle, x2=x, y2=y)
     drawCanvas.coords(drawing_circle, circle_origin[0], circle_origin[1], x, y)
     return 
 def paint_circle(o):
-    ## if center is 0,0:
-    # y = (1 - xpos/xrad)*yrad
     global drawCanvas
     global drawing_circle 
     circ_coords = drawCanvas.coords(drawing_circle)
@@ -1394,18 +1386,16 @@ def paint_circle(o):
     global zoom_scale 
     global y_ratio 
     mp_xy = (math.floor((mp[0] / (app_scale*zoom_scale))), math.floor((mp[1] / (app_scale*zoom_scale*y_ratio))))
-    print('circle midpoint (px): ', mp_xy[0], mp_xy[1])
     x_rad = math.floor(abs(circ_coords[2] - circ_coords[0]) / (app_scale*zoom_scale)/2)
     y_rad = math.floor(abs(circ_coords[3] - circ_coords[1]) / (app_scale*zoom_scale*y_ratio)/2)
-    print('circle radii: ', x_rad, y_rad)
     global hex_palette 
     global selected_palette_no
     global graphics_mode_width
+    last_y = math.floor( math.sqrt( (1 - (0/x_rad)**2)*y_rad**2) )
     i =  0
     while i < x_rad:
         # i is now the x position - e.g. negative 20 to positive 20
         dif_y = math.floor( math.sqrt( (1 - (i/x_rad)**2)*y_rad**2) )
-        #print (i, dif_y)
         cur_xpx = mp_xy[0] + i
         cur_ypx = mp_xy[1] - dif_y 
         p = tileindex(cur_xpx, cur_ypx)
@@ -1422,8 +1412,46 @@ def paint_circle(o):
         cur_ypx = mp_xy[1] + dif_y 
         p = tileindex(cur_xpx, cur_ypx)
         drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
-        
-        
+        ystep = last_y - dif_y
+        skip = 1
+        while ystep > 1:
+            # did we step down more than one?
+            cur_xpx = mp_xy[0] + i
+            cur_ypx = (mp_xy[1]-skip) - dif_y 
+            p = tileindex(cur_xpx, cur_ypx)
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            cur_xpx = mp_xy[0] - i
+            cur_ypx = (mp_xy[1]-skip) - dif_y 
+            p = tileindex(cur_xpx, cur_ypx)
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            cur_xpx = mp_xy[0] + i
+            cur_ypx = (mp_xy[1]+skip) + dif_y 
+            p = tileindex(cur_xpx, cur_ypx)
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            cur_xpx = mp_xy[0] - i
+            cur_ypx = (mp_xy[1]+skip) + dif_y 
+            p = tileindex(cur_xpx, cur_ypx)
+            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+            skip += 1
+            ystep -= 1
+        last_y = dif_y 
+        i += 1
+    # finalize the line by taking last_y and printing that up and down equal spaces
+    i = 0
+    txa = mp_xy[0] - x_rad
+    txb = mp_xy[0] + x_rad     
+    while i < last_y:
+        # +/-0 indicates the X axis.
+        ty = mp_xy[1] + i 
+        p = tileindex(txa, ty)
+        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        p = tileindex(txb, ty)
+        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        ty = mp_xy[1] - i 
+        p = tileindex(txa, ty)
+        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        p = tileindex(txb, ty)
+        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])    
         i += 1
     drawCanvas.delete(drawing_circle)
     return
