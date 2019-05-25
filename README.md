@@ -6,6 +6,7 @@ Python3 toolset for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) spr
 
 ### Release notes:
 
+1.32/1.22: Added raw bytes export to all modes.<br>
 1.31/1.21: Added compression to M2S/M2P/M2C file formats. Files should now rarely exceed 1kB in size.<br>
 1.30: Added fill tool. NOTE: Since palette colors are entirely seperate from sprite masks, the fill tool effectively fills 0s in with 1s. Colors per-mask will reflect this, so don't be surprised when the tool changes your entire mask to one color! :)<br> 
 1.29: Added color picker to sprite/pattern tool.<br>

@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.31: Added compression to file format.
+# v1.32: Added raw bytes export to both modes.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -1100,6 +1100,236 @@ def load_sprite_as():
     load_as(reset)
 
 ## Z80 ASSEMBLY EXPORT - THE GOOD SHIT ##   
+pattern_bin_file = None
+def export_pattern_bytes():
+    global pattern_bin_file
+    pattern_bin_file = ''
+    pattern_bin_file = tk.filedialog.asksaveasfilename(title='Save pattern as binary')#, filetypes=( ("All files", "*.*")))
+    if pattern_bin_file == '' or type(pattern_bin_file)==tuple:
+        return
+    outdata = []
+    outdata_c = []
+    colors_array = []
+    out_check = []
+    p = 0
+    while p < 3:
+        i = 0
+        out_check.append(0)
+        while i < (256):
+            j = 0
+            while j < (spriteSize*spriteSize):
+                if patterndata[(p*256)+i][j] != 0:
+                    out_check[p] = 1
+                j += 1
+            i += 1
+        p += 1
+    #
+    pl = 0 
+    while pl < 3:
+        if out_check[pl] == 1:
+            tl = 0
+            while tl < 256:
+                rl = 0
+                thisbyteout = 0
+                while rl < 8:
+                    c2 = None 
+                    c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                    cl = 1 
+                    while cl < 8:
+                        if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
+                            c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
+                        if c2 != None:
+                            cl = 8
+                        cl += 1 #col loop
+                    if c2 == None:
+                        c2 = 0
+                    c1b = format(c1, '04b')
+                    c2b = format(c2, '04b')
+                    colors_array.append('{}{}'.format(c2b,c1b))
+                    reformatrow = []
+                    clp = 0 
+                    while clp < 8:
+                        if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
+                            #is this pixel color 0?
+                            reformatrow.append('0')
+                        elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
+                            reformatrow.append('1')
+                        clp += 1
+                    thisbyteout = ''.join(reformatrow)
+                    thisbyteout = int(thisbyteout,2)
+                    outdata.append(thisbyteout)
+                    rl += 1
+                tl += 1
+        pl += 1
+    pl = 0
+    while pl < 3:
+        if out_check[pl] == 1:
+            tl = 0
+            while tl < 256:
+                rl = 0
+                thisbyteout = 0
+                while rl < 8:
+                    thisbyteout = colors_array[0]
+                    colors_array.pop(0)
+                    outdata_c.append(int(thisbyteout,2))
+                    rl += 1
+                tl += 1
+        pl += 1
+
+    try:
+        cfile = pattern_bin_file.split('.')
+        cfile[0] = cfile[0] + '_colors'
+        cfile = ''.join(cfile)
+        f = open(pattern_bin_file, 'wb')
+        for s in outdata:
+            b = bytes([s])
+            f.write(b)
+        f.close()
+        f = open(cfile, 'wb')
+        for s in outdata_c:
+            b = bytes([s])
+            f.write(b)
+        messagebox.showinfo('Export OK', message='Binaries exported OK!')
+    except:
+        messagebox.showerror('Export failed...', message='Export failed. Maybe a bug!')
+    finally:
+        if(f):
+            f.close()
+
+
+def export_sprite_bytes():
+    binaryfile = '' 
+    binaryfile = tk.filedialog.asksaveasfilename(title='Export sprite data binary')
+    if binaryfile == '' or type(binaryfile)==tuple:
+        return
+    outdata = [] 
+    outcolor = []
+    out_check = 0
+    i = 0
+    while i < 32:
+        j = 0
+        while j < (spriteSize*spriteSize):
+            if maskdata[i][j] != 0:
+                out_check = i+1
+            j += 1
+        i += 1
+    # palette shit
+    i = 0 
+    while i < out_check:
+        y = 0
+        while y < 8:
+            outb = ''
+            x = 0
+            while x < 16:
+                md = maskdata[i][(y*16)+x]
+                if md > 0:
+                    if i % 2 == 0:
+                        outb = '{:02x}'.format(md)
+                    else:
+                        md += 64
+                        outb = '{:02x}'.format(md)
+                x += 1
+            y += 1
+            if outb == '':
+                outcolor.append(0)
+            else:
+                outcolor.append(int(outb,16))
+        y = 8
+        while y < 16:
+            outb = ''
+            x = 0
+            while x < 16:
+                md = maskdata[i][(y*16)+x]
+                if md > 0:
+                    if i % 2 == 0:
+                        outb = '{:02x}'.format(md)
+                    else:
+                        md += 64
+                        outb = '{:02x}'.format(md)
+                x += 1
+            y += 1
+            if outb == '':
+                outcolor.append(0)
+            else:
+                outcolor.append(int(outb,16))
+        i += 1
+    #now sprites
+    i = 0
+    while i < out_check:
+        y = 0
+        while y < 8:
+            outb = [] 
+            x = 0
+            while x < 8:
+                if maskdata[i][(y*16)+x] != 0:
+                    outb.append('1')
+                else: 
+                    outb.append('0')
+                x += 1
+            y += 1
+            curb = int(''.join(outb),2)
+            outdata.append(curb)
+        y = 8
+        while y < 16:
+            outb = []
+            x = 0
+            while x < 8:
+                if maskdata[i][(y*16)+x] != 0:
+                    outb.append('1')
+                else: 
+                    outb.append('0')
+                x += 1
+            y += 1
+            curb = int(''.join(outb),2)
+            outdata.append(curb)
+        y = 0
+        while y < 8:
+            outb = []
+            x = 8
+            while x < 16:
+                if maskdata[i][(y*16)+x] != 0:
+                    outb.append('1')
+                else: 
+                    outb.append('0')
+                x += 1
+            y += 1
+            curb = int(''.join(outb),2)
+            outdata.append(curb)
+        y = 8
+        while y < 16:
+            outb = []
+            x = 8
+            while x < 16:
+                if maskdata[i][(y*16)+x] != 0:
+                    outb.append('1')
+                else: 
+                    outb.append('0')
+                x += 1
+            y += 1
+            curb = int(''.join(outb),2)
+            outdata.append(curb)
+        i += 1
+    #print(outdata)
+    try:
+        f = open(binaryfile, 'wb')
+        for s in outdata:
+            b = bytes([s])
+            f.write(b)
+        f.close()
+        c = binaryfile.split('.')
+        c[0] = c[0] + '_colors'
+        c = ''.join(c)
+        f = open(c, 'wb')
+        for s in outcolor:
+            b = bytes([s])
+            f.write(b)
+        messagebox.showinfo('Export OK!', message='Mask and palette binaries\nexported successfully!')
+    except:
+        messagebox.showerror('Export failed...', message='Something went wrong.\nMaybe a bug!')
+    finally:
+        if(f):
+            f.close()
+
 def export_asm_pattern():
     global asmfile 
     asmfile = ''
@@ -1233,9 +1463,9 @@ def export_asm_pattern():
 
 def export_asm_data():
     global patternMode
-    if patternMode == True:
-        messagebox.showwarning("Error","Saving not supported for tile mode.")
-        return 
+    #if patternMode == True:
+    #    messagebox.showwarning("Error","Saving not supported for tile mode.")
+    #    return 
     
     global asmfile 
     asmfile = ''
@@ -1469,7 +1699,8 @@ def export_pal_data():
     except:
         messagebox.showerror("Export failed", message="Unknown error exporting file. This might be a bug!")
     finally:
-        f.close()
+        if(f):
+            f.close()
 
 import tkinter.messagebox as messagebox
 
@@ -2499,6 +2730,53 @@ def open_about():
     messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.29\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
 
 
+def export_asm():
+    global patternMode
+    if patternMode:
+        export_asm_pattern()
+    else:
+        export_asm_data()
+
+def export_bytes():
+    global patternMode 
+    if patternMode:
+        export_pattern_bytes()
+    else:
+        export_sprite_bytes()
+
+def export_pal_bytes():
+    pal_bin = ''
+    pal_bin = tk.filedialog.asksaveasfilename(title='Export palette binary')
+    if pal_bin == '' or type(pal_bin) == tuple:
+        return
+    outdata = []
+    i = 0
+    while i < 16:
+        ob1 = intpal[i][0:1]
+        ob3 = intpal[i][2:3]
+        ob2 = intpal[i][1:2]
+        ob1 = '0' + format(int(ob1), '03b')
+        ob3 = '0' + format(int(ob3), '03b')
+        ob2 = '00000' + format(int(ob2), '03b')
+        b1 = ob1 + ob3 
+        #print(b1, ob2)
+        outdata.append(int(b1,2))
+        outdata.append(int(ob2,2))
+        i += 1
+    f = None 
+    try:
+        f = open(pal_bin, 'wb')
+        for s in outdata:
+            b = bytes([s])
+            f.write(b)
+        messagebox.showinfo("Export OK", message='Palette binary export successful!')
+    except:
+        messagebox.showerror('Export failed...', message='Palette export failed. Could be a bug!')
+    finally:
+        if(f):
+            f.close()
+    
+
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label="New sprite file", command=new_file)
@@ -2508,13 +2786,19 @@ fileMenu.add_command(label="Save As .M2S...", command=save_sprite_as) #3
 fileMenu.add_command(label="Load .M2S Sprite...", command=load_sprite_as)
 fileMenu.add_command(label="Load .M2P Pattern...", command=load_pattern_as)
 fileMenu.add_separator()
-fileMenu.add_command(label="Export z80 sprite data...", command=export_asm_data) #7
-fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data)
-fileMenu.add_separator()
+#fileMenu.add_command(label="Export z80 sprite data...", command=export_asm_data) #7
+#fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data)
+#fileMenu.add_separator()
 fileMenu.add_command(label='Import palette from...', command=import_palette)
 fileMenu.add_separator()
 fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
+exportMenu = tk.Menu(menuBar, tearoff=0)
+exportMenu.add_command(label='Export file as z80 data...', command=export_asm)
+exportMenu.add_command(label='Export palette as z80 data...', command=export_pal_data)
+exportMenu.add_separator()
+exportMenu.add_command(label='Export file as raw bytes...', command=export_bytes)
+exportMenu.add_command(label='Export palette as raw bytes...', command=export_pal_bytes)
 editMenu = tk.Menu(menuBar, tearoff=0)
 helpMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
@@ -2531,6 +2815,7 @@ editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
 helpMenu.add_command(label='About...', command=open_about)
 menuBar.add_cascade(label='Edit', menu=editMenu)
+menuBar.add_cascade(label='Export', menu=exportMenu)
 menuBar.add_cascade(label='Help', menu=helpMenu)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
 savebutton = tk.Button(toolbar, image=save_icon, width=20, height=20, command=save_normal)
@@ -3125,11 +3410,11 @@ def initialize_new(patternMode, loading=False):
     if patternMode == True:
         fileMenu.entryconfigure(2, command=save_normal_pattern)
         fileMenu.entryconfigure(3, label='Save As .M2P...', command=save_pattern_as)
-        fileMenu.entryconfigure(7, label='Export z80 pattern data...', command=export_asm_pattern)
+        #fileMenu.entryconfigure(7, label='Export z80 pattern data...', command=export_asm_pattern)
     else: 
         fileMenu.entryconfigure(2, command=save_normal_sprite)
         fileMenu.entryconfigure(3, label='Save As .M2S...', command=save_sprite_as)
-        fileMenu.entryconfigure(7, label='Export z80 sprite data...', command=export_asm_data)
+        #fileMenu.entryconfigure(7, label='Export z80 sprite data...', command=export_asm_data)
     
     palette_display[1].clicked(0)
 
