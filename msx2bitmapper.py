@@ -155,6 +155,13 @@ static char im_bits[] = {
 0x00, 0x00, 0x00, 0x02, 0x00, 0x06, 0xf0, 0x0b, 0x08, 0x10, 0xf4, 0x0b, 0x14, 0x06, 0x0c, 0x02, 0x0c, 0x00, 0x0c, 0x00, 0x18, 0x00, 0x30, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 """
+save_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xfc, 0x3f, 0x1e, 0x78, 0x5e, 0x78, 0x5e, 0x78, 0x1e, 0x78, 0xfe, 0x7f, 0xfe, 0x7f, 0x7e, 0x7e, 0xbe, 0x7d, 0xbe, 0x7c, 0x7e, 0x7e, 0xfe, 0x7f, 0xfe, 0x6f, 0xfc, 0x3f, 0x00, 0x00
+};
+"""
 
 dotbmp = tk.BitmapImage(data=dotdata)
 scale_icon = tk.BitmapImage(data=scale_icon_data)
@@ -171,6 +178,7 @@ copy_icon = tk.BitmapImage(data=copy_icon_data)
 paste_icon = tk.BitmapImage(data=paste_icon_data)
 undo_icon = tk.BitmapImage(data=undo_icon_data)
 redo_icon = tk.BitmapImage(data=redo_icon_data)
+save_icon = tk.BitmapImage(data=save_icon_data)
 
 # init screen data
 def init_screen_data(mode='G4', expanded=False):
@@ -881,9 +889,18 @@ def color_pixel(x, y):
     drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
 
 
-
 def client_exit():
-    sys.exit()
+    a = tk.messagebox.askyesnocancel('Save?', message='Save current bitmap before\nquitting?')
+    if a == True:
+        save_normal()
+        global m2bfilename
+        if m2bfilename == '' or type(m2bfilename)==tuple:
+            return
+        sys.exit()
+    elif a == False:
+        sys.exit()
+    elif a == None:
+        return
     
 
 def new_file(mode, expanded):
@@ -2027,39 +2044,41 @@ editMenu.add_command(label='Redo (Ctrl+Y)', command=redo_last)
 helpMenu = tk.Menu(menuBar, tearoff=0)
 helpMenu.add_command(label='About', command=show_about)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
+savebutton = tk.Button(toolbar, image=save_icon, width=20, height=20, command=save_normal)
+savebutton.grid(row=0,column=0)
 pxbutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, relief=tk.SUNKEN, command=lambda:change_mode('PX'))#px_mode)
-pxbutton.grid(row=0, column=0, padx=(20,0), sticky='w')
+pxbutton.grid(row=0, column=1, padx=(20,0), sticky='w')
 linebutton = tk.Button(toolbar, image=line_icon, width=20, height=20, command=lambda:change_mode('LINE'))#line_mode)
-linebutton.grid(row=0, column=1)
+linebutton.grid(row=0, column=2)
 circlebutton = tk.Button(toolbar, image=circle_icon, width=20, height=20, command=lambda:change_mode('CIRCLE'))
-circlebutton.grid(row=0, column=2)
+circlebutton.grid(row=0, column=3)
 rectbutton = tk.Button(toolbar, image=rect_icon, width=20, height=20, command=lambda:change_mode('RECT'))
-rectbutton.grid(row=0, column=3)
+rectbutton.grid(row=0, column=4)
 selectbutton = tk.Button(toolbar, image=select_icon, width=20, height=20, command=lambda:change_mode('SELECT'))
-selectbutton.grid(row=0, column=4, padx=(20,0))
+selectbutton.grid(row=0, column=5, padx=(20,0))
 cutbutton = tk.Button(toolbar, image=cut_icon, width=20, height=20, command=cut_data)
 copybutton = tk.Button(toolbar, image=copy_icon, width=20, height=20, command=copy_data)
 pastebutton = tk.Button(toolbar, image=paste_icon, width=20, height=20, command=paste_data)
 cutbutton.configure(state=tk.DISABLED)
 copybutton.configure(state=tk.DISABLED)
 pastebutton.configure(state=tk.DISABLED)
-cutbutton.grid(row=0, column=5)
-copybutton.grid(row=0, column=6)
-pastebutton.grid(row=0, column=7)
+cutbutton.grid(row=0, column=6)
+copybutton.grid(row=0, column=7)
+pastebutton.grid(row=0, column=8)
 undobutton = tk.Button(toolbar, image=undo_icon, width=20, height=20, command=undo_last)
 redobutton = tk.Button(toolbar, image=redo_icon, height=20, width=20, command=redo_last)
-undobutton.grid(row=0, column=8, padx=(20,0))
-redobutton.grid(row=0, column=9)
+undobutton.grid(row=0, column=9, padx=(20,0))
+redobutton.grid(row=0, column=10)
 scalebutton = tk.Button(toolbar, image=scale_icon, width=20, height=20, command=toggle_scale)
-scalebutton.grid(row=0, column=10, padx=(20,0), sticky='w')
+scalebutton.grid(row=0, column=11, padx=(20,0), sticky='w')
 zoom1button = tk.Button(toolbar, image=zoom1_icon, width=20, height=20, command=zoom_1x, relief=tk.SUNKEN)
-zoom1button.grid(row=0, column=11, sticky='w')
+zoom1button.grid(row=0, column=12, sticky='w')
 zoom2button = tk.Button(toolbar, image=zoom2_icon, width=20, height=20, command=zoom_2x)
-zoom2button.grid(row=0, column=12, sticky='w')
+zoom2button.grid(row=0, column=13, sticky='w')
 zoom4button = tk.Button(toolbar, image=zoom4_icon, width=20, height=20, command=zoom_4x)
-zoom4button.grid(row=0, column=13, sticky='w')
+zoom4button.grid(row=0, column=14, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
-zoom8button.grid(row=0, column=14, sticky='w')
+zoom8button.grid(row=0, column=15, sticky='w')
 
 toolbar.grid(row=0, columnspan=12)
 menuBar.add_cascade(label="File", menu=fileMenu)
