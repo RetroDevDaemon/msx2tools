@@ -1707,7 +1707,7 @@ def paint_rect(o, shouldFill = False):
     set_undo_point()
     # need four lines
     ofs = get_canvas_offset()
-    boundx = drawCanvas.winfo_width()
+    boundx = drawCanvas.winfo_width()*zoom_scale
     p1 = xypos(rect_start[0]-ofs[0], rect_start[1]-ofs[1])
     p2 = xypos(o.x, rect_start[1]-ofs[1])
     p3 = xypos(rect_start[0]-ofs[0], o.y)
@@ -1830,6 +1830,7 @@ def paste_data():
     global app_scale 
     global zoom_scale 
     global y_ratio 
+    set_undo_point()
     x1 = math.floor(selector_start[0] / (app_scale*zoom_scale))
     y1 = math.floor(selector_start[1] / (app_scale*zoom_scale*y_ratio))
     global graphics_mode_width 
@@ -1861,6 +1862,7 @@ def paste_data():
         iy += 1
 
 def cut_data():
+    set_undo_point()
     copy_data(cut=True)
     
 undo_history = []
@@ -1881,14 +1883,20 @@ def undo_last():
     global redo_history 
     if len(undo_history) == 0:
         return
-    screen_data = list(undo_history[len(undo_history)-1])
     if len(redo_history) >= 100:
         redo_history.pop(0)
-    redo_history.append(undo_history.pop())
+    redo_history.append(list(screen_data))
+    screen_data = list(undo_history.pop())
     repaint_screen()
 
 def redo_last():
-
+    global screen_data 
+    global redo_history 
+    if len(redo_history) == 0:
+        return 
+    set_undo_point()
+    screen_data = list(redo_history.pop())
+    repaint_screen()
     return 
 
 
