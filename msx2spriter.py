@@ -1427,29 +1427,20 @@ def export_pal_data():
         # byte 1 = '0RRR0BBB'
         # byte 2 = '00000GGG'
         # RED:
-        if i != 0:
-            ob1 = "{0:b}".format(int(intpal[i][:-2])) 
-        else:
-            ob1 = '000'
+        ob1 = "{0:b}".format(int(intpal[i][:-2])) 
         if len(ob1) == 1:
             ob1 = '00' + ob1
         elif len(ob1) == 2:
             ob1 = '0' + ob1 
         # BLUE:
-        if i != 0:
-            ob2 = int(intpal[i][2:])
-            ob2 = "{0:b}".format(ob2)
-        else:
-            ob2 = '000'
+        ob2 = int(intpal[i][2:])
+        ob2 = "{0:b}".format(ob2)
         if len(ob2) == 1:
             ob2 = '00' + ob2
         elif len(ob2) == 2:
             ob2 = '0' + ob2
         # GREEN:
-        if i != 0:
-            ob3 = "{0:b}".format(int(intpal[i][1:-1]))
-        else:
-            ob3 = '000'
+        ob3 = "{0:b}".format(int(intpal[i][1:-1]))
         if len(ob3) == 1:
             ob3 = '00' + ob3
         elif len(ob3) == 2:

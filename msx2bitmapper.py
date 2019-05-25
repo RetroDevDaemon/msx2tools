@@ -35,6 +35,7 @@ screen_pixels = []
 y_ratio = (3/4)
 graphic_mode = 'G4'
 draw_mode = 'PX'
+selector_rect = None
 # 'LINE', 'CIRCLE', 'SQUARE', 'SELECT'
 
 ###### BIT MAP DATA #######
@@ -119,6 +120,28 @@ static char im_bits[] = {
 0x04, 0x00,0xa8, 0x2a, 0x00, 0x00,0x00, 0x00
 };
 """
+cut_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x80, 0x00, 0x80, 0x01, 0x80, 0x02, 0x80, 0x02, 0x80, 0x02, 0x80, 0x02, 0x80, 0x32, 0x80, 0x7a, 0xff, 0xcf, 0x82, 0xce, 0xfc, 0xcb, 0x80, 0x31, 0xc0, 0x03, 0x60, 0x06, 0x60, 0x06, 0xc0, 0x03
+};
+"""
+copy_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0xf8, 0x00, 0xac, 0x01, 0x56, 0x03, 0xab, 0x06, 0x55, 0x05, 0xab, 0x1f, 0xd5, 0x20, 0x6b, 0x40, 0x36, 0x80, 0x2c, 0x80, 0x38, 0x80, 0x20, 0x80, 0x20, 0x80, 0x40, 0x40, 0x80, 0x20, 0x00, 0x1f
+};
+"""
+paste_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x01, 0x80, 0x01, 0x80, 0x01, 0xc0, 0x02, 0xe0, 0x05, 0x20, 0x05, 0xe0, 0x0c, 0x10, 0x09, 0x08, 0x16, 0xe8, 0x17, 0x28, 0x14, 0x28, 0x14, 0xe8, 0x17, 0x08, 0x10, 0x08, 0x10, 0xf0, 0x0f
+};
+"""
+
 
 dotbmp = tk.BitmapImage(data=dotdata)
 scale_icon = tk.BitmapImage(data=scale_icon_data)
@@ -130,6 +153,9 @@ line_icon = tk.BitmapImage(data=line_icon_data)
 circle_icon = tk.BitmapImage(data=circle_icon_data)
 rect_icon = tk.BitmapImage(data=rect_icon_data)
 select_icon = tk.BitmapImage(data=select_icon_data)
+cut_icon = tk.BitmapImage(data=cut_icon_data)
+copy_icon = tk.BitmapImage(data=copy_icon_data)
+paste_icon = tk.BitmapImage(data=paste_icon_data)
 
 
 # init screen data
@@ -233,9 +259,9 @@ class drawFrame(tk.Frame):
         super().__init__(master, *args, **kwargs)
 
 d = drawFrame(win, padx=20, pady=20, width=256*app_scale, height=graphics_mode_height*app_scale*y_ratio)#, background='black')
-d.grid(row = 1, column=1, rowspan=20, columnspan=20)
+d.grid(row = 1, column=1, rowspan=20, columnspan=20, sticky='w')
 drawCanvas = tk.Canvas(d, width=256*app_scale, height=graphics_mode_height*app_scale*y_ratio, background='black', scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
-drawCanvas.grid(row=1, column=1, rowspan=20, columnspan=20)
+drawCanvas.grid(row=1, column=1, rowspan=20, columnspan=20, sticky='w')
 d.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale)
 
 draw_scroll_y = tk.Scrollbar(d, orient=tk.VERTICAL, command=drawCanvas.yview)
@@ -509,7 +535,7 @@ def add_palette_display():
         i += 1
     i = 0
     while i < palnums:
-        palette_display[i].grid(row=i + 1, column=32, sticky='ne')
+        palette_display[i].grid(row=i + 1, column=32, sticky='w')
         palette_display[i].setVal(hex_palette[i])
         i += 1
     
@@ -678,20 +704,25 @@ def toggle_scale(scale=0):
         app_scale = 1
         tscale = 1
         max_scale = False 
-    if (graphics_mode_height*tscale*y_ratio)+(ys*tscale)+30 > sy:
+    if (graphics_mode_height*tscale*y_ratio)+(ys*tscale)+60 > sy:
         #print('broke y')
-        app_scale = sy/(((graphics_mode_height*y_ratio)+30)+ys)
+        app_scale = sy/(((graphics_mode_height*y_ratio)+60)+ys)
         max_scale = True
-    elif (graphics_mode_width*tscale)+(150*tscale) > sx:
+    elif (graphics_mode_width*tscale)+(160*tscale) > sx:
         #print('broke x')
-        app_scale = sx/((graphics_mode_width)+150)
+        app_scale = sx/((graphics_mode_width)+160)
         max_scale = True
     else:
         app_scale = tscale
-    drawCanvas.config(width=graphics_mode_width*app_scale, height=graphics_mode_height*app_scale*y_ratio, scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
+    w = graphics_mode_width*app_scale
+    h = graphics_mode_height*app_scale*y_ratio
+    drawCanvas.config(width=w, height=h, scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
     zoom_screen_pixels()
     rescale_palette()
-    app.geometry('{}x{}'.format(int((graphics_mode_width*app_scale)+(150)), int((graphics_mode_height*app_scale*y_ratio)+(ys*app_scale)+60)))
+    x = int(sx/2)-int((w/2)) - 75
+    y = int(sy/2)-int(h/2) - 120
+
+    app.geometry('{}x{}+{}+{}'.format(int((graphics_mode_width*app_scale)+(160)), int((graphics_mode_height*app_scale*y_ratio)+(ys*app_scale)+60), x, y ))
 
 def get_newzoom_offset(plusminus):
     global draw_scroll_x
@@ -731,6 +762,10 @@ def zoom_screen_pixels():
         yp = yp * app_scale * zoom_scale * y_ratio
         drawCanvas.coords(screen_pixels[i], xp, yp, xp+w, yp+h)
         i += 1
+    global selector_rect
+    if selector_rect != None:
+        drawCanvas.delete(selector_rect)
+        selector_rect = None
     update_canvas_grid()
    
 zoomplusminus = '+'
@@ -828,26 +863,6 @@ def color_pixel(x, y):
         screen_data[tp] = hex_palette[selected_palette_no]
     drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
 
-def px_mode():
-    global pxbutton 
-    pxbutton.config(relief=tk.SUNKEN)
-    global linebutton 
-    linebutton.config(relief=tk.RAISED)
-    global circlebutton
-    circlebutton.config(relief=tk.RAISED)
-    global rectbutton
-    rectbutton.config(relief=tk.RAISED)
-    global selectbutton
-    selectbutton.config(relief=tk.RAISED)
-    global draw_mode
-    draw_mode = 'PX'
-    global drawCanvas
-    drawCanvas.unbind("<ButtonRelease-1>")
-    drawCanvas.bind("<Button-1>", clicked_loc)
-    drawCanvas.bind("<B1-Motion>", clicked_loc)
-    drawCanvas.bind("<Button-3>", set_scroll_orig)
-    drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
-    drawCanvas.unbind("<ButtonRelease-3>")
 
 
 def client_exit():
@@ -1175,27 +1190,126 @@ def paint_line(o):
             
     drawCanvas.delete(drawing_line)
     
-def line_mode():
-    global pxbutton 
-    pxbutton.config(relief=tk.RAISED)
-    global linebutton 
-    linebutton.config(relief=tk.SUNKEN)
+def change_mode(mod):
+    global pxbutton
+    global linebutton
     global circlebutton
-    circlebutton.config(relief=tk.RAISED)
     global rectbutton
-    rectbutton.config(relief=tk.RAISED)
     global selectbutton
-    selectbutton.config(relief=tk.RAISED)
     global draw_mode
-    draw_mode = 'LINE'
     global drawCanvas
-    drawCanvas.bind("<Button-1>", start_line)
-    drawCanvas.bind("<B1-Motion>", move_line)
-    drawCanvas.bind("<ButtonRelease-1>", paint_line)
-    drawCanvas.bind("<Button-3>", set_scroll_orig)
-    drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
+    global draw_mode
+    global selector_rect
+    if selector_rect != None:
+        drawCanvas.delete(selector_rect)
+        #selector_rect = None
+    draw_mode = mod
     drawCanvas.unbind("<ButtonRelease-3>")
+    drawCanvas.unbind("<ButtonRelease-1>")
+    drawCanvas.unbind("<Button-3>")
+    drawCanvas.unbind("<Button-1>")
+    drawCanvas.unbind("<B1-Motion>")
+    drawCanvas.unbind("<B3-Motion>")
+    global cutbutton 
+    global copybutton 
+    global pastebutton 
+    cutbutton.config(state=tk.DISABLED)
+    copybutton.config(state=tk.DISABLED)
+    pastebutton.config(state=tk.DISABLED)
+    pxbutton.config(relief=tk.RAISED)
+    linebutton.config(relief=tk.RAISED)
+    circlebutton.config(relief=tk.RAISED)
+    rectbutton.config(relief=tk.RAISED)
+    selectbutton.config(relief=tk.RAISED)
+    global editMenu
+    editMenu.entryconfigure(0, state=tk.DISABLED)
+    editMenu.entryconfigure(1, state=tk.DISABLED)
+    editMenu.entryconfigure(2, state=tk.DISABLED)
+    #'LINE', 'CIRCLE', 'RECT', 'SELECT', 'PX'
+    if mod=='LINE':
+        linebutton.config(relief=tk.SUNKEN)
+        drawCanvas.bind("<Button-1>", start_line)
+        drawCanvas.bind("<B1-Motion>", move_line)
+        drawCanvas.bind("<ButtonRelease-1>", paint_line)
+        drawCanvas.bind("<Button-3>", set_scroll_orig)
+        drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
+    elif mod=='CIRCLE':
+        circlebutton.config(relief=tk.SUNKEN)
+        drawCanvas.bind("<Button-1>", start_circle)
+        drawCanvas.bind("<B1-Motion>", move_circle)
+        drawCanvas.bind("<ButtonRelease-1>", paint_circle)
+        drawCanvas.bind("<Button-3>", start_circle)
+        drawCanvas.bind("<B3-Motion>", move_circle)
+        drawCanvas.bind("<ButtonRelease-3>", paint_and_fill_circle)
+    elif mod=='RECT':
+        rectbutton.config(relief=tk.SUNKEN)
+        drawCanvas.bind("<Button-1>", start_rect)
+        drawCanvas.bind("<B1-Motion>", move_rect)
+        drawCanvas.bind("<ButtonRelease-1>", paint_rect)
+        drawCanvas.bind("<Button-3>", start_rect)
+        drawCanvas.bind("<B3-Motion>", move_rect)
+        drawCanvas.bind("<ButtonRelease-3>", paint_and_fill_rect)
+    elif mod=='SELECT':
+        selectbutton.config(relief=tk.SUNKEN)
+        drawCanvas.bind("<Button-1>", start_select)
+        drawCanvas.bind("<B1-Motion>", move_select)
+        drawCanvas.bind("<Button-3>", set_scroll_orig)
+        drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
+        editMenu.entryconfigure(0, state=tk.NORMAL)
+        editMenu.entryconfigure(1, state=tk.NORMAL)
+        editMenu.entryconfigure(2, state=tk.NORMAL)
+        cutbutton.config(state=tk.NORMAL)
+        copybutton.config(state=tk.NORMAL)
+        pastebutton.config(state=tk.NORMAL)
+    elif mod=='PX':
+        pxbutton.config(relief=tk.SUNKEN)
+        drawCanvas.bind("<Button-1>", clicked_loc)
+        drawCanvas.bind("<B1-Motion>", clicked_loc)
+        drawCanvas.bind("<Button-3>", set_scroll_orig)
+        drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
 
+def export_pal_data():
+    asmpalfile = ''
+    asmpalfile = tk.filedialog.asksaveasfilename(title='Save MSX2 palette z80 data', filetypes=( ('z80 assembly data', '*.z80'), ('z80 assembly data', '*.Z80'), ('All files', '*.*')))
+    if asmpalfile == '' or type(asmpalfile)==tuple:
+        return 
+    if asmpalfile[-4:].upper() != '.Z80':
+        asmpalfile = asmpalfile + '.z80'
+    outdata = []
+    outdata.append('; Palette data made with MSX2 Spriter\n')
+    outdata.append(';  Write in sequence to R#16!')
+    global palette_display
+    i = 0
+    while i < 16:
+        # byte 1 = '0RRR0BBB'
+        # byte 2 = '00000GGG'
+        #print(palette_display[i].myVal[1:2])
+        ob1 = format(math.floor(int(palette_display[i].myVal[1:2],16)/2),'03b')
+        ob2 = format(math.floor(int(palette_display[i].myVal[2:3],16)/2),'03b')
+        ob3 = format(math.floor(int(palette_display[i].myVal[3:4],16)/2),'03b')
+        b1 = '0' + ob1 + '0' + ob3
+        b2 = '00000' + ob2
+        b1 = format(int(b1,2), '02x')
+        b2 = format(int(b2,2), '02x')
+        if i % 4 == 0:
+            outdata.append('\n DB ')
+        outdata.append(' ${}, ${},'.format(b1, b2))
+        i += 1
+        # Disgusting, but manually erase the commas
+    outdata[6] = outdata[6][:-1]
+    outdata[11] = outdata[11][:-1]
+    outdata[16] = outdata[16][:-1]
+    outdata = ''.join(outdata)[:-1]
+    f = None 
+    try:
+        f = open(asmpalfile, 'w')
+        for s in outdata:
+            f.write(s)
+        messagebox.showinfo('Save OK', message='Palette export successful!')
+    except:
+        messagebox.showerror('Error', message='Export failed.')
+    finally:
+        f.close()
 
 def export_z80():
     asmfile = ''
@@ -1526,29 +1640,7 @@ def tileindex(x, y):
     global graphics_mode_width
     return (y*graphics_mode_width)+x 
 
-def circle_mode():
-    global pxbutton 
-    pxbutton.config(relief=tk.RAISED)
-    global linebutton 
-    linebutton.config(relief=tk.RAISED)
-    global circlebutton
-    circlebutton.config(relief=tk.SUNKEN)
-    global rectbutton
-    rectbutton.config(relief=tk.RAISED)
-    global selectbutton
-    selectbutton.config(relief=tk.RAISED)
-    global draw_mode
-    draw_mode = 'CIRCLE'
-    global drawCanvas
-    drawCanvas.bind("<Button-1>", start_circle)
-    drawCanvas.bind("<B1-Motion>", move_circle)
-    drawCanvas.bind("<ButtonRelease-1>", paint_circle)
 
-    drawCanvas.bind("<Button-3>", start_circle)
-    drawCanvas.bind("<B3-Motion>", move_circle)
-    drawCanvas.bind("<ButtonRelease-3>", paint_and_fill_circle)
-
-    return
 
 drawing_rect = None 
 rect_start = [-1,-1]
@@ -1616,29 +1708,7 @@ def paint_rect(o, shouldFill = False):
 def paint_and_fill_rect(o):
     paint_rect(o, True)
 
-def rect_mode():
-    global pxbutton 
-    pxbutton.config(relief=tk.RAISED)
-    global linebutton 
-    linebutton.config(relief=tk.RAISED)
-    global circlebutton
-    circlebutton.config(relief=tk.RAISED)
-    global rectbutton
-    rectbutton.config(relief=tk.SUNKEN)
-    global selectbutton
-    selectbutton.config(relief=tk.RAISED)
-    global draw_mode
-    draw_mode = 'RECT'
-    global drawCanvas
-    drawCanvas.bind("<Button-1>", start_rect)
-    drawCanvas.bind("<B1-Motion>", move_rect)
-    drawCanvas.bind("<ButtonRelease-1>", paint_rect)
 
-    drawCanvas.bind("<Button-3>", start_rect)
-    drawCanvas.bind("<B3-Motion>", move_rect)
-    drawCanvas.bind("<ButtonRelease-3>", paint_and_fill_rect)
-    
-selector_rect = None
 selector_start = [-1,-1]
 
 def start_select(o):
@@ -1657,8 +1727,8 @@ def start_select(o):
     global copy_w
     global copy_h
     if copy_w > 0 or copy_h > 0:
-        x2 = x1 + (copy_w * app_scale*zoom_scale)
-        y2 = y1 + (copy_h * app_scale * zoom_scale)
+        x2 = x1 + (copy_w * app_scale * zoom_scale)
+        y2 = y1 + (copy_h * app_scale * zoom_scale * y_ratio)
     else:
         x2 = x1 + (app_scale*zoom_scale)
         y2 = y1 + (app_scale*zoom_scale*y_ratio)
@@ -1677,27 +1747,6 @@ def move_select(o):
     selector_end[1] = max(math.floor((ofs[1]+o.y)/(app_scale*zoom_scale*y_ratio)) * app_scale * zoom_scale * y_ratio, selector_start[1]+(app_scale*zoom_scale*y_ratio))
     drawCanvas.coords(selector_rect, selector_start[0], selector_start[1], selector_end[0], selector_end[1])
 
-
-def select_mode():
-    global pxbutton 
-    pxbutton.config(relief=tk.RAISED)
-    global linebutton 
-    linebutton.config(relief=tk.RAISED)
-    global circlebutton
-    circlebutton.config(relief=tk.RAISED)
-    global rectbutton
-    rectbutton.config(relief=tk.RAISED)
-    global selectbutton
-    selectbutton.config(relief=tk.SUNKEN)
-    global draw_mode
-    draw_mode = 'SELECT'
-    global drawCanvas
-    drawCanvas.bind("<Button-1>", start_select)
-    drawCanvas.bind("<B1-Motion>", move_select)
-    drawCanvas.unbind("<ButtonRelease-1>")#, paint_rect)
-    drawCanvas.unbind("<Button-3>")
-    drawCanvas.unbind("<B3-Motion>")
-    drawCanvas.unbind("<ButtonRelease-3>")
 
 copy_buffer = []
 copy_w = -1
@@ -1802,56 +1851,138 @@ def keyboard_monitor(obj):
             save_normal()
             return 
 
+class make_new(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title('New bitmap')
+        self.b_4_192 = tk.Button(self, text='GRAPHIC 4 (192)', command=lambda:self.new('G4', False))#.grid(row=0,column=0)
+        self.b_4_192.grid(row=2, column=0)
+        self.b_4_212 = tk.Button(self, text='GRAPHIC 4 (212)', command=lambda:self.new('G4', True))#.grid(row=0,column=1)
+        self.b_4_212.grid(row=2, column=2)
+        self.b_5_192 = tk.Button(self, text='GRAPHIC 5 (192)', command=lambda:self.new('G5', False))#.grid(row=1,column=0)
+        self.b_5_192.grid(row=4, column=0)
+        self.b_5_212 = tk.Button(self, text='GRAPHIC 5 (212)', command=lambda:self.new('G5', True))#.grid(row=1,column=1)
+        self.b_5_212.grid(row=4, column=2)
+        self.b_6_192 = tk.Button(self, text='GRAPHIC 6 (192)', command=lambda:self.new('G6', False))#.grid(row=2,column=0)
+        self.b_6_192.grid(row=6, column=0)
+        self.b_6_212 = tk.Button(self, text='GRAPHIC 6 (212)', command=lambda:self.new('G6', True))#.grid(row=2,column=1)
+        self.b_6_212.grid(row=6, column=2)
+        self.b_7_192 = tk.Button(self, text='GRAPHIC 7 (192)', command=lambda:self.new('G7', False))#.grid(row=3,column=0)
+        self.b_7_192.grid(row=8, column=0)
+        self.b_7_212 = tk.Button(self, text='GRAPHIC 7 (212)', command=lambda:self.new('G7', True))#.grid(row=3,column=1)
+        self.b_7_212.grid(row=8, column=2)
+        self.lb_b4a = tk.Label(master=self, text='SCREEN-5, 256x192\n16 colors')
+        self.lb_b4a.grid(row=3, column=0)
+        self.lb_b4b = tk.Label(master=self, text='SCREEN-5, 256x212\n16 colors')
+        self.lb_b4b.grid(row=3, column=2)
+        self.lb_b5a = tk.Label(master=self, text='SCREEN-6, 512x192\n4 colors')
+        self.lb_b5a.grid(row=5, column=0)
+        self.lb_b5b = tk.Label(master=self, text='SCREEN-6, 512x212\n4 colors')
+        self.lb_b5b.grid(row=5, column=2)
+        self.lb_b6a = tk.Label(master=self, text='SCREEN-7, 512x192\n16 colors')
+        self.lb_b6a.grid(row=7, column=0)
+        self.lb_b6b = tk.Label(master=self, text='SCREEN-7, 512x212\n16 colors')
+        self.lb_b6b.grid(row=7, column=2)
+        self.lb_b7a = tk.Label(master=self, text='SCREEN-8, 256x192\n256 colors')
+        self.lb_b7a.grid(row=9, column=0)
+        self.lb_b7b = tk.Label(master=self, text='SCREEN-8, 256x212\n256 colors')
+        self.lb_b7b.grid(row=9, column=2)
+        self.lbl = tk.Label(master=self, text='Select a graphics mode!')
+        self.lbl.grid(row=0,columnspan=4)
+
+    def destroy(self):
+        self.withdraw()
+
+    def new(self, mode, expanded):
+        new_file(mode, expanded)
+        self.withdraw()
+
+
+newwin = None
+if newwin:
+    newwin.mainloop()
+
+def open_new_window():
+    a = tk.messagebox.askyesnocancel('Save?', message='Save current bitmap before\nstarting a new one?')
+    if a == True:
+        save_normal()
+        global m2bfilename
+        if m2bfilename == '' or type(m2bfilename)==tuple:
+            return
+    elif a == None:
+        return
+    global newwin
+    if not newwin:
+        newwin = make_new()
+    else:
+        newwin.deiconify()
+    
+def show_about():
+    tk.messagebox.showinfo("About", message='MSX2 Bitmapper v1.0\n(c)2019 Ben Ferguson\n\nhttps://github.com/bferguson3/msx2tools\n\nMade in Python3!')
+
+
 app.bind("<Key>", keyboard_monitor)
         
-scalebutton = tk.Button(win, text='W', command=toggle_scale)
-zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
+scalebutton = tk.Button(win, command=toggle_scale)
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
-fileMenu.add_command(label='New G4 bitmap (192)', command=lambda:new_file('G4', False))
-fileMenu.add_command(label='New G4 bitmap (212)', command=lambda:new_file('G4', True))
-fileMenu.add_command(label='New G5 bitmap (192)', command=lambda:new_file('G5', False))
-fileMenu.add_command(label='New G5 bitmap (212)', command=lambda:new_file('G5', True))
-fileMenu.add_command(label='New G6 bitmap (192)', command=lambda:new_file('G6', False))
-fileMenu.add_command(label='New G6 bitmap (212)', command=lambda:new_file('G6', True))
-fileMenu.add_command(label='New G7 bitmap (192)', command=lambda:new_file('G7', False))
-fileMenu.add_command(label='New G7 bitmap (212)', command=lambda:new_file('G7', True))
-fileMenu.add_command(label='Save', command=save_normal)
+fileMenu.add_command(label='New...', command=open_new_window)
+fileMenu.add_command(label='Save (Ctrl+S)...', command=save_normal)
 fileMenu.add_command(label='Load...', command=load_m2b)
 fileMenu.add_separator()
 fileMenu.add_command(label='Export as z80 assembly...', command=export_z80)
+fileMenu.add_command(label='Export palette as z80...', command=export_pal_data)
 fileMenu.add_separator()
 fileMenu.add_command(label='Quit', command=client_exit)
+editMenu = tk.Menu(menuBar, tearoff=0)
+editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
+editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
+editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
+helpMenu = tk.Menu(menuBar, tearoff=0)
+helpMenu.add_command(label='About', command=show_about)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
-pxbutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, relief=tk.SUNKEN, command=px_mode)
-pxbutton.grid(row=0, column=1, padx=(20,0), sticky='w')
-linebutton = tk.Button(toolbar, image=line_icon, width=20, height=20, command=line_mode)
-linebutton.grid(row=0, column=2)
-circlebutton = tk.Button(toolbar, image=circle_icon, width=20, height=20, command=circle_mode)
-circlebutton.grid(row=0, column=3)
-rectbutton = tk.Button(toolbar, image=rect_icon, width=20, height=20, command=rect_mode)
-rectbutton.grid(row=0, column=4)
-selectbutton = tk.Button(toolbar, image=select_icon, width=20, height=20, command=select_mode)
-selectbutton.grid(row=0, column=5, padx=(20,0))
+pxbutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, relief=tk.SUNKEN, command=lambda:change_mode('PX'))#px_mode)
+pxbutton.grid(row=0, column=0, padx=(20,0), sticky='w')
+linebutton = tk.Button(toolbar, image=line_icon, width=20, height=20, command=lambda:change_mode('LINE'))#line_mode)
+linebutton.grid(row=0, column=1)
+circlebutton = tk.Button(toolbar, image=circle_icon, width=20, height=20, command=lambda:change_mode('CIRCLE'))
+circlebutton.grid(row=0, column=2)
+rectbutton = tk.Button(toolbar, image=rect_icon, width=20, height=20, command=lambda:change_mode('RECT'))
+rectbutton.grid(row=0, column=3)
+selectbutton = tk.Button(toolbar, image=select_icon, width=20, height=20, command=lambda:change_mode('SELECT'))
+selectbutton.grid(row=0, column=4, padx=(20,0))
+cutbutton = tk.Button(toolbar, image=cut_icon, width=20, height=20, command=cut_data)
+copybutton = tk.Button(toolbar, image=copy_icon, width=20, height=20, command=copy_data)
+pastebutton = tk.Button(toolbar, image=paste_icon, width=20, height=20, command=paste_data)
+cutbutton.configure(state=tk.DISABLED)
+copybutton.configure(state=tk.DISABLED)
+pastebutton.configure(state=tk.DISABLED)
+cutbutton.grid(row=0, column=5)
+copybutton.grid(row=0, column=6)
+pastebutton.grid(row=0, column=7)
 scalebutton = tk.Button(toolbar, image=scale_icon, width=20, height=20, command=toggle_scale)
-scalebutton.grid(row=0, column=6, padx=(20,0), sticky='w')
+scalebutton.grid(row=0, column=8, padx=(20,0), sticky='w')
 zoom1button = tk.Button(toolbar, image=zoom1_icon, width=20, height=20, command=zoom_1x, relief=tk.SUNKEN)
-zoom1button.grid(row=0, column=7, sticky='w')
+zoom1button.grid(row=0, column=9, sticky='w')
 zoom2button = tk.Button(toolbar, image=zoom2_icon, width=20, height=20, command=zoom_2x)
-zoom2button.grid(row=0, column=8, sticky='w')
+zoom2button.grid(row=0, column=10, sticky='w')
 zoom4button = tk.Button(toolbar, image=zoom4_icon, width=20, height=20, command=zoom_4x)
-zoom4button.grid(row=0, column=9, sticky='w')
+zoom4button.grid(row=0, column=11, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
-zoom8button.grid(row=0, column=10, sticky='w')
+zoom8button.grid(row=0, column=12, sticky='w')
 
-toolbar.grid(row=0, columnspan=5)
+toolbar.grid(row=0, columnspan=12)
 menuBar.add_cascade(label="File", menu=fileMenu)
+menuBar.add_cascade(label="Edit", menu=editMenu)
+menuBar.add_cascade(label='Help', menu=helpMenu)
 app.config(menu=menuBar) 
 
 init_screen_data(mode='G4', expanded=False)
 init_screen_pixels()
 toggle_scale(1)
-
+editMenu.entryconfigure(0, state=tk.DISABLED)
+editMenu.entryconfigure(1, state=tk.DISABLED)
+editMenu.entryconfigure(2, state=tk.DISABLED)
 # run the app
 app.resizable(False, False)
 app.protocol("WM_DELETE_WINDOW", client_exit)
