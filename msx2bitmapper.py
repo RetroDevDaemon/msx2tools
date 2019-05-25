@@ -681,11 +681,6 @@ def scroll_drawwindow(o):
     return
 
 
-drawCanvas.bind("<Button-1>", clicked_loc)
-drawCanvas.bind("<B1-Motion>", clicked_loc)
-drawCanvas.bind("<Button-3>", set_scroll_orig)
-drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
-
 max_scale = True
 
 def toggle_scale(scale=0):
@@ -714,6 +709,8 @@ def toggle_scale(scale=0):
         max_scale = True
     else:
         app_scale = tscale
+    if app_scale == 1 and (graphic_mode == 'G4' or graphic_mode == 'G7'):
+        app_scale = 2
     w = graphics_mode_width*app_scale
     h = graphics_mode_height*app_scale*y_ratio
     drawCanvas.config(width=w, height=h, scrollregion=(0,0,graphics_mode_width*app_scale*zoom_scale, graphics_mode_height*app_scale*zoom_scale*y_ratio))
@@ -843,6 +840,8 @@ def toggle_zoom(z=0):
     newx, newy = get_newzoom_offset(zoomplusminus)
     set_drawwindow_pos(xypos(newx,newy))
 
+button_held = False
+
 def color_pixel(x, y):
     global drawCanvas
     global graphics_mode_width
@@ -851,6 +850,10 @@ def color_pixel(x, y):
         return
     if (x < 0) or (y < 0):
         return
+    global button_held
+    if button_held == False:
+        button_held = True
+        set_undo_point()
     global screen_data
     global screen_pixels 
     global selected_palette_no
@@ -926,7 +929,32 @@ def save_bitmap():
         #f.close()
         os.remove('m2b')
 
+'''unlike refresh_entire_screen, this will only change pixels to reflect whats already in screen_data'''
+def repaint_screen():
+    global screen_data 
+    global graphic_mode 
+    global drawCanvas 
+    global screen_pixels 
+    global hex_palette 
+    fsize = int(5*app_scale)
+    ofs = get_canvas_offset()
+    loadingt = drawCanvas.create_text(ofs[0]+40,ofs[1]+10, text='Refreshing...', fill='black', font=('Times New Roman',fsize))
+    loadings = drawCanvas.create_text(ofs[0]+42,ofs[1]+12, text="Refreshing...", fill='white', font=('Times New Roman',fsize))
+    drawCanvas.update_idletasks()
+    i = 0
+    while i < len(screen_data):
+        if graphic_mode != 'G7':
+            screen_data[i] = int(screen_data[i])
+            drawCanvas.itemconfig(screen_pixels[i], fill=hex_palette[screen_data[i]])
+        else:
+            if screen_data[i] == '':
+                screen_data[i] = '#000'
+            drawCanvas.itemconfig(screen_pixels[i], fill=screen_data[i])
+        i += 1
+    drawCanvas.delete(loadingt)
+    drawCanvas.delete(loadings)
 
+'''this recreates the entire canvas, essentially'''
 def refresh_entire_screen(exp, newdata):
     global graphic_mode
     global screen_data
@@ -980,13 +1008,11 @@ def load_m2b():
             zipped = True 
             z = zipfile.ZipFile(m2bfilename)
             f = z.open(inbuffer, 'r')
-            #data = f.readline().decode("utf-8")
             gm = f.readline().decode("utf-8")
             pw = f.readline().decode("utf-8")
             pl = f.readline().decode("utf-8")
         else:
             f = open(m2bfilename, 'r')
-            #data = f.readline()
             gm = f.readline()
             pw = f.readline()
             pl = f.readline()
@@ -1057,7 +1083,7 @@ def move_line(o):
 
 '''To use this generically, pass a new xypos class, and set globally line_startpos)'''
 
-def paint_line(o):
+def paint_line(o, undo=True):
     global line_startpos 
     global drawing_line
     global drawCanvas
@@ -1069,7 +1095,8 @@ def paint_line(o):
     global hex_palette
     global selected_palette_no
     global y_ratio
-
+    if undo:
+        set_undo_point()
     ofs = get_canvas_offset()
     line_endpos = (o.x+ofs[0], o.y+ofs[1])
 
@@ -1189,6 +1216,10 @@ def paint_line(o):
             draw_pixel_atindex(current_index)
             
     drawCanvas.delete(drawing_line)
+
+def set_undo_released(o):
+    global button_held
+    button_held = False
     
 def change_mode(mod):
     global pxbutton
@@ -1265,8 +1296,10 @@ def change_mode(mod):
         pxbutton.config(relief=tk.SUNKEN)
         drawCanvas.bind("<Button-1>", clicked_loc)
         drawCanvas.bind("<B1-Motion>", clicked_loc)
+        drawCanvas.bind("<ButtonRelease-1>", set_undo_released)
         drawCanvas.bind("<Button-3>", set_scroll_orig)
         drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
+
 
 def export_pal_data():
     asmpalfile = ''
@@ -1494,6 +1527,7 @@ def move_circle(o):
 def paint_circle(o, shouldFill = False):
     global drawCanvas
     global drawing_circle 
+    set_undo_point()
     circ_coords = drawCanvas.coords(drawing_circle)
     mp = ((circ_coords[0]+circ_coords[2])/2, (circ_coords[1]+circ_coords[3])/2) #midpoint in expanded point size
     global app_scale 
@@ -1670,24 +1704,24 @@ def paint_rect(o, shouldFill = False):
     global drawing_rect
     global zoom_scale 
     global app_scale 
+    set_undo_point()
     # need four lines
-    p1 = xypos(rect_start[0], rect_start[1])
     ofs = get_canvas_offset()
-    tx = o.x + ofs[0]
-    ty = o.y + ofs[1] 
-    boundx = drawCanvas.winfo_width() * zoom_scale * app_scale 
-    p2 = xypos(tx, rect_start[1])
-    p3 = xypos(rect_start[0], ty)
-    p4 = xypos(tx, ty)
-    line_startpos = (p1.x, p1.y)
-    paint_line(p2) # top
-    line_startpos = (p2.x, p2.y)
-    if o.x >= 0 and o.x < boundx:
-        paint_line(p4) # right... OR LEFT
-    line_startpos = (p1.x, p1.y)
-    paint_line(p3) # left 
-    line_startpos = (p3.x, p3.y)
-    paint_line(p4) # bottom
+    boundx = drawCanvas.winfo_width()
+    p1 = xypos(rect_start[0]-ofs[0], rect_start[1]-ofs[1])
+    p2 = xypos(o.x, rect_start[1]-ofs[1])
+    p3 = xypos(rect_start[0]-ofs[0], o.y)
+    p4 = xypos(o.x, o.y)
+    line_startpos = (rect_start[0], rect_start[1])
+    paint_line(p2, undo=False) # top
+    line_startpos = (p2.x+ofs[0], p2.y+ofs[1])
+    if o.x <= boundx:
+        if o.x >= 0 and o.x < boundx: # left out of bounds?
+            paint_line(p4, undo=False) 
+    line_startpos = (p1.x+ofs[0], p1.y+ofs[1])
+    paint_line(p3, undo=False) # left 
+    line_startpos = (p3.x+ofs[0], p3.y+ofs[1])
+    paint_line(p4, undo=False) # bottom
 
     if shouldFill: 
         x_start = p1.x
@@ -1829,9 +1863,32 @@ def paste_data():
 def cut_data():
     copy_data(cut=True)
     
+undo_history = []
+
+def set_undo_point():
+    global undo_history 
+    global screen_data 
+    #print('Undo added.')
+    if len(undo_history) >= 100:
+        undo_history.pop(0)
+    undo_history.append(list(screen_data))
+
+redo_history = []
+
 def undo_last():
-    return 
+    global undo_history 
+    global screen_data 
+    global redo_history 
+    if len(undo_history) == 0:
+        return
+    screen_data = list(undo_history[len(undo_history)-1])
+    if len(redo_history) >= 100:
+        redo_history.pop(0)
+    redo_history.append(undo_history.pop())
+    repaint_screen()
+
 def redo_last():
+
     return 
 
 
@@ -1895,6 +1952,10 @@ class make_new(tk.Tk):
 
     def new(self, mode, expanded):
         new_file(mode, expanded)
+        global undo_history 
+        global redo_history
+        undo_history = []
+        redo_history = []
         self.withdraw()
 
 
@@ -1983,6 +2044,12 @@ toggle_scale(1)
 editMenu.entryconfigure(0, state=tk.DISABLED)
 editMenu.entryconfigure(1, state=tk.DISABLED)
 editMenu.entryconfigure(2, state=tk.DISABLED)
+
+drawCanvas.bind("<Button-1>", clicked_loc)
+drawCanvas.bind("<B1-Motion>", clicked_loc)
+drawCanvas.bind("<Button-3>", set_scroll_orig)
+drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
+drawCanvas.bind("<ButtonRelease-1>", set_undo_released)
 # run the app
 app.resizable(False, False)
 app.protocol("WM_DELETE_WINDOW", client_exit)
