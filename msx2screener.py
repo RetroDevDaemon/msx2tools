@@ -5,7 +5,7 @@
 #
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.21: Added compression to file format.
+# v1.22: Added raw bytes export.
 # 
 #
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
@@ -737,6 +737,29 @@ def load_m2c():
             z.close()
     # now that tiles are confirmed, open m2c dialog
 
+def export_bytes():
+    bin_file = ''
+    bin_file = tk.filedialog.asksaveasfilename(title='Export as raw binary')
+    if bin_file == '' or type(bin_file)==tuple:
+        return 
+    outdata = []
+    i = 0
+    while i < 768:
+        outdata.append(screentiles[i])
+        i += 1
+    f = None 
+    try:
+        f = open(bin_file, 'wb')
+        for s in outdata:
+            b = bytes([s])
+            f.write(b)
+        messagebox.showinfo('Export OK', message='Screen binary export successful!')
+    except:
+        messagebox.showerror('Export failed...', message='Something went wrong. Maybe a bug!')
+    finally:
+        if(f):
+            f.close()
+
 def export_z80():
     global z80filename
     z80filename = tk.filedialog.asksaveasfilename(title='Save z80 screen data file', filetypes=( ('z80 screen data file', '*.z80'),('All files', '*.*') ))
@@ -992,7 +1015,9 @@ fileMenu.add_command(label='New screen file', command=new_screen) #also ask to c
 fileMenu.add_command(label="Save (Ctrl+S)", command=save_normal)
 fileMenu.add_command(label="Save as .M2C file...", command=save_as)
 fileMenu.add_command(label="Load .M2C file...", command=load_m2c) #ask to change m2p
+fileMenu.add_separator()
 fileMenu.add_command(label="Export as z80 screen data...", command=export_z80)
+fileMenu.add_command(label='Export as raw bytes...', command=export_bytes)
 fileMenu.add_separator()
 fileMenu.add_command(label='Import .M2P patterns...', command=import_m2p) #do not change m2c!
 fileMenu.add_separator()
