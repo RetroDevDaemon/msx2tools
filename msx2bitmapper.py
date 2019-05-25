@@ -109,6 +109,17 @@ static char im_bits[] = {
 };
 """
 
+select_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00,0x00, 0x00, 0x54, 0x15,0x00, 0x20,
+0x04, 0x00,0x00, 0x20, 0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0x00, 0x20, 0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0xa8, 0x2a, 0x00, 0x00,0x00, 0x00
+};
+"""
+
 dotbmp = tk.BitmapImage(data=dotdata)
 scale_icon = tk.BitmapImage(data=scale_icon_data)
 zoom1_icon = tk.BitmapImage(data=zoom1_icon_data)
@@ -118,6 +129,9 @@ zoom8_icon = tk.BitmapImage(data=zoom8_icon_data)
 line_icon = tk.BitmapImage(data=line_icon_data)
 circle_icon = tk.BitmapImage(data=circle_icon_data)
 rect_icon = tk.BitmapImage(data=rect_icon_data)
+select_icon = tk.BitmapImage(data=select_icon_data)
+
+
 # init screen data
 def init_screen_data(mode='G4', expanded=False):
     global screen_data
@@ -823,6 +837,8 @@ def px_mode():
     circlebutton.config(relief=tk.RAISED)
     global rectbutton
     rectbutton.config(relief=tk.RAISED)
+    global selectbutton
+    selectbutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'PX'
     global drawCanvas
@@ -831,6 +847,7 @@ def px_mode():
     drawCanvas.bind("<B1-Motion>", clicked_loc)
     drawCanvas.bind("<Button-3>", set_scroll_orig)
     drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
+    drawCanvas.unbind("<ButtonRelease-3>")
 
 
 def client_exit():
@@ -1167,14 +1184,17 @@ def line_mode():
     circlebutton.config(relief=tk.RAISED)
     global rectbutton
     rectbutton.config(relief=tk.RAISED)
+    global selectbutton
+    selectbutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'LINE'
     global drawCanvas
-    drawCanvas.unbind("<Button-1>")
-    drawCanvas.unbind("<B1-Motion>")
     drawCanvas.bind("<Button-1>", start_line)
     drawCanvas.bind("<B1-Motion>", move_line)
     drawCanvas.bind("<ButtonRelease-1>", paint_line)
+    drawCanvas.bind("<Button-3>", set_scroll_orig)
+    drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
+    drawCanvas.unbind("<ButtonRelease-3>")
 
 
 def export_z80():
@@ -1515,6 +1535,8 @@ def circle_mode():
     circlebutton.config(relief=tk.SUNKEN)
     global rectbutton
     rectbutton.config(relief=tk.RAISED)
+    global selectbutton
+    selectbutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'CIRCLE'
     global drawCanvas
@@ -1603,6 +1625,8 @@ def rect_mode():
     circlebutton.config(relief=tk.RAISED)
     global rectbutton
     rectbutton.config(relief=tk.SUNKEN)
+    global selectbutton
+    selectbutton.config(relief=tk.RAISED)
     global draw_mode
     draw_mode = 'RECT'
     global drawCanvas
@@ -1614,6 +1638,171 @@ def rect_mode():
     drawCanvas.bind("<B3-Motion>", move_rect)
     drawCanvas.bind("<ButtonRelease-3>", paint_and_fill_rect)
     
+selector_rect = None
+selector_start = [-1,-1]
+
+def start_select(o):
+    global drawCanvas
+    global selector_rect 
+    global selector_start 
+    ofs = get_canvas_offset()
+    selector_start = [ofs[0]+o.x, ofs[1]+o.y]
+    global app_scale 
+    global zoom_scale 
+    global y_ratio 
+    x1 = math.floor(selector_start[0] / (app_scale*zoom_scale)) * app_scale*zoom_scale
+    y1 = math.floor(selector_start[1] / (app_scale*zoom_scale*y_ratio)) * app_scale*zoom_scale*y_ratio
+    selector_start[0] = x1
+    selector_start[1] = y1
+    global copy_w
+    global copy_h
+    if copy_w > 0 or copy_h > 0:
+        x2 = x1 + (copy_w * app_scale*zoom_scale)
+        y2 = y1 + (copy_h * app_scale * zoom_scale)
+    else:
+        x2 = x1 + (app_scale*zoom_scale)
+        y2 = y1 + (app_scale*zoom_scale*y_ratio)
+    drawCanvas.delete(selector_rect)
+    selector_rect = drawCanvas.create_rectangle(x1, y1, x2, y2, outline='yellow', width=max(1, (app_scale*zoom_scale)/8), dash=(4,4))
+    
+selector_end = [-1,-1]
+
+def move_select(o):
+    global drawCanvas 
+    global selector_rect 
+    global selector_start 
+    global selector_end
+    ofs = get_canvas_offset()
+    selector_end[0] = max(math.floor((ofs[0]+o.x)/(app_scale*zoom_scale)) * app_scale * zoom_scale, selector_start[0]+(app_scale*zoom_scale))
+    selector_end[1] = max(math.floor((ofs[1]+o.y)/(app_scale*zoom_scale*y_ratio)) * app_scale * zoom_scale * y_ratio, selector_start[1]+(app_scale*zoom_scale*y_ratio))
+    drawCanvas.coords(selector_rect, selector_start[0], selector_start[1], selector_end[0], selector_end[1])
+
+
+def select_mode():
+    global pxbutton 
+    pxbutton.config(relief=tk.RAISED)
+    global linebutton 
+    linebutton.config(relief=tk.RAISED)
+    global circlebutton
+    circlebutton.config(relief=tk.RAISED)
+    global rectbutton
+    rectbutton.config(relief=tk.RAISED)
+    global selectbutton
+    selectbutton.config(relief=tk.SUNKEN)
+    global draw_mode
+    draw_mode = 'SELECT'
+    global drawCanvas
+    drawCanvas.bind("<Button-1>", start_select)
+    drawCanvas.bind("<B1-Motion>", move_select)
+    drawCanvas.unbind("<ButtonRelease-1>")#, paint_rect)
+    drawCanvas.unbind("<Button-3>")
+    drawCanvas.unbind("<B3-Motion>")
+    drawCanvas.unbind("<ButtonRelease-3>")
+
+copy_buffer = []
+copy_w = -1
+copy_h = -1
+
+def copy_data(cut=False):
+    global selector_start 
+    global selector_end 
+    global draw_mode 
+    global copy_buffer 
+    if draw_mode != 'SELECT':
+        return
+    copy_buffer = []
+    global app_scale 
+    global zoom_scale 
+    global y_ratio 
+    global copy_w
+    global copy_h
+    copy_w = math.floor(abs(selector_end[0] - selector_start[0])/(app_scale*zoom_scale))
+    copy_h = math.floor(abs(selector_end[1] - selector_start[1])/(app_scale*zoom_scale*y_ratio))
+    x1 = math.floor(selector_start[0] / (app_scale*zoom_scale))
+    y1 = math.floor(selector_start[1] / (app_scale*zoom_scale*y_ratio))
+    global graphics_mode_width
+    global graphic_mode
+    global drawCanvas
+    px_start = (y1*graphics_mode_width)+x1
+    iy = 0
+    while iy < copy_h:
+        ix = 0
+        while ix < copy_w:
+            p = px_start+(iy*graphics_mode_width)+ix
+            copy_buffer.append(screen_data[p])
+            if cut == True:
+                if graphic_mode == 'G7':
+                    screen_data[p] = hex_palette[0]
+                else:
+                    screen_data[p] = 0
+                drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[0])
+            ix += 1
+        iy += 1
+
+     
+def paste_data():
+    global selector_start 
+    global selector_end 
+    
+    global app_scale 
+    global zoom_scale 
+    global y_ratio 
+    x1 = math.floor(selector_start[0] / (app_scale*zoom_scale))
+    y1 = math.floor(selector_start[1] / (app_scale*zoom_scale*y_ratio))
+    global graphics_mode_width 
+    px_start = (y1*graphics_mode_width)+x1 
+    global copy_h
+    global copy_w
+    global drawCanvas
+    global copy_buffer
+    global graphics_mode_height
+    iy = 0
+    while iy < copy_h:
+        if y1 + iy > graphics_mode_height:
+            break
+        ix = 0
+        while ix < copy_w:
+            if x1 + ix >= graphics_mode_width:
+                ix += 1
+                continue
+            p = px_start+(iy*graphics_mode_width)+ix
+            if p > len(screen_pixels):
+                return 
+            c = copy_buffer[(iy*copy_w)+ix]
+            screen_data[p] = c
+            if graphic_mode != 'G7':
+                drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[c])
+            else:
+                drawCanvas.itemconfig(screen_pixels[p], fill=c)
+            ix += 1
+        iy += 1
+
+def cut_data():
+    copy_data(cut=True)
+    
+def undo_last():
+    return 
+def redo_last():
+    return 
+
+
+def keyboard_monitor(obj):
+    if obj.state & 4 == 4:
+        if obj.keysym == 'c':
+            copy_data()
+        elif obj.keysym == 'v':
+            paste_data()
+        elif obj.keysym == 'x':
+            cut_data()
+        elif obj.keysym == 'z':
+            undo_last()
+        elif obj.keysym == 'y':
+            redo_last()
+        elif obj.keysym == 's':
+            save_normal()
+            return 
+
+app.bind("<Key>", keyboard_monitor)
         
 scalebutton = tk.Button(win, text='W', command=toggle_scale)
 zoombutton = tk.Button(win, text='Z', command=toggle_zoom)
@@ -1642,16 +1831,18 @@ circlebutton = tk.Button(toolbar, image=circle_icon, width=20, height=20, comman
 circlebutton.grid(row=0, column=3)
 rectbutton = tk.Button(toolbar, image=rect_icon, width=20, height=20, command=rect_mode)
 rectbutton.grid(row=0, column=4)
+selectbutton = tk.Button(toolbar, image=select_icon, width=20, height=20, command=select_mode)
+selectbutton.grid(row=0, column=5, padx=(20,0))
 scalebutton = tk.Button(toolbar, image=scale_icon, width=20, height=20, command=toggle_scale)
-scalebutton.grid(row=0, column=5, padx=(20,0), sticky='w')
+scalebutton.grid(row=0, column=6, padx=(20,0), sticky='w')
 zoom1button = tk.Button(toolbar, image=zoom1_icon, width=20, height=20, command=zoom_1x, relief=tk.SUNKEN)
-zoom1button.grid(row=0, column=6, sticky='w')
+zoom1button.grid(row=0, column=7, sticky='w')
 zoom2button = tk.Button(toolbar, image=zoom2_icon, width=20, height=20, command=zoom_2x)
-zoom2button.grid(row=0, column=7, sticky='w')
+zoom2button.grid(row=0, column=8, sticky='w')
 zoom4button = tk.Button(toolbar, image=zoom4_icon, width=20, height=20, command=zoom_4x)
-zoom4button.grid(row=0, column=8, sticky='w')
+zoom4button.grid(row=0, column=9, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
-zoom8button.grid(row=0, column=9, sticky='w')
+zoom8button.grid(row=0, column=10, sticky='w')
 
 toolbar.grid(row=0, columnspan=5)
 menuBar.add_cascade(label="File", menu=fileMenu)

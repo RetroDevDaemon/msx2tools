@@ -2660,11 +2660,14 @@ def keydown_monitor(obj):
             # rebind left AND right click 
     return
 def keyup_monitor(obj):
-    if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R':
+    #print(obj)
+    if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R' or obj.keycode==50 or obj.keycode==62:
         global shiftheld
         shiftheld = False 
         if interface_mode == 'DRAWPIXEL':
             changemode_drawpixel(True)
+        elif interface_mode == 'FILLPIXEL':
+            changemode_fillpixel(True)
         
     return
 
