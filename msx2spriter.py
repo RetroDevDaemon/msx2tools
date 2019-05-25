@@ -1107,7 +1107,7 @@ def export_asm_pattern():
     if asmfile == '' or type(asmfile) == tuple:
         return 
     if asmfile[-4:].upper() != '.Z80':
-            asmfile = asmfile + '.z80'
+        asmfile = asmfile + '.z80'
     outdata = []
     outdata_c = []
     colors_array = []
@@ -1427,29 +1427,20 @@ def export_pal_data():
         # byte 1 = '0RRR0BBB'
         # byte 2 = '00000GGG'
         # RED:
-        if i != 0:
-            ob1 = "{0:b}".format(int(intpal[i][:-2])) 
-        else:
-            ob1 = '000'
+        ob1 = "{0:b}".format(int(intpal[i][:-2])) 
         if len(ob1) == 1:
             ob1 = '00' + ob1
         elif len(ob1) == 2:
             ob1 = '0' + ob1 
         # BLUE:
-        if i != 0:
-            ob2 = int(intpal[i][2:])
-            ob2 = "{0:b}".format(ob2)
-        else:
-            ob2 = '000'
+        ob2 = int(intpal[i][2:])
+        ob2 = "{0:b}".format(ob2)
         if len(ob2) == 1:
             ob2 = '00' + ob2
         elif len(ob2) == 2:
             ob2 = '0' + ob2
         # GREEN:
-        if i != 0:
-            ob3 = "{0:b}".format(int(intpal[i][1:-1]))
-        else:
-            ob3 = '000'
+        ob3 = "{0:b}".format(int(intpal[i][1:-1]))
         if len(ob3) == 1:
             ob3 = '00' + ob3
         elif len(ob3) == 2:
@@ -2471,7 +2462,7 @@ def import_palette():
     global filename
     #global spriteSize
     #spriteSize = 16
-    filename = tk.filedialog.askopenfilename(title='Load MSX2 sprite/pattern file', filetypes=( ('MSX2 Spriter file', '*.m2s;*.m2p'),('All files', '*.*') ))
+    filename = tk.filedialog.askopenfilename(title='Load MSX2 sprite/pattern file', filetypes=( ('MSX2 Spriter file', '*.m2s'),('MSX2 Spriter file', '*.m2p'),('All files', '*.*') ))
     if filename == '':
         return 
     if type(filename) == tuple:
@@ -2660,11 +2651,14 @@ def keydown_monitor(obj):
             # rebind left AND right click 
     return
 def keyup_monitor(obj):
-    if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R':
+    #print(obj)
+    if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R' or obj.keycode==50 or obj.keycode==62:
         global shiftheld
         shiftheld = False 
         if interface_mode == 'DRAWPIXEL':
             changemode_drawpixel(True)
+        elif interface_mode == 'FILLPIXEL':
+            changemode_fillpixel(True)
         
     return
 
@@ -2885,9 +2879,11 @@ def swap_palette(obj):
     updatePaletteDisplay()
     refresh_display(True)
     
+lastmode = False 
 
 def initialize_new(patternMode, loading=False):
     global intpal 
+    global lastmode
     intpal = defaultIntegerPalette.copy()
     convert_int_pal_to_hex(intpal)
     global palette_display
@@ -3143,7 +3139,10 @@ def initialize_new(patternMode, loading=False):
     app.bind("<Button-1>", grab_palette)
     app.bind("<B1-Motion>", drag_palette)
     app.bind("<ButtonRelease-1>", swap_palette)
-
+    global copybuffer 
+    if lastmode != patternMode:
+        copybuffer = []
+    lastmode = patternMode
     return
 
 initialize_new(False)
