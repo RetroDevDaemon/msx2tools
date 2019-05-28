@@ -1636,7 +1636,7 @@ def flood_fill(array, index, targetColor, replacementColor):
     
     while west % graphics_mode_width < graphics_mode_width - 1 and array[west] == targetColor:
         draw_pixel_atindex(west)
-        west += 1
+        west -= 1
 
     north = index - graphics_mode_width
     south = index + graphics_mode_width
