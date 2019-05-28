@@ -705,18 +705,19 @@ def scroll_drawwindow(o):
 
 max_scale = True
 
-def toggle_scale(scale=0):
+def toggle_scale(scale=1):
     #used in 'd' and 'drawCanvas'
     sx = app.winfo_screenwidth()
     sy = app.winfo_screenheight()
     global max_scale
     global app_scale 
     global graphic_mode 
+    tscale = app_scale + 1
     if graphic_mode == 'G4' or graphic_mode == 'G7':
         ys = 30
+        tscale = app_scale+1
     else:
         ys = 50
-    tscale = app_scale+1
     if max_scale == True:
         app_scale = 1
         tscale = 1
@@ -862,6 +863,7 @@ def toggle_zoom(z=0):
     newx, newy = get_newzoom_offset(zoomplusminus)
     set_drawwindow_pos(xypos(newx,newy))
 
+brush_style = 'square'
 button_held = False
 
 def color_pixel(x, y, size=1):
@@ -899,14 +901,19 @@ def color_pixel(x, y, size=1):
         #TODO: possible toggle for double-high brush size
         #TODO: possible toggle for diamond vs square 
         #atm only pixel-perfect square
-        size_loop = size - 1
-        if size_loop % 2 == 0: #is pixel size odd?   
-            tp_origin_y = y - ((size_loop)/2)
-            tp_origin_x = x - ((size_loop)/2)
-        else: #is pixel size even?
-            tp_origin_y = y - ((size_loop-1)/2)
-            tp_origin_x = x - ((size_loop-1)/2)
-        paint_square_brush(size, tp_origin_y, tp_origin_x)
+        #brush_style = 'diamond'
+        global brush_style
+        if brush_style == 'square':
+            size_loop = size - 1
+            if size_loop % 2 == 0: #is pixel size odd?   
+                tp_origin_y = y - ((size_loop)/2)
+                tp_origin_x = x - ((size_loop)/2)
+            else: #is pixel size even?
+                tp_origin_y = y - ((size_loop-1)/2)
+                tp_origin_x = x - ((size_loop-1)/2)
+            paint_square_brush(size, tp_origin_y, tp_origin_x)
+        elif brush_style == 'diamond':
+            paint_diamond_brush(size, y, x)
 
 
 def client_exit():
@@ -1260,7 +1267,7 @@ def paint_line(o, undo=True):
             # Check if off screen bounds
             current_index = (cur_y*graphics_mode_width)+cur_x
             if ((current_index > len(screen_pixels)) or (current_index < 0))\
-                or (cur_y > graphics_mode_height) or (cur_x > graphics_mode_width)\
+                or (cur_y >= graphics_mode_height) or (cur_x >= graphics_mode_width)\
                     or (cur_y < 0) or (cur_x < 0):
                 drawCanvas.delete(drawing_line)
                 return
@@ -1572,9 +1579,21 @@ def paint_square_brush(size, tp_origin_y, tp_origin_x):
     global screen_data 
     iy = 0
     while iy < size:
+        if tp_origin_y + iy < 0:
+            iy += 1
+            continue
         ix = 0
         while ix < size:
+            if (tp_origin_x + ix) >= graphics_mode_width:
+                ix += 1
+                continue
+            if (tp_origin_x + ix) < 0:
+                ix += 1
+                continue
             tp = int(((tp_origin_y+iy)*graphics_mode_width) + (tp_origin_x+ix) )
+            if tp > len(screen_pixels):
+                ix += 1
+                continue
             drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
             if graphic_mode != 'G7':
                 screen_data[tp] = selected_palette_no
@@ -1583,6 +1602,44 @@ def paint_square_brush(size, tp_origin_y, tp_origin_x):
             ix += 1
         iy += 1
 
+def paint_diamond_brush(size, tp_origin_y, tp_origin_x):
+    global graphics_mode_width 
+    global drawCanvas 
+    global screen_pixels 
+    global hex_palette 
+    global selected_palette_no 
+    global graphic_mode 
+    global screen_data 
+    
+    if tp_origin_x < 0:
+        return
+    iy = -size
+    while iy < size:
+        if tp_origin_y + iy < 0:
+            iy += 1
+            continue
+        ix = -size
+        while ix < size:
+            if abs(ix) + abs(iy) >= size:
+                ix += 1
+                continue
+            if (tp_origin_x + ix) >= graphics_mode_width:
+                ix += 1
+                continue
+            if (tp_origin_x + ix) < 0:
+                ix += 1
+                continue
+            tp = int(((tp_origin_y+iy)*graphics_mode_width) + (tp_origin_x+ix) )
+            if tp > len(screen_pixels):
+                ix += 1
+                continue
+            drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[tp] = selected_palette_no
+            else:
+                screen_data[tp] = hex_palette[selected_palette_no]
+            ix += 1
+        iy += 1
 
 '''returns tuple of 0,0 based x,y offset of drawCanvas'''
 def get_canvas_offset():
@@ -1631,6 +1688,10 @@ def paint_circle(o, shouldFill = False):
     mp_xy = (math.floor((mp[0] / (app_scale*zoom_scale))), math.floor((mp[1] / (app_scale*zoom_scale*y_ratio))))
     x_rad = math.floor(abs(circ_coords[2] - circ_coords[0]) / (app_scale*zoom_scale)/2)
     y_rad = math.floor(abs(circ_coords[3] - circ_coords[1]) / (app_scale*zoom_scale*y_ratio)/2)
+    if x_rad < 1:
+        x_rad = 1
+    if y_rad < 1:
+        y_rad = 1
     global graphics_mode_width
     last_y = math.floor( math.sqrt( (1 - (0/x_rad)**2)*y_rad**2) )
     i =  0
@@ -2054,6 +2115,8 @@ class make_new(tk.Tk):
         self.withdraw()
 
     def new(self, mode, expanded):
+        global palette_display
+        palette_display[0].clicked(0)
         new_file(mode, expanded)
         global undo_history 
         global redo_history
@@ -2081,12 +2144,27 @@ def open_new_window():
     else:
         newwin.deiconify()
     
+def px_square():
+    global editMenu 
+    editMenu.entryconfigure(4, label="✓Pixel brush: Square")
+    editMenu.entryconfigure(5, label="Pixel brush: Diamond")
+    global brush_style
+    brush_style = 'square'
+    return
+def px_diamond():
+    global editMenu 
+    editMenu.entryconfigure(4, label="Pixel brush: Square")
+    editMenu.entryconfigure(5, label="✓Pixel brush: Diamond")
+    global brush_style
+    brush_style = 'diamond'
+    return
+
 def show_about():
     tk.messagebox.showinfo("About", message='MSX2 Bitmapper v1.0\n(c)2019 Ben Ferguson\n\nhttps://github.com/bferguson3/msx2tools\n\nMade in Python3!')
 
 
 app.bind("<Key>", keyboard_monitor)
-        
+
 scalebutton = tk.Button(win, command=toggle_scale)
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
@@ -2102,6 +2180,9 @@ editMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
 editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
+editMenu.add_separator()
+editMenu.add_command(label='✓Pixel brush: Square', command=px_square)
+editMenu.add_command(label='Pixel brush: Diamond', command=px_diamond)
 editMenu.add_separator()
 editMenu.add_command(label='Undo (Ctrl+Z)', command=undo_last)
 editMenu.add_command(label='Redo (Ctrl+Y)', command=redo_last)
