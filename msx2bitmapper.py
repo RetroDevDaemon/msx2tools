@@ -994,7 +994,8 @@ def repaint_screen():
     global drawCanvas 
     global screen_pixels 
     global hex_palette 
-    fsize = int(5*app_scale)
+    global y_ratio
+    fsize = int(5*app_scale*y_ratio)
     ofs = get_canvas_offset()
     loadingt = drawCanvas.create_text(ofs[0]+40,ofs[1]+10, text='Refreshing...', fill='black', font=('Times New Roman',fsize))
     loadings = drawCanvas.create_text(ofs[0]+42,ofs[1]+12, text="Refreshing...", fill='white', font=('Times New Roman',fsize))
@@ -1003,11 +1004,14 @@ def repaint_screen():
     while i < len(screen_data):
         if graphic_mode != 'G7':
             screen_data[i] = int(screen_data[i])
-            drawCanvas.itemconfig(screen_pixels[i], fill=hex_palette[screen_data[i]])
+            if hex_palette[screen_data[i]] != drawCanvas.itemcget(screen_pixels[i], 'fill'):
+                #print('waste')
+                drawCanvas.itemconfig(screen_pixels[i], fill=hex_palette[screen_data[i]])
         else:
             if screen_data[i] == '':
                 screen_data[i] = '#000'
-            drawCanvas.itemconfig(screen_pixels[i], fill=screen_data[i])
+            if screen_data[i] != drawCanvas.itemcget(screen_pixels[i], 'fill'):
+                drawCanvas.itemconfig(screen_pixels[i], fill=screen_data[i])
         i += 1
     drawCanvas.delete(loadingt)
     drawCanvas.delete(loadings)
