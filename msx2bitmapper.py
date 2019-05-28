@@ -1278,6 +1278,7 @@ def change_mode(mod):
     global circlebutton
     global rectbutton
     global selectbutton
+    global fillbutton
     global draw_mode
     global drawCanvas
     global draw_mode
@@ -1303,6 +1304,7 @@ def change_mode(mod):
     circlebutton.config(relief=tk.RAISED)
     rectbutton.config(relief=tk.RAISED)
     selectbutton.config(relief=tk.RAISED)
+    fillbutton.config(relief=tk.RAISED)
     global editMenu
     editMenu.entryconfigure(0, state=tk.DISABLED)
     editMenu.entryconfigure(1, state=tk.DISABLED)
@@ -1350,6 +1352,9 @@ def change_mode(mod):
         drawCanvas.bind("<ButtonRelease-1>", set_undo_released)
         drawCanvas.bind("<Button-3>", set_scroll_orig)
         drawCanvas.bind("<B3-Motion>", scroll_drawwindow)
+    elif mod=='FILL':
+        fillbutton.config(relief=tk.SUNKEN)
+        drawCanvas.bind("<Button-1>", paint_fill)
 
 
 def export_pal_data():
@@ -1582,6 +1587,71 @@ def paint_square_brush(size, tp_origin_y, tp_origin_x):
                 screen_data[tp] = hex_palette[selected_palette_no]
             ix += 1
         iy += 1
+
+
+def paint_fill(o):
+    global drawCanvas 
+    global app_scale 
+    global zoom_scale
+
+    if graphic_mode != 'G7':
+        replacementColor = selected_palette_no
+    else:
+        replacementColor = hex_palette[selected_palette_no]
+
+    ofs = get_canvas_offset()
+
+    scale = app_scale*zoom_scale
+
+    px = math.floor((ofs[0] + o.x) / scale)
+    py = math.floor((ofs[1] + o.y) / (scale*y_ratio))
+
+    index = (py * graphics_mode_width) + px
+
+    if index > len(screen_data) - 1:
+        return
+
+    targetColor = screen_data[index]
+
+    flood_fill(screen_data, index, targetColor, replacementColor)
+
+
+def flood_fill(array, index, targetColor, replacementColor):
+    global graphics_mode_width
+
+    if index > len(array) - 1:
+        return
+
+    if array[index] != targetColor:
+        return
+
+    draw_pixel_atindex(index)
+
+    east = index + 1
+    west = index - 1
+
+    while east % graphics_mode_width > 0 and array[east] == targetColor:
+        draw_pixel_atindex(east)
+        east += 1
+    
+    while west % graphics_mode_width < graphics_mode_width - 1 and array[west] == targetColor:
+        draw_pixel_atindex(west)
+        west += 1
+
+    north = index - graphics_mode_width
+    south = index + graphics_mode_width
+
+    if north > 0:
+        flood_fill(array, north, targetColor, replacementColor)
+    
+    if south < graphics_mode_width * graphics_mode_width:
+        flood_fill(array, south, targetColor, replacementColor)
+
+    # if west % graphics_mode_width < graphics_mode_width - 1:
+    #     flood_fill(array, west, targetColor, replacementColor)
+
+    # if east % graphics_mode_width > 0:
+    #     flood_fill(array, east, targetColor, replacementColor)
 
 
 '''returns tuple of 0,0 based x,y offset of drawCanvas'''
@@ -2123,31 +2193,33 @@ pxlbl.grid(row=0,column=5)
 pxsize = tk.Entry(toolbar, width=2)
 pxsize.grid(row=0,column=6)
 pxsize.insert(0,1)
+fillbutton = tk.Button(toolbar, image=rect_icon, width=20, height=20, command=lambda:change_mode("FILL"))
+fillbutton.grid(row=0, column=7)
 selectbutton = tk.Button(toolbar, image=select_icon, width=20, height=20, command=lambda:change_mode('SELECT'))
-selectbutton.grid(row=0, column=7, padx=(20,0))
+selectbutton.grid(row=0, column=8, padx=(20,0))
 cutbutton = tk.Button(toolbar, image=cut_icon, width=20, height=20, command=cut_data)
 copybutton = tk.Button(toolbar, image=copy_icon, width=20, height=20, command=copy_data)
 pastebutton = tk.Button(toolbar, image=paste_icon, width=20, height=20, command=paste_data)
 cutbutton.configure(state=tk.DISABLED)
 copybutton.configure(state=tk.DISABLED)
 pastebutton.configure(state=tk.DISABLED)
-cutbutton.grid(row=0, column=8)
-copybutton.grid(row=0, column=9)
-pastebutton.grid(row=0, column=10)
+cutbutton.grid(row=0, column=9)
+copybutton.grid(row=0, column=10)
+pastebutton.grid(row=0, column=11)
 undobutton = tk.Button(toolbar, image=undo_icon, width=20, height=20, command=undo_last)
 redobutton = tk.Button(toolbar, image=redo_icon, height=20, width=20, command=redo_last)
-undobutton.grid(row=0, column=11, padx=(20,0))
-redobutton.grid(row=0, column=12)
+undobutton.grid(row=0, column=12, padx=(20,0))
+redobutton.grid(row=0, column=13)
 scalebutton = tk.Button(toolbar, image=scale_icon, width=20, height=20, command=toggle_scale)
-scalebutton.grid(row=0, column=13, padx=(20,0), sticky='w')
+scalebutton.grid(row=0, column=14, padx=(20,0), sticky='w')
 zoom1button = tk.Button(toolbar, image=zoom1_icon, width=20, height=20, command=zoom_1x, relief=tk.SUNKEN)
-zoom1button.grid(row=0, column=14, sticky='w')
+zoom1button.grid(row=0, column=15, sticky='w')
 zoom2button = tk.Button(toolbar, image=zoom2_icon, width=20, height=20, command=zoom_2x)
-zoom2button.grid(row=0, column=15, sticky='w')
+zoom2button.grid(row=0, column=16, sticky='w')
 zoom4button = tk.Button(toolbar, image=zoom4_icon, width=20, height=20, command=zoom_4x)
-zoom4button.grid(row=0, column=16, sticky='w')
+zoom4button.grid(row=0, column=17, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
-zoom8button.grid(row=0, column=17, sticky='w')
+zoom8button.grid(row=0, column=18, sticky='w')
 
 toolbar.grid(row=0, columnspan=12)
 menuBar.add_cascade(label="File", menu=fileMenu)
