@@ -864,7 +864,7 @@ def toggle_zoom(z=0):
 
 button_held = False
 
-def color_pixel(x, y):
+def color_pixel(x, y, size=1):
     global drawCanvas
     global graphics_mode_width
     global graphics_mode_height
@@ -887,6 +887,26 @@ def color_pixel(x, y):
     else:
         screen_data[tp] = hex_palette[selected_palette_no]
     drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
+    global pxsize
+    size = int(pxsize.get())
+    if size < 1:
+        size = 1
+    elif size > 9:
+        size = 9
+    pxsize.delete(0,tk.END)
+    pxsize.insert(0,size)
+    if size > 1:
+        #TODO: possible toggle for double-high brush size
+        #TODO: possible toggle for diamond vs square 
+        #atm only pixel-perfect square
+        size_loop = size - 1
+        if size_loop % 2 == 0: #is pixel size odd?   
+            tp_origin_y = y - ((size_loop)/2)
+            tp_origin_x = x - ((size_loop)/2)
+        else: #is pixel size even?
+            tp_origin_y = y - ((size_loop-1)/2)
+            tp_origin_x = x - ((size_loop-1)/2)
+        paint_square_brush(size, tp_origin_y, tp_origin_x)
 
 
 def client_exit():
@@ -1501,7 +1521,7 @@ def export_z80():
 drawing_circle = None
 circle_origin = [-1,-1]
 
-def draw_pixel_atindex(p):
+def draw_pixel_atindex(p, size=1):
     global drawCanvas 
     global screen_pixels 
     global hex_palette 
@@ -1517,7 +1537,51 @@ def draw_pixel_atindex(p):
         screen_data[p] = selected_palette_no
     else:
         screen_data[p] = hex_palette[selected_palette_no]
+    global pxsize
+    size = int(pxsize.get())
+    if size < 1:
+        size = 1
+    elif size > 9:
+        size = 9
+    pxsize.delete(0,tk.END)
+    pxsize.insert(0,size)
+    x = p % graphics_mode_width
+    y = math.floor(p / graphics_mode_width)
+    #print(x, y)
+    if size > 1:
+        #TODO: possible toggle for double-high brush size
+        #TODO: possible toggle for diamond vs square 
+        #atm only pixel-perfect square
+        size_loop = size - 1
+        if size_loop % 2 == 0: #is pixel size odd?   
+            tp_origin_y = y - ((size_loop)/2)
+            tp_origin_x = x - ((size_loop)/2)
+        else: #is pixel size even?
+            tp_origin_y = y - ((size_loop-1)/2)
+            tp_origin_x = x - ((size_loop-1)/2)
+        paint_square_brush(size, tp_origin_y, tp_origin_x)
+        ####
 
+def paint_square_brush(size, tp_origin_y, tp_origin_x):
+    global graphics_mode_width 
+    global drawCanvas 
+    global screen_pixels 
+    global hex_palette 
+    global selected_palette_no 
+    global graphic_mode 
+    global screen_data 
+    iy = 0
+    while iy < size:
+        ix = 0
+        while ix < size:
+            tp = int(((tp_origin_y+iy)*graphics_mode_width) + (tp_origin_x+ix) )
+            drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
+            if graphic_mode != 'G7':
+                screen_data[tp] = selected_palette_no
+            else:
+                screen_data[tp] = hex_palette[selected_palette_no]
+            ix += 1
+        iy += 1
 
 
 '''returns tuple of 0,0 based x,y offset of drawCanvas'''
@@ -2054,31 +2118,36 @@ circlebutton = tk.Button(toolbar, image=circle_icon, width=20, height=20, comman
 circlebutton.grid(row=0, column=3)
 rectbutton = tk.Button(toolbar, image=rect_icon, width=20, height=20, command=lambda:change_mode('RECT'))
 rectbutton.grid(row=0, column=4)
+pxlbl = tk.Label(toolbar, text='Px:')
+pxlbl.grid(row=0,column=5)
+pxsize = tk.Entry(toolbar, width=2)
+pxsize.grid(row=0,column=6)
+pxsize.insert(0,1)
 selectbutton = tk.Button(toolbar, image=select_icon, width=20, height=20, command=lambda:change_mode('SELECT'))
-selectbutton.grid(row=0, column=5, padx=(20,0))
+selectbutton.grid(row=0, column=7, padx=(20,0))
 cutbutton = tk.Button(toolbar, image=cut_icon, width=20, height=20, command=cut_data)
 copybutton = tk.Button(toolbar, image=copy_icon, width=20, height=20, command=copy_data)
 pastebutton = tk.Button(toolbar, image=paste_icon, width=20, height=20, command=paste_data)
 cutbutton.configure(state=tk.DISABLED)
 copybutton.configure(state=tk.DISABLED)
 pastebutton.configure(state=tk.DISABLED)
-cutbutton.grid(row=0, column=6)
-copybutton.grid(row=0, column=7)
-pastebutton.grid(row=0, column=8)
+cutbutton.grid(row=0, column=8)
+copybutton.grid(row=0, column=9)
+pastebutton.grid(row=0, column=10)
 undobutton = tk.Button(toolbar, image=undo_icon, width=20, height=20, command=undo_last)
 redobutton = tk.Button(toolbar, image=redo_icon, height=20, width=20, command=redo_last)
-undobutton.grid(row=0, column=9, padx=(20,0))
-redobutton.grid(row=0, column=10)
+undobutton.grid(row=0, column=11, padx=(20,0))
+redobutton.grid(row=0, column=12)
 scalebutton = tk.Button(toolbar, image=scale_icon, width=20, height=20, command=toggle_scale)
-scalebutton.grid(row=0, column=11, padx=(20,0), sticky='w')
+scalebutton.grid(row=0, column=13, padx=(20,0), sticky='w')
 zoom1button = tk.Button(toolbar, image=zoom1_icon, width=20, height=20, command=zoom_1x, relief=tk.SUNKEN)
-zoom1button.grid(row=0, column=12, sticky='w')
+zoom1button.grid(row=0, column=14, sticky='w')
 zoom2button = tk.Button(toolbar, image=zoom2_icon, width=20, height=20, command=zoom_2x)
-zoom2button.grid(row=0, column=13, sticky='w')
+zoom2button.grid(row=0, column=15, sticky='w')
 zoom4button = tk.Button(toolbar, image=zoom4_icon, width=20, height=20, command=zoom_4x)
-zoom4button.grid(row=0, column=14, sticky='w')
+zoom4button.grid(row=0, column=16, sticky='w')
 zoom8button = tk.Button(toolbar, image=zoom8_icon, width=20, height=20, command=zoom_8x)
-zoom8button.grid(row=0, column=15, sticky='w')
+zoom8button.grid(row=0, column=17, sticky='w')
 
 toolbar.grid(row=0, columnspan=12)
 menuBar.add_cascade(label="File", menu=fileMenu)
