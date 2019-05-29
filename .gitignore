@@ -8,3 +8,4 @@ dist/
 *.m2p
 *.spec
 *.M2B
+inverter.py
