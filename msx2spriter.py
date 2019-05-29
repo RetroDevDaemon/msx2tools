@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.32: Added raw bytes export to both modes.
+# v1.33: Added triplicate option to pattern mode.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -2815,7 +2815,7 @@ def export_pattern(etype):
                 x += 1
             i += 1
         j += 1
-    triplicate = ''
+    triplicate = False
     if patterncount == 0:
         triplicate = messagebox.askyesno('Triplicate data?', message='You only have data in the first table.\nWould you like to triplicate the pattern data\nfor the export?\n\n(Select No to export just the first table.)')
     if etype == 'data':
