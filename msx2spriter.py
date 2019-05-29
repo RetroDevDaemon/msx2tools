@@ -1101,7 +1101,8 @@ def load_sprite_as():
 
 ## Z80 ASSEMBLY EXPORT - THE GOOD SHIT ##   
 pattern_bin_file = None
-def export_pattern_bytes():
+def export_pattern_bytes(triplicate):
+    #if triplicate is true, only export first table 3 times
     global pattern_bin_file
     pattern_bin_file = ''
     pattern_bin_file = tk.filedialog.asksaveasfilename(title='Save pattern as binary')#, filetypes=( ("All files", "*.*")))
@@ -1330,7 +1331,8 @@ def export_sprite_bytes():
         if(f):
             f.close()
 
-def export_asm_pattern():
+def export_asm_pattern(triplicate):
+    # if triplicate is true, then just export pattern 1 three times
     global asmfile 
     asmfile = ''
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 pattern assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
@@ -1361,7 +1363,7 @@ def export_asm_pattern():
     #
     pl = 0
     while pl < 3:
-        if out_check[pl] == 1:
+        if out_check[pl] == 1 or triplicate:
             outdata.append(";;;;;;;;;;;;;;;;;;")
             outdata.append("; Pattern table {}".format(pl+1))
             # determine palette values for color 0 and color 1
@@ -1375,11 +1377,18 @@ def export_asm_pattern():
                 while rl < 8:
                     #c1 = None 
                     c2 = None 
-                    c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                    if not triplicate:
+                        c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                    else:
+                        c1 = patterndata[tl][0+(rl*8)]
                     cl = 1 
                     while cl < 8:
-                        if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
-                            c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
+                        if not triplicate:
+                            if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
+                                c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
+                        else:
+                            if patterndata[tl][cl+(rl*8)] != c1:
+                                c2 = patterndata[tl][cl+(rl*8)]
                         if c2 != None:
                             cl = 8
                         cl += 1 #col loop
@@ -1413,7 +1422,7 @@ def export_asm_pattern():
     outdata_c.append("; VDP Location default @ $2000")
     pl = 0
     while pl < 3:
-        if out_check[pl] == 1:
+        if out_check[pl] == 1 or triplicate:
             outdata_c.append(";;;;;;;;;;;;;;;;;")
             outdata_c.append("; Table {} colors".format(pl+1))
             tl = 0
@@ -1463,10 +1472,6 @@ def export_asm_pattern():
 
 def export_asm_data():
     global patternMode
-    #if patternMode == True:
-    #    messagebox.showwarning("Error","Saving not supported for tile mode.")
-    #    return 
-    
     global asmfile 
     asmfile = ''
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 sprite assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
@@ -2730,17 +2735,17 @@ def open_about():
     messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.29\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
 
 
-def export_asm():
+def export_asm(etype):
     global patternMode
     if patternMode:
-        export_asm_pattern()
+        export_pattern(etype)
     else:
         export_asm_data()
 
-def export_bytes():
+def export_bytes(etype):
     global patternMode 
     if patternMode:
-        export_pattern_bytes()
+        export_pattern(etype)
     else:
         export_sprite_bytes()
 
@@ -2775,6 +2780,29 @@ def export_pal_bytes():
     finally:
         if(f):
             f.close()
+
+def export_pattern(etype):
+    patterncount = 0
+    j = 0
+    while j < 3:
+        i = 0
+        while i < 256:
+            x = 0
+            while x < 64:
+                if patterndata[(j*256)+i][x] != 0:
+                    patterncount = j
+                    break 
+                x += 1
+            i += 1
+        j += 1
+    triplicate = ''
+    if patterncount == 0:
+        triplicate = messagebox.askyesno('Triplicate data?', message='You only have data in the first table.\nWould you like to triplicate the pattern data\nfor the export?\n\n(Select No to export just the first table.)')
+    if etype == 'data':
+        export_asm_pattern(triplicate)
+    elif etype == 'bytes':
+        export_pattern_bytes(triplicate)
+    return
     
 
 menuBar = tk.Menu(app)
@@ -2794,11 +2822,11 @@ fileMenu.add_separator()
 fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
 exportMenu = tk.Menu(menuBar, tearoff=0)
-exportMenu.add_command(label='Export file as z80 data...', command=export_asm)
-exportMenu.add_command(label='Export palette as z80 data...', command=export_pal_data)
+exportMenu.add_command(label='Export file as z80 data...', command=lambda:export_asm('data'))
+exportMenu.add_command(label='Export palette as z80 data...', command=export_pal_data)#lambda:export_pal('data'))
 exportMenu.add_separator()
-exportMenu.add_command(label='Export file as raw bytes...', command=export_bytes)
-exportMenu.add_command(label='Export palette as raw bytes...', command=export_pal_bytes)
+exportMenu.add_command(label='Export file as raw bytes...', command=lambda:export_bytes('bytes'))
+exportMenu.add_command(label='Export palette as raw bytes...', command=export_pal_bytes)#lambda:export_pal('bytes'))
 editMenu = tk.Menu(menuBar, tearoff=0)
 helpMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
