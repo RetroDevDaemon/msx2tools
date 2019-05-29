@@ -1,0 +1,10 @@
+__pycache__/
+build/
+dist/
+*.m2s
+*.z80
+*.m2b
+*.m2c
+*.m2p
+*.spec
+*.M2B
