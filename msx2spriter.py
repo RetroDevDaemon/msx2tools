@@ -1127,20 +1127,29 @@ def export_pattern_bytes(triplicate):
     #
     pl = 0 
     while pl < 3:
-        if out_check[pl] == 1:
+        if out_check[pl] == 1 or triplicate:
             tl = 0
             while tl < 256:
                 rl = 0
                 thisbyteout = 0
                 while rl < 8:
                     c2 = None 
-                    c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                    if not triplicate:
+                        c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                    else:
+                        c1 = patterndata[tl][0+(rl*8)]
                     cl = 1 
                     while cl < 8:
-                        if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
-                            c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
-                        if c2 != None:
-                            cl = 8
+                        if not triplicate:
+                            if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
+                                c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
+                            if c2 != None:
+                                cl = 8
+                        else:
+                            if patterndata[tl][cl+(rl*8)] != c1:
+                                c2 = patterndata[tl][cl+(rl*8)]
+                            if c2 != None:
+                                cl = 8
                         cl += 1 #col loop
                     if c2 == None:
                         c2 = 0
@@ -1150,11 +1159,16 @@ def export_pattern_bytes(triplicate):
                     reformatrow = []
                     clp = 0 
                     while clp < 8:
-                        if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
-                            #is this pixel color 0?
-                            reformatrow.append('0')
-                        elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
-                            reformatrow.append('1')
+                        if not triplicate:
+                            if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
+                                reformatrow.append('0')
+                            elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
+                                reformatrow.append('1')
+                        else:
+                            if patterndata[tl][clp+(rl*8)] == c1:
+                                reformatrow.append('0')
+                            elif patterndata[tl][clp+(rl*8)] == c2:
+                                reformatrow.append('1')
                         clp += 1
                     thisbyteout = ''.join(reformatrow)
                     thisbyteout = int(thisbyteout,2)
@@ -1164,7 +1178,7 @@ def export_pattern_bytes(triplicate):
         pl += 1
     pl = 0
     while pl < 3:
-        if out_check[pl] == 1:
+        if out_check[pl] == 1 or triplicate:
             tl = 0
             while tl < 256:
                 rl = 0
@@ -1402,11 +1416,17 @@ def export_asm_pattern(triplicate):
                     reformatrow = []
                     clp = 0 
                     while clp < 8:
-                        if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
-                            #is this pixel color 0?
-                            reformatrow.append('0')
-                        elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
-                            reformatrow.append('1')
+                        if not triplicate:
+                            if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
+                                #is this pixel color 0?
+                                reformatrow.append('0')
+                            elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
+                                reformatrow.append('1')
+                        else:
+                            if patterndata[tl][clp+(rl*8)] == c1:
+                                reformatrow.append('0')
+                            elif patterndata[tl][clp+(rl*8)] == c2:
+                                reformatrow.append('1')
                         clp += 1
                     thisbyteout = ''.join(reformatrow)
                     thisbyteout = '$' + format(int(thisbyteout,2), '02x') + ', '
