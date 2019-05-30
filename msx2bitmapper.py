@@ -1622,37 +1622,30 @@ def flood_fill(array, index, targetColor, replacementColor):
     if index > len(array) - 1:
         return
 
-    if array[index] != targetColor:
-        return
+    queue = []
+    queue.append(index)
 
-    draw_pixel_atindex(index)
+    while len(queue) > 0:
+        current_node = queue.pop()
 
-    east = index + 1
-    west = index - 1
+        if array[current_node] == targetColor:
+            draw_pixel_atindex(current_node)
+            east = current_node + 1
+            west = current_node - 1
+            north = current_node - graphics_mode_width
+            south = current_node + graphics_mode_width
 
-    while east % graphics_mode_width > 0 and array[east] == targetColor:
-        draw_pixel_atindex(east)
-        east += 1
-    
-    while west % graphics_mode_width < graphics_mode_width - 1 and array[west] == targetColor:
-        draw_pixel_atindex(west)
-        west -= 1
+            if north > 0 and array[north] == targetColor:
+                queue.append(north)
 
-    north = index - graphics_mode_width
-    south = index + graphics_mode_width
+            if south < graphics_mode_width * graphics_mode_width and array[south] == targetColor:
+                queue.append(south)
 
-    if north > 0:
-        flood_fill(array, north, targetColor, replacementColor)
-    
-    if south < graphics_mode_width * graphics_mode_width:
-        flood_fill(array, south, targetColor, replacementColor)
+            if west % graphics_mode_width < graphics_mode_width - 1 and array[west] == targetColor:
+                queue.append(west)
 
-    # if west % graphics_mode_width < graphics_mode_width - 1:
-    #     flood_fill(array, west, targetColor, replacementColor)
-
-    # if east % graphics_mode_width > 0:
-    #     flood_fill(array, east, targetColor, replacementColor)
-
+            if east % graphics_mode_width > 0 and array[east] == targetColor:
+                queue.append(east)
 
 '''returns tuple of 0,0 based x,y offset of drawCanvas'''
 def get_canvas_offset():
