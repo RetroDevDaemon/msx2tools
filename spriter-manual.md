@@ -18,7 +18,7 @@
 -Optional triplicate for pattern export<br>
 
 ## Usage
-![ss1](m2s9.png)
+![ss1](m2s9.png)<br>
 The palette at the top of the screen is the default MSX2 palette. To modify these colors, simply select the color, input new RGB values in the edit boxes (values of 0-7), and select **Apply**. The **Reset** button will change the selected color back to the MSX2 system default. You can also <b>drag and drop</b> palette entries to rearrange them. This will automatically swap their associated colors for all current sprites.
 
 _Note that the first color (color 0) is transparent for sprites. Its value can be changed, but for practical purposes this is cosmetic._
