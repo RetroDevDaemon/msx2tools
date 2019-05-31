@@ -1,13 +1,13 @@
-#MSX2 Screener v1.22
+# MSX2 Screener v1.22
 
-##Features
+## Features
 -Native compressed format<br>
 -Export in z80 code and raw bytes<br>
 -Support for hot-swapping pattern files<br>
 -100-step undo and redo<br>
 -Selection and cut/copy/paste<br>
 -Automatic tile swapping when drawing each pattern region<br>
-<br>
+
 ## Usage (Screener tool):
 As above, copy or download `msx2screener.py` locally to your computer. To make use of the screener tool, you need a pattern (M2P) file created with the Spriter tool. You execute it with:<br>
 
