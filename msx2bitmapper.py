@@ -553,7 +553,7 @@ hex_palette = [ '#000', '#000', '#2C2', '#6F6',
  '#F22', '#F66', '#CC2', '#CC8',
  '#282', '#C4A', '#AAA', '#FFF' ]
  #0/2/4/6/8/A/C/F
-
+default_palette = list(hex_palette)
 palette_display = []
 
 i = 0
@@ -1512,14 +1512,14 @@ def export_z80():
             while x < graphics_mode_width:
                 thisbyteout = ''
                 px_a = screen_data[(y*graphics_mode_width)+x]
-                px_a = str(px_a).format('1x')
+                px_a = format(px_a, '1x')#str(px_a).format('1x')
                 x += 1
                 px_b = screen_data[(y*graphics_mode_width)+x]
-                px_b = str(px_b).format('1x')
+                px_b = format(px_b, '1x')#str(px_b).format('1x')
                 thisbyteout += '$' + px_a + px_b + ', '
                 thisrowout += thisbyteout
                 x += 1
-            outdata.append(thisrowout)
+            outdata.append(thisrowout[:-2])
             if not interlaced:
                 y += 1
             else:
@@ -1565,7 +1565,7 @@ def export_z80():
                 fullbyte = format(int(fullbyte,2),'02x')
                 thisbyteout += '$' + fullbyte + ', '
                 thisrowout += thisbyteout 
-            outdata.append(thisrowout)
+            outdata.append(thisrowout[:-2])
             if not interlaced:
                 y += 1
             else:
@@ -1603,7 +1603,7 @@ def export_z80():
                 fullbyte = '$' + fullbyte + ', '
                 thisrowout += fullbyte 
                 x += 1
-            outdata.append(thisrowout)
+            outdata.append(thisrowout[:-2])
             if not interlaced:
                 y += 1
             else:
@@ -1648,10 +1648,10 @@ def export_bytes():
             while x < graphics_mode_width:
                 thisbyteout = ''
                 px_a = screen_data[(y*graphics_mode_width)+x]
-                px_a = str(px_a).format('1x')
+                px_a = format(px_a, '1x')#str(px_a).format('1x')
                 x += 1
                 px_b = screen_data[(y*graphics_mode_width)+x]
-                px_b = str(px_b).format('1x')
+                px_b = format(px_b, '1x')
                 strby = px_a + px_b
                 thisbyteout = int(strby,16)
                 x += 1
@@ -1662,6 +1662,7 @@ def export_bytes():
                 y += 2
                 if y == graphics_mode_height:
                     y = 1
+        #print(outdata)
     elif (graphic_mode == 'G5'):
         y = 0
         while y < graphics_mode_height:
@@ -2423,12 +2424,22 @@ class make_new(tk.Tk):
         if expanded == 192 or expanded == 384:
             expanded = False 
         new_file(mode, expanded, interlace)
+        reset_palette_display()
         global undo_history 
         global redo_history
         undo_history = []
         redo_history = []
         self.withdraw()
 
+def reset_palette_display():
+    global palette_display
+    global hex_palette
+    global default_palette
+    hex_palette = list(default_palette)
+    i = 0
+    while i < 16:
+        palette_display[i].setVal(hex_palette[i])
+        i += 1
 
 newwin = None
 if newwin:
