@@ -2207,7 +2207,7 @@ def invert_pixels():
                     rowcolor = lastUsedColor
                 else:
                     firstEmptyRows.append(rowstart)
-            
+
             if rowcolor != None:
                 index = 0 + (rowstart * spriteSize)
 
@@ -2236,7 +2236,7 @@ def invert_pixels():
             pixels_mask1 = maskdata[maskdata_ofs].copy()
         else:
             pixels_mask2 = maskdata[maskdata_ofs].copy()
-    else:
+    else: # pattern mode invert
         rowstart = 0
         rowend = spriteSize
 
@@ -2244,41 +2244,63 @@ def invert_pixels():
         firstUsedColor = None
         lastUsedColor = None
         firstEmptyRows = []
-
+        
         while rowstart < rowend:
             index = 0 + (rowstart * spriteSize)
             end = spriteSize + (rowstart * spriteSize)
-            rowcolor = None
+            rowcolor_a = None 
+            rowcolor_b = None
 
-            # Find row color
-            while index < end:
-                if copiedpatterndata[index] > 0:
-                    rowcolor = copiedpatterndata[index]
-                    lastUsedColor = rowcolor
-
-                    if firstUsedColor == None:
-                        firstUsedColor = rowcolor
-    
-                    break
-                index += 1
-
-            # Loop row again to perform invert
-            if rowcolor == None:
-                if lastUsedColor != None:
-                    rowcolor = lastUsedColor
+            # Find row colors
+            while index < end: # loop through row 
+                if rowcolor_a == None:
+                    rowcolor_a = copiedpatterndata[index] # can be 0
+                    if rowcolor_a != 0:
+                        firstUsedColor = rowcolor_a 
                 else:
-                    firstEmptyRows.append(rowstart)
+                    if rowcolor_b == None and copiedpatterndata[index] != rowcolor_a:
+                        rowcolor_b = copiedpatterndata[index]
+                        if rowcolor_b != 0:
+                            lastUsedColor = rowcolor_b
+                        break 
+                index += 1
+            if rowcolor_b == None:
+                rowcolor_b = 0 # but what if they're both zero?
+                # if copiedpatterndata[index] > 0: # if its not transparent
+                #     if copiedpatterndata[index] != rowcolor_a:
+                #         rowcolor_a = copiedpatterndata[index]  # set as row color a
+                #         lastUsedColor = rowcolor_a             # and the most recent color
 
-            if rowcolor != None:
-                index = 0 + (rowstart * spriteSize)
+                #         if firstUsedColor == None:          # if we don't have a color to replace transparent,
+                #             firstUsedColor = rowcolor       # set it as this first color
 
-                while index < end:
-                    if copiedpatterndata[index] == 0:
-                        copiedpatterndata[index] = rowcolor
-                    else:
-                        copiedpatterndata[index] = 0
+                #index += 1
+            #print('1', firstUsedColor, '2', lastUsedColor)
+            # Loop row again to perform invert
+            #if rowcolor_a == None:
+            #    if lastUsedColor != None:
+            #        rowcolor_a = lastUsedColor
+            #    else:
+            #        firstEmptyRows.append(rowstart)
+            if rowcolor_b == 0 and rowcolor_a == 0:
+                rowcolor_a = firstUsedColor
+            if rowcolor_a == None:
+                i = 0
+                while i < 64:
+                    if patterndata[icon_selected][i] > 0:
+                        rowcolor_a = patterndata[icon_selected][i]
+                        break
+                    i += 1
+            
+            index = 0 + (rowstart * spriteSize)
 
-                    index += 1
+            while index < end:
+                if copiedpatterndata[index] == rowcolor_b:
+                    copiedpatterndata[index] = rowcolor_a
+                else:
+                    copiedpatterndata[index] = rowcolor_b
+
+                index += 1
 
             rowstart += 1
 
