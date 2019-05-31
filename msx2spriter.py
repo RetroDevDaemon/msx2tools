@@ -1203,7 +1203,7 @@ def export_pattern_bytes(triplicate):
         pl += 1
 
     try:
-        cfile = pattern_bin_file.split('.')
+        cfile = os.path.basename(pattern_bin_file).split('.')
         cfile[0] = cfile[0] + '_colors'
         cfile = ''.join(cfile)
         f = open(pattern_bin_file, 'wb')
@@ -1335,14 +1335,13 @@ def export_sprite_bytes():
             curb = int(''.join(outb),2)
             outdata.append(curb)
         i += 1
-    #print(outdata)
     try:
         f = open(binaryfile, 'wb')
         for s in outdata:
             b = bytes([s])
             f.write(b)
         f.close()
-        c = binaryfile.split('.')
+        c = os.path.basename(binaryfile).split('.')
         c[0] = c[0] + '_colors'
         c = ''.join(c)
         f = open(c, 'wb')
