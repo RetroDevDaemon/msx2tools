@@ -1,10 +1,19 @@
-# MSX2 Spriter v1.25 / Screener v1.1
+# MSX2 Tools
+# MSX2 Spriter v1.31 / MSX2 Screener v1.21
 
-Python3 tool for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts.
+Python3 toolset for creating/exporting dual-masked mode 2 (GRAPHIC3/screen4) sprites, patterns, and screen layouts, plus GRAPHIC4-7 (screen 5-8) bitmaps.
 
 
 ### Release notes:
 
+1.33: Added option to triplicate pattern export if graphic data is only in the first pattern table.<br>
+1.32/1.22: Added raw bytes export to all modes.<br>
+1.31/1.21: Added compression to M2S/M2P/M2C file formats. Files should now rarely exceed 1kB in size.<br>
+1.30: Added fill tool. NOTE: Since palette colors are entirely seperate from sprite masks, the fill tool effectively fills 0s in with 1s. Colors per-mask will reflect this, so don't be surprised when the tool changes your entire mask to one color! :)<br> 
+1.29: Added color picker to sprite/pattern tool.<br>
+1.28: Added icon toolbar to both tools, box select to screen tool, and horizontal/vertical flip for sprite tool.<br>
+1.27: Added import of palettes from other M2S/M2P files.<br>
+1.26: Added UDLR shifting of sprites and patterns. (This does NOT add to the undo queue, since it's easy to undo yourself). <br>
 1.25: Added 100-step undo/redo and various bug fixes <br>
 1.22: Keyboard shortcuts for copy/paste sprites, fix for transparency color change<br>
 1.21: Added transparency selection/display to sprite mode, added copy/paste mask data<br>
@@ -24,11 +33,11 @@ To start it, download (or copy) msx2spriter.py to any folder on a computer with 
 
 The following window will open:
 
-![ss1](m2s4.png)
+![ss1](m2s6.png)
 
 The palette at the top of the screen is the default MSX2 palette. To modify these colors, simply select the color, input new RGB values in the edit boxes (values of 0-7), and select **Apply**. The **Reset** button will change the selected color back to the MSX2 system default.
 
-_Note that the first color (color 0) is transparent, and its grey value cannot be changed as of this version!_
+_Note that the first color (color 0) is transparent for sprites. Its value can be changed, but for practical purposes this is cosmetic._
 
 Instructions:<br>
 -The left mouse button draws the selected color, and the right mouse button erases (draws transparent).<br>
@@ -36,8 +45,12 @@ Instructions:<br>
 -**Note that TWO sprite masks are selected at a time, and all sprites are currently limited to 16x16 mode**. 'Mask' in this context refers to one of the two 16x16 pixel blocks that make up a combined sprite.<br>
 -Only one mask can be drawn on at a time. Use the radio button beneath the draw area to swap between the two currently displayed masks.<br>
 -Use the checkbox buttons to toggle visibility of the two currently displayed masks.<br>
+-The Shift key temporarily toggles the color picker.<br>
 -Click the small sprite display to swap between the two masks currently being edited.<br>
 -Click the arrows to swap between pages (there are four, to constitute a full MSX2 mode-2 sprite set).<br>
+-The arrows underneath the draw area allow you to shift in all four directions.<br>
+-The toolbar at the top of the screen represents, in order: Save, Pixel, Pick color, Cut, Copy, Paste, Undo, Redo, Flip Horiz. and Flip Vertical. These options are all in the Edit menu as well (Save is in File).<br>
+-To use a palette from another M2S or M2P file in your current file, choose 'Import palette from...' option from the File menu.<br>
 
 ### Save, Load, and Export
 
@@ -49,13 +62,13 @@ To use the sprites in assembly language programs, use **Export z80 sprite data..
 
 The color data is included as bytes above the sprite mask data so an entire set can be loaded into MSX2 memory all in one go. 
 
-(Note that as of v1.0 the exporter will export all 32 masks and color data. You'll have to cherry pick them if you only want to include some of them.)
+(The exporter will only export tiles/masks that are NOT empty.)
 
 To export the universal palette, use the **Export z80 palette data...** option. As above, it will export assembler data byte format in sequence to be loaded into register #16. 
 
 As of 1.1, you can also create pattern sets for backgrounds!
 
-To switch to pattern mode, select **New pattern file** from the File menu. You will be greeted with a screen similar to the following:
+To switch to pattern mode, select **New pattern file** from the File menu. You will be greeted with a screen similar to the following (screenshot slightly out of date):
 
 ![ss2](m2s3.png)
 
@@ -79,7 +92,7 @@ As above, copy or download `msx2screener.py` locally to your computer. To make u
 
 The window looks like this:<br>
 
-![ss2](m2s5.png)
+![ss2](m2s7.png)
 
 
 Instructions for **Screener tool**:<br>
@@ -87,6 +100,7 @@ Instructions for **Screener tool**:<br>
 -Screen patterns are limited to one-third sections of the screen. Patterns 0-255 are for the top third, 256-511 for the middle, and 512-767 for the bottom.<br>
 -Click any of the patterns on each of the pattern windows to select a 'paintbrush' for that section of the screen. After doing this, painting is natural and fluid - you can drag your mouse between the screen's third-sections and continue painting with the selected neighboring pattern.<br>
 -Right click to set that tile to whatever is set to tile '0' in that section. <br>
+-When creating a new screen file, all tiles will be filled in by default with tile '0'. It is recommended this tile is fully transparent (color 0).<br>
 -You can freely change screen files and pattern files. Import a new M2P to change the current screen's pattern graphics, or load/create a new M2C and the tool will ask if you want to change your current pattern set.<br>
 -Exporting is nice and easy - 768 bytes, one per tile, each valued 0-255. Formatting is the same as described above.<br>
 
@@ -112,8 +126,10 @@ GRAPHIC3 background patterns are surprisingly lenient:<br>
 
 The code is extremely ugly. I am not a professional coder by any means and this is mostly for personal use. I'm releasing it publically so maybe someone else will get some use out of it. 
 
-IT'S SLOW! I use Tkinter rectangles to represent pixels, which means there are sometimes several thousand canvas updates happening. Hopefully it remains manageable even on slower systems.
+IT'S SLOW! I use Tkinter rectangles to represent pixels, which means there are sometimes several thousand canvas updates happening. Hopefully it remains manageable even on slower systems. I've done quite a bit of optimizing, so right now the only noticable thing is importing and undo on the screener tool (which has a loading notification).
 
-Quality of life features (copy and paste, RMB functionality) are coming soon.
+The icons for the toolbar were actually made using the tool, and inverting the byte order for X11-method bitmaps.
+
+More QoL features coming soon!
 
 Feel free to contribute, clean up, or give me a shout-out :)

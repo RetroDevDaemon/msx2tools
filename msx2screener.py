@@ -5,7 +5,7 @@
 #
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.1: Undo, redo, bugfixes
+# v1.22: Added raw bytes export.
 # 
 #
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
@@ -19,6 +19,8 @@ from tkinter import filedialog
 from tkinter import messagebox 
 import math 
 import sys 
+import os 
+import zipfile
 
 # MSX2 default 16-color palette, in integer strings
 defaultIntegerPalette = [
@@ -28,12 +30,83 @@ defaultIntegerPalette = [
     '141', '625', '555', '777'
 ]
 
+dotdata = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x00, 0x10, 0x00, 0x28, 0x00, 0x5c, 0x00, 0x2e, 0x00, 0x17, 0x80, 0x0b, 0xc0, 0x05, 0xe0, 0x02, 0x70, 0x01, 0xb8, 0x00, 0x54, 0x00, 0x24, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
+boxdata = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00,0x00, 0x00,
+0x54, 0x15,0x00, 0x20,
+0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0x00, 0x20,
+0x04, 0x00,0xa8, 0x2a,
+0x00, 0x00,0x00, 0x00
+};
+"""
+save_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xfc, 0x3f, 0x1e, 0x78, 0x5e, 0x78, 0x5e, 0x78, 0x1e, 0x78, 0xfe, 0x7f, 0xfe, 0x7f, 0x7e, 0x7e, 0xbe, 0x7d, 0xbe, 0x7c, 0x7e, 0x7e, 0xfe, 0x7f, 0xfe, 0x6f, 0xfc, 0x3f, 0x00, 0x00
+};
+"""
+cut_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x80, 0x00, 0x80, 0x01, 0x80, 0x02, 0x80, 0x02, 0x80, 0x02, 0x80, 0x02, 0x80, 0x32, 0x80, 0x7a, 0xff, 0xcf, 0x82, 0xce, 0xfc, 0xcb, 0x80, 0x31, 0xc0, 0x03, 0x60, 0x06, 0x60, 0x06, 0xc0, 0x03
+};
+"""
+copy_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0xf8, 0x00, 0xac, 0x01, 0x56, 0x03, 0xab, 0x06, 0x55, 0x05, 0xab, 0x1f, 0xd5, 0x20, 0x6b, 0x40, 0x36, 0x80, 0x2c, 0x80, 0x38, 0x80, 0x20, 0x80, 0x20, 0x80, 0x40, 0x40, 0x80, 0x20, 0x00, 0x1f
+};
+"""
+paste_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x01, 0x80, 0x01, 0x80, 0x01, 0xc0, 0x02, 0xe0, 0x05, 0x20, 0x05, 0xe0, 0x0c, 0x10, 0x09, 0x08, 0x16, 0xe8, 0x17, 0x28, 0x14, 0x28, 0x14, 0xe8, 0x17, 0x08, 0x10, 0x08, 0x10, 0xf0, 0x0f
+};
+"""
+undo_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x40, 0x00, 0x60, 0x00, 0xf0, 0x0f, 0xf8, 0x1f, 0xf0, 0x3f, 0x60, 0x38, 0x40, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x18, 0x00, 0x0c, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
+redo_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x00, 0x02, 0x00, 0x06, 0xf0, 0x0b, 0x08, 0x10, 0xf4, 0x0b, 0x14, 0x06, 0x0c, 0x02, 0x0c, 0x00, 0x0c, 0x00, 0x18, 0x00, 0x30, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
 integerPalette = defaultIntegerPalette.copy()
 
 # TK Setup
 app = tk.Tk()
 app.title('MSX2 Screener')
 
+boxbmp = tk.BitmapImage(data=boxdata)
+dotbmp = tk.BitmapImage(data=dotdata)
+save_icon = tk.BitmapImage(data=save_icon_data)
+cut_icon = tk.BitmapImage(data=cut_icon_data)
+copy_icon = tk.BitmapImage(data=copy_icon_data)
+paste_icon = tk.BitmapImage(data=paste_icon_data)
+undo_icon = tk.BitmapImage(data=undo_icon_data)
+redo_icon = tk.BitmapImage(data=redo_icon_data)
 # Global def 
 win = None 
 screenCanvas = None 
@@ -212,6 +285,11 @@ def refresh_whole_screen():
             while yt < 8:
                 tilepaint = screentiles[(i*256)+(yt*32)+xt]
                 tiletopaint = tile_data[(i*256)+tilepaint]
+                if tiletopaint == []:
+                    RedrawScreenGrid(0)
+                    screenCanvas.delete(loadingt)
+                    screenCanvas.delete(loadings)
+                    return
                 xp = 0
                 while xp < 8:
                     yp = 0
@@ -230,6 +308,7 @@ last_tile_erased = -1
 
 def erase_tile(obj):
     global last_tile_used
+    global button_not_released
     last_tile_used = -1
     if loaded_tiles == False:
         return 
@@ -246,7 +325,11 @@ def erase_tile(obj):
     if yt > 7:
         yt -= 8
         tab += 1
+    if button_not_released == False: 
+        add_undo_point()
+        button_not_released = True 
     screentiles[(oyt*32)+xt] = 0
+    tab_ofs = tab*256
     if obj.x > 0 and obj.x <= screenCanvas.winfo_width() and obj.y > 0 and obj.y <= screenCanvas.winfo_height():
         #and selected_tile_data[tab] != None:
         if screentiles[(oyt*32)+xt] == tile_data[(tab*256)+0] and last_tile_erased > -1:
@@ -255,7 +338,7 @@ def erase_tile(obj):
         while xp < 8:
             yp = 0
             while yp < 8:
-                paint = convertIntColorToHex(integerPalette[tile_data[(tab*256)+0][(yp*8)+xp]])
+                paint = convertIntColorToHex(integerPalette[tile_data[tab_ofs][(yp*8)+xp]])
                 screenCanvas.itemconfig(screenpixels[(tab*32*64*8)+(yt*32*64)+(xt*64)+(yp*8)+xp], fill=paint)
                 yp += 1
             xp += 1
@@ -308,6 +391,23 @@ def DrawTileSelector(tilepal, x, y):
     toy = y * (tileSize*iconScale)
     tile_selector[tilepal] = tilePalettes[tilepal].create_rectangle(tox, toy, tox+(tileSize*iconScale), toy+(tileSize*iconScale), width=2, outline='white')
 
+area_selector = None
+selection_size = (0,0) 
+
+def DrawAreaSelector(x, y, w=1, h=1):
+    #default size 1, 1 
+    global area_selector
+    if area_selector != None:
+        screenCanvas.delete(area_selector)
+    sx = x * (tileSize*screenScale)
+    sy = y * (tileSize*screenScale)
+    tx = sx + (tileSize*screenScale*w)
+    ty = sy + (tileSize*screenScale*h)
+    area_selector = screenCanvas.create_rectangle(sx, sy, tx, ty, width=2, outline='white')
+    global selection_size 
+    selection_size = (w, h)
+    return
+
 tile_pal_grid = []
 i = 0
 while i < 3:
@@ -327,16 +427,18 @@ def InitTilePalettes():
         # align
         tilePalettes[i].grid(row=4+(i*3), column=16)
         # then draw grid
+        scale = tileSize*iconScale
         x = 0
         while x < 32:
-            tile_pal_grid[i].append(tilePalettes[i].create_line(x*(tileSize*iconScale), 0, x*(tileSize*iconScale), (iconScale*tileSize*8), fill='grey'))
+            tile_pal_grid[i].append(tilePalettes[i].create_line(x*scale, 0, x*scale, scale*8, fill='grey'))
             x += 1
         y = 0 
         while y < 24:
-            tile_pal_grid[i].append(tilePalettes[i].create_line(0, y*(tileSize*iconScale), (tileSize*iconScale*32), y*(tileSize*iconScale), fill='grey'))
+            tile_pal_grid[i].append(tilePalettes[i].create_line(0, y*scale, scale*32, y*scale, fill='grey'))
             y += 1
         i += 1
     # and bind clicks
+    scale8 = iconScale*8
     i = 0
     while i < 3:
         # and populate it with 32x8x64 pixels
@@ -348,10 +450,10 @@ def InitTilePalettes():
                 while xp < 8:
                     yp = 0
                     while yp < 8: # assign to tilepixels
-                        tilepixels[i][(yt*32*64)+(xt*64)+(yp*8)+xp] = tilePalettes[i].create_rectangle( (xp*iconScale)+(xt*8*iconScale),\
-                             ((yp*iconScale)+(iconScale*8*yt),\
-                             ((xp*iconScale)+(xt*8*iconScale))+iconScale,\
-                             ((yp*iconScale)+(iconScale*8*yt))+iconScale), outline='')
+                        tilepixels[i][(yt*32*64)+(xt*64)+(yp*8)+xp] = tilePalettes[i].create_rectangle( (xp*iconScale)+(xt*scale8),\
+                             ((yp*iconScale)+(scale8*yt),\
+                             ((xp*iconScale)+(xt*scale8))+iconScale,\
+                             ((yp*iconScale)+(scale8*yt))+iconScale), outline='')
                         yp += 1
                     xp += 1
                 yt += 1
@@ -375,22 +477,24 @@ def InitScreenWindow():
         screenCanvas.bind("<B3-Motion>", erase_tile)
         screenCanvas.bind("<ButtonRelease-1>", RedrawScreenGrid)
         screenCanvas.bind("<ButtonRelease-3>", RedrawScreenGrid)
-        screenCanvas.bind("<ButtonRelease-1>", set_undo_release)
+        screenCanvas.bind("<ButtonRelease-1>", set_undo_release, "+")
+        screenCanvas.bind("<ButtonRelease-3>", set_undo_release, "+")
     # then clear it
     screenCanvas.delete("all")
     # set pos 
     screenCanvas.grid(row=3, column=3, rowspan=10, columnspan=10)
     # and draw 32x24 grid
+    scale = screenScale * tileSize
     x = 0
     while x < 32:
-        screen_grid.append(screenCanvas.create_line(x*(screenScale*tileSize), 0, x*(screenScale*tileSize), (tileSize*screenScale*24), fill='grey'))
+        screen_grid.append(screenCanvas.create_line(x*scale, 0, x*scale, (scale*24), fill='grey'))
         x += 1
     y = 0
     while y < 24:
         if y % 8 == 0:
-            screen_grid.append(screenCanvas.create_line(0, y*(screenScale*tileSize), (tileSize*screenScale*32), y*(screenScale*tileSize), fill='grey', width=2))    
+            screen_grid.append(screenCanvas.create_line(0, y*(scale), (scale*32), y*(scale), fill='grey', width=2))    
         else:
-            screen_grid.append(screenCanvas.create_line(0, y*(screenScale*tileSize), (tileSize*screenScale*32), y*(screenScale*tileSize), fill='grey'))
+            screen_grid.append(screenCanvas.create_line(0, y*(scale), (scale*32), y*(scale), fill='grey'))
         y += 1
     # then populate it with 3x32x8x(8x8) pixels
     i = 0
@@ -404,9 +508,9 @@ def InitScreenWindow():
                     yp = 0
                     while yp < 8: #assign to screenpixels
                         screenpixels[(i*256*64)+(yt*32*64)+(xt*64)+(yp*8)+xp] = screenCanvas.create_rectangle( (xp*screenScale)+(xt*8*screenScale),\
-                             ((yp*screenScale)+(screenScale*8*yt)+(i*screenScale*8*8),\
+                             ((yp*screenScale)+(screenScale*8*yt)+(i*screenScale*64),\
                              ((xp*screenScale)+(xt*8*screenScale))+screenScale,\
-                             ((yp*screenScale)+(screenScale*8*yt))+(i*screenScale*8*8)+screenScale), outline='')
+                             ((yp*screenScale)+(screenScale*8*yt))+(i*screenScale*64)+screenScale), outline='')
                         yp += 1
                     xp += 1
                 yt += 1
@@ -454,14 +558,23 @@ def import_m2p():
     global m2pfilename 
     m2pfilename = ''
     f = None 
+    z = None 
     m2pfilename = tk.filedialog.askopenfilename(title='Load MSX2 Spriter file', filetypes=( ('MSX2 Spriter pattern file', '*.m2p'),('All files', '*.*') ))
     if m2pfilename == '' or type(m2pfilename) == tuple:
         return
     else:
+        inbuffer = 'm2p'
+        zipped = False 
         try:
-            f=open(m2pfilename,'r')
+            if zipfile.is_zipfile(m2pfilename):
+                zipped = True
+                z = zipfile.ZipFile(m2pfilename)
+                f = z.open(inbuffer, 'r')
+                data = f.readline().decode("utf-8")
+            else:
+                f=open(m2pfilename,'r')
             # read in palette
-            data = f.readline()
+                data = f.readline()
             global integerPalette
             palette_vals = data.split(',')
             i = 0
@@ -475,13 +588,16 @@ def import_m2p():
             while n < 3:
                 s = 0
                 while s < 256:
-                    data = f.readline()
-                    tdat = data.split(',')
+                    if zipped:
+                        data = f.readline().decode("utf-8").split(',')
+                    else:
+                        data = f.readline().split(',')
+                    #tdat = data.split(',')
                     p = 0
                     while p < 64:
-                        tdat[p] = int(tdat[p])
+                        data[p] = int(data[p])
                         p += 1
-                    tile_data[(n*256)+s] = tdat
+                    tile_data[(n*256)+s] = data
                     s += 1
                 selected_tile_data[n] = []
                 n += 1
@@ -491,11 +607,13 @@ def import_m2p():
             loaded_tiles = True 
         except IOError:
             messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-        except:
-            messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
+        #except:
+        #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
         finally:
             if(f):
                 f.close()
+            if(z):
+                z.close()
     refresh_whole_screen()
 
 def launch_app():
@@ -561,6 +679,7 @@ def new_screen():
     redo_history = []
     refresh_whole_screen()
     return 
+
 def load_m2c():
     # ask to change imported m2p
     # if none is imported, show warning
@@ -583,9 +702,19 @@ def load_m2c():
     if m2cfilename == '' or type(m2cfilename) == tuple:
         return
     f = None 
+    z = None 
+    #zipped = False 
+    inbuffer = 'm2c'
     try:
-        f = open(m2cfilename, 'r')
-        indata = f.readline()
+        if zipfile.is_zipfile(m2cfilename):
+            #zipped = True 
+            z = zipfile.ZipFile(m2cfilename)
+            f = z.open(inbuffer, 'r')
+            indata = f.readline().decode("utf-8")
+        else:
+            f = open(m2cfilename, 'r')
+            indata = f.readline()
+        #indata = f.readline()
         indata = indata.split(',')
         indata.pop()
         global screentiles
@@ -604,7 +733,32 @@ def load_m2c():
     finally:
         if f != None:
             f.close()
+        if(z):
+            z.close()
     # now that tiles are confirmed, open m2c dialog
+
+def export_bytes():
+    bin_file = ''
+    bin_file = tk.filedialog.asksaveasfilename(title='Export as raw binary')
+    if bin_file == '' or type(bin_file)==tuple:
+        return 
+    outdata = []
+    i = 0
+    while i < 768:
+        outdata.append(screentiles[i])
+        i += 1
+    f = None 
+    try:
+        f = open(bin_file, 'wb')
+        for s in outdata:
+            b = bytes([s])
+            f.write(b)
+        messagebox.showinfo('Export OK', message='Screen binary export successful!')
+    except:
+        messagebox.showerror('Export failed...', message='Something went wrong. Maybe a bug!')
+    finally:
+        if(f):
+            f.close()
 
 def export_z80():
     global z80filename
@@ -649,10 +803,16 @@ def save_m2c():
     # save with global filename already set.
     # it's just a csv of 768 values.
     f = None
+    z = None 
+    outbuffer = 'm2c'
     try:
-        f = open(m2cfilename, 'w')
+        f = open(outbuffer, 'w')
+        #f = open(m2cfilename, 'w')
         for s in screentiles:
             f.write(str(s) +',')
+        f.close()
+        with zipfile.ZipFile(m2cfilename, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.write(outbuffer)
         global saved 
         saved = True 
         messagebox.showinfo("Save OK", message='Save successful!')
@@ -661,8 +821,9 @@ def save_m2c():
     except:
         messagebox.showerror("Save failed", message="Unknown error saving file. This might be a bug!")
     finally:
-        if f != None:
-            f.close()
+        os.remove('m2c')
+        #if f != None:
+        #    f.close()
 
 def save_normal():
     global m2cfilename
@@ -680,42 +841,219 @@ def save_as():
         m2cfilename = m2cfilename + '.m2c'
     save_m2c()
 
+def open_about():
+    messagebox.showinfo(title='About', message='MSX2 Screener tool v1.2\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
+
+topleft_sel = -1
+
+def start_selection(obj):
+    x = math.floor(obj.x/(screenScale*tileSize))
+    y = math.floor(obj.y/(screenScale*tileSize))
+    ti = (y*32)+x 
+    global topleft_sel 
+    topleft_sel = ti 
+    DrawAreaSelector(x, y)
+    return 
+
+def drag_selection(obj):
+    x = math.floor(obj.x/(screenScale*tileSize))
+    y = math.floor(obj.y/(screenScale*tileSize))
+    ti = (y*32)+x 
+    global topleft_sel 
+    if ti != topleft_sel:
+        ax = topleft_sel % 32
+        ay = math.floor(topleft_sel/32)
+        tx = x-ax+1
+        ty = y-ay+1
+        if tx < 1:
+            tx = 1
+        if ty < 1:
+            ty = 1
+        DrawAreaSelector(ax, ay, tx, ty) 
+    return
+
+copy_size = (0,0)
+copy_buffer = []
+
+def copy_selection():
+    global topleft_sel
+    global selection_size
+    #top left is tile number
+    #selection size is tiles wide and high (x,y)
+    global copy_size
+    global copy_buffer
+    global screentiles
+    copy_buffer = []
+    copy_size = selection_size
+    i = 0
+    while i < copy_size[1]: #y size
+        j = 0
+        while j < copy_size[0]: #x size
+            copy_buffer.append(screentiles[topleft_sel+(i*32)+j])
+            j += 1
+        i += 1
+    #print(copy_buffer)
+    return
+
+def cut_selection():
+    global topleft_sel
+    global selection_size
+    global copy_size
+    global copy_buffer
+    global screentiles
+    global no_changes_made
+    no_changes_made = False
+    add_undo_point()
+    copy_buffer = []
+    copy_size = selection_size
+    i = 0
+    while i < copy_size[1]: #y size
+        j = 0
+        while j < copy_size[0]: #x size
+            copy_buffer.append(screentiles[topleft_sel+(i*32)+j])
+            screentiles[topleft_sel+(i*32)+j] = 0
+            j += 1
+        i += 1
+    refresh_whole_screen()
+
+
+def paste_selection():
+    global topleft_sel
+    global copy_size 
+    global copy_buffer 
+    global screentiles
+    col = topleft_sel % 32 
+    add_undo_point()
+    i = 0
+    while i < copy_size[1]:
+        j = 0
+        while j < copy_size[0]:
+            if topleft_sel + (i*32) + j < len(screentiles):
+                if col + j < 32:
+                    screentiles[topleft_sel + (i*32) + j] = copy_buffer[(i*copy_size[0])+j]
+            j += 1
+        i += 1
+    refresh_whole_screen()
+    return
+
+def draw_mode():
+    global selbutton
+    global pxbutton
+    global interface_mode
+    global area_selector
+    interface_mode = 'DRAW'
+    pxbutton.configure(relief=tk.SUNKEN)
+    selbutton.configure(relief=tk.RAISED)
+    screenCanvas.bind("<Button-1>", draw_tile)
+    screenCanvas.bind("<B1-Motion>", draw_tile)
+    screenCanvas.bind("<Button-3>", erase_tile)
+    screenCanvas.bind("<B3-Motion>", erase_tile)
+    screenCanvas.bind("<ButtonRelease-1>", RedrawScreenGrid)
+    screenCanvas.bind("<ButtonRelease-3>", RedrawScreenGrid)
+    screenCanvas.bind("<ButtonRelease-1>", set_undo_release, "+")
+    screenCanvas.bind("<ButtonRelease-3>", set_undo_release, "+")
+    if area_selector != None:
+        screenCanvas.delete(area_selector)
+    editMenu.entryconfigure(0, state=tk.DISABLED)
+    editMenu.entryconfigure(1, state=tk.DISABLED)
+    editMenu.entryconfigure(2, state=tk.DISABLED)
+    global cutbutton 
+    global copybutton 
+    global pastebutton 
+    cutbutton.configure(state=tk.DISABLED)
+    copybutton.configure(state=tk.DISABLED)
+    pastebutton.configure(state=tk.DISABLED)
+    return
+def select_mode():
+    global selbutton
+    global pxbutton
+    global interface_mode
+    interface_mode = 'SELECT'
+    pxbutton.configure(relief=tk.RAISED)
+    selbutton.configure(relief=tk.SUNKEN)
+    screenCanvas.bind("<Button-1>", start_selection)
+    screenCanvas.bind("<B1-Motion>", drag_selection)
+    screenCanvas.unbind("<Button-3>")#, erase_tile)
+    screenCanvas.unbind("<B3-Motion>")#, erase_tile)
+    screenCanvas.unbind("<ButtonRelease-1>")#, RedrawScreenGrid)
+    screenCanvas.unbind("<ButtonRelease-3>")#, RedrawScreenGrid)
+    editMenu.entryconfigure(0, state=tk.NORMAL)
+    editMenu.entryconfigure(1, state=tk.NORMAL)
+    editMenu.entryconfigure(2, state=tk.NORMAL)
+    global cutbutton 
+    global copybutton 
+    global pastebutton 
+    cutbutton.configure(state=tk.NORMAL)
+    copybutton.configure(state=tk.NORMAL)
+    pastebutton.configure(state=tk.NORMAL)
+    
+    return 
+
 def kb_monitor(obj):
     if obj.state & 4 == 4:
         if obj.keysym == 'c':
+            copy_selection()
             return
-            #copy_data()
         elif obj.keysym == 'v':
+            paste_selection()
             return
-            #paste_data()
         elif obj.keysym == 'x':
-            return
-            #cut_data()
+            cut_selection()
         elif obj.keysym == 'z':
             undo_last()
         elif obj.keysym == 'y':
             redo_last()
-            #return 
+        elif obj.keysym == 's':
+            save_normal()
 
     
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 editMenu = tk.Menu(menuBar, tearoff=0)
+helpMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label='New screen file', command=new_screen) #also ask to change m2p
-fileMenu.add_command(label="Save", command=save_normal)
+fileMenu.add_command(label="Save (Ctrl+S)", command=save_normal)
 fileMenu.add_command(label="Save as .M2C file...", command=save_as)
 fileMenu.add_command(label="Load .M2C file...", command=load_m2c) #ask to change m2p
+fileMenu.add_separator()
 fileMenu.add_command(label="Export as z80 screen data...", command=export_z80)
+fileMenu.add_command(label='Export as raw bytes...', command=export_bytes)
 fileMenu.add_separator()
 fileMenu.add_command(label='Import .M2P patterns...', command=import_m2p) #do not change m2c!
 fileMenu.add_separator()
 fileMenu.add_command(label='Quit', command=client_exit)
+editMenu.add_command(label="Cut (Ctrl+X)", command=cut_selection, state=tk.DISABLED)
+editMenu.add_command(label="Copy (Ctrl+C)", command=copy_selection, state=tk.DISABLED)
+editMenu.add_command(label="Paste (Ctrl+V)", command=paste_selection, state=tk.DISABLED)
+editMenu.add_separator()
 editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
 editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
 editMenu.add_separator()
 editMenu.add_command(label='Configure RMB...', state=tk.DISABLED)
+helpMenu.add_command(label='About...', command=open_about)
 menuBar.add_cascade(label="File", menu=fileMenu)
 menuBar.add_cascade(label='Edit', menu=editMenu)
+menuBar.add_cascade(label='Help', menu=helpMenu)
+toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
+savebutton = tk.Button(toolbar, image=save_icon, width=20, height=20, command=save_normal)
+pxbutton = tk.Button(toolbar, image=dotbmp, width=20, height=20, relief=tk.SUNKEN, command=draw_mode)
+selbutton = tk.Button(toolbar, image=boxbmp, width=20, height=20, command=select_mode)
+cutbutton = tk.Button(toolbar, image=cut_icon, width=20, height=20, command=cut_selection, state=tk.DISABLED)
+copybutton = tk.Button(toolbar, image=copy_icon, width=20, height=20, command=copy_selection, state=tk.DISABLED)
+pastebutton = tk.Button(toolbar, image=paste_icon, width=20, height=20, command=paste_selection, state=tk.DISABLED)
+undobutton = tk.Button(toolbar, image=undo_icon, width=20, height=20, command=undo_last)
+redobutton = tk.Button(toolbar, image=redo_icon, width=20, height=20, command=redo_last)
+
+savebutton.grid(row=0,column=0)
+pxbutton.grid(row=0, column=1, padx=(20,0))
+selbutton.grid(row=0,column=2)
+cutbutton.grid(row=0, column=3, padx=(20,0))
+copybutton.grid(row=0,column=4)
+pastebutton.grid(row=0,column=5)
+undobutton.grid(row=0, column=6, padx=(20,0))
+redobutton.grid(row=0,column=7)
+
+toolbar.grid(row=0)
 app.config(menu=menuBar) 
 
 app.bind("<Key>", kb_monitor)

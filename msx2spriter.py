@@ -5,7 +5,7 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.25: Various bugfixes, 100-step undo and redo
+# v1.33: Added triplicate option to pattern mode.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -17,9 +17,103 @@
 import tkinter as tk
 import sys 
 import math 
+import zipfile 
+import os 
+#import zlib
 
 patternMode = False
 
+## button bitmaps
+drawpx_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x00, 0x10, 0x00, 0x28, 0x00, 0x5c, 0x00, 0x2e, 0x00, 0x17, 0x80, 0x0b, 0xc0, 0x05, 0xe0, 0x02, 0x70, 0x01, 0xb8, 0x00, 0x54, 0x00, 0x24, 0x00, 0x1c, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
+cut_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x80, 0x00, 0x80, 0x01, 0x80, 0x02, 0x80, 0x02, 0x80, 0x02, 0x80, 0x02, 0x80, 0x32, 0x80, 0x7a, 0xff, 0xcf, 0x82, 0xce, 0xfc, 0xcb, 0x80, 0x31, 0xc0, 0x03, 0x60, 0x06, 0x60, 0x06, 0xc0, 0x03
+};
+"""
+copy_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0xf8, 0x00, 0xac, 0x01, 0x56, 0x03, 0xab, 0x06, 0x55, 0x05, 0xab, 0x1f, 0xd5, 0x20, 0x6b, 0x40, 0x36, 0x80, 0x2c, 0x80, 0x38, 0x80, 0x20, 0x80, 0x20, 0x80, 0x40, 0x40, 0x80, 0x20, 0x00, 0x1f
+};
+"""
+paste_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x01, 0x80, 0x01, 0x80, 0x01, 0xc0, 0x02, 0xe0, 0x05, 0x20, 0x05, 0xe0, 0x0c, 0x10, 0x09, 0x08, 0x16, 0xe8, 0x17, 0x28, 0x14, 0x28, 0x14, 0xe8, 0x17, 0x08, 0x10, 0x08, 0x10, 0xf0, 0x0f
+};
+"""
+undo_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x40, 0x00, 0x60, 0x00, 0xf0, 0x0f, 0xf8, 0x1f, 0xf0, 0x3f, 0x60, 0x38, 0x40, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x18, 0x00, 0x0c, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
+redo_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0x00, 0x02, 0x00, 0x06, 0xf0, 0x0b, 0x08, 0x10, 0xf4, 0x0b, 0x14, 0x06, 0x0c, 0x02, 0x0c, 0x00, 0x0c, 0x00, 0x18, 0x00, 0x30, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+"""
+
+horiz_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xfe, 0x7f, 0x56, 0x40, 0xaa, 0x40, 0x56, 0x40, 0xaa, 0x50, 0x0e, 0x70, 0xff, 0xff, 0x0e, 0x70, 0xaa, 0x50, 0x56, 0x40, 0xaa, 0x40, 0x56, 0x40, 0xaa, 0x40, 0xfe, 0x7f, 0x00, 0x00
+};
+"""
+
+vert_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x01, 0xfe, 0x7f, 0xaa, 0x6b, 0xd6, 0x57, 0x2a, 0x69, 0x56, 0x55, 0x2a, 0x69, 0x56, 0x55, 0x02, 0x41, 0x02, 0x41, 0x02, 0x41, 0x02, 0x41, 0xc2, 0x47, 0x82, 0x43, 0xfe, 0x7f, 0x00, 0x01
+};
+"""
+
+save_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xfc, 0x3f, 0x1e, 0x78, 0x5e, 0x78, 0x5e, 0x78, 0x1e, 0x78, 0xfe, 0x7f, 0xfe, 0x7f, 0x7e, 0x7e, 0xbe, 0x7d, 0xbe, 0x7c, 0x7e, 0x7e, 0xfe, 0x7f, 0xfe, 0x6f, 0xfc, 0x3f, 0x00, 0x00
+};
+"""
+
+inv_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0xff, 0xff, 0xff, 0xff, 0x1d, 0xf8, 0x09, 0xf0, 0x1d, 0xe0, 0xff, 0xc3, 0xdf, 0xc7, 0x9f, 0xc7, 0x1f, 0xc7, 0x1f, 0xc6, 0x3f, 0xc4, 0xfd, 0xef, 0xf9, 0xff, 0xf1, 0xef, 0xe1, 0xc7, 0xff, 0xff
+};
+"""
+
+dropper_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x70, 0x00, 0x78, 0x00, 0x7d, 0x00, 0x3f, 0x00, 0x1f, 0x80, 0x0c, 0x40, 0x1c, 0x20, 0x02, 0x10, 0x01, 0xf8, 0x00, 0x48, 0x00, 0x34, 0x00, 0x0c, 0x00, 0x04, 0x00, 0x04, 0x00, 0x0e, 0x00
+};
+"""
+bucket_icon_data = """
+#define im_width 16
+#define im_height 16
+static char im_bits[] = {
+0x00, 0x00, 0xe0, 0x1f, 0x50, 0x20, 0xa8, 0x40, 0x54, 0x81, 0xac, 0x81, 0x54, 0x81, 0xac, 0x81, 0xf8, 0x40, 0x70, 0x20, 0xf0, 0x1f, 0x30, 0x00, 0x30, 0x00, 0x78, 0x00,
+0xfe, 0x01, 0xff, 0x13
+};
+"""
 ## GLOBALS - MUST BE REFD IN INIT DEF
 r0 = None 
 r1 = None 
@@ -31,6 +125,15 @@ l2 = None
 l3 = None 
 buu = None
 bdd = None 
+win = None
+bl = None 
+br = None 
+bu = None 
+bd = None
+sr = None 
+sl = None 
+su = None 
+sd = None
 smallpixels1 = []
 smallpixels2 = []
 smallpixels3 = []
@@ -67,6 +170,19 @@ displayPalette = []
 app = tk.Tk()
 app.title('MSX2 Spriter')
 
+drawpx_icon = tk.BitmapImage(data=drawpx_data)
+cut_icon = tk.BitmapImage(data=cut_icon_data)
+copy_icon = tk.BitmapImage(data=copy_icon_data)
+paste_icon = tk.BitmapImage(data=paste_icon_data)
+undo_icon = tk.BitmapImage(data=undo_icon_data)
+redo_icon = tk.BitmapImage(data=redo_icon_data)
+horiz_icon = tk.BitmapImage(data=horiz_icon_data)
+vert_icon = tk.BitmapImage(data=vert_icon_data)
+save_icon = tk.BitmapImage(data=save_icon_data)
+inv_icon = tk.BitmapImage(data=inv_icon_data)
+dropper_icon = tk.BitmapImage(data=dropper_icon_data)
+fill_icon = tk.BitmapImage(data=bucket_icon_data)
+
 # First, convert the integer palette to hexadecimal palette.    
 def convert_int_pal_to_hex(integerPalette):
     global displayPalette
@@ -79,39 +195,20 @@ def convert_int_pal_to_hex(integerPalette):
             integerPalette[i] = '000'
         tempPalVals = []
         tempPalVals.append('#')
-        #a = math.floor((int(integerPalette[i][:-2]) / 7) * 255)
         tc = int(integerPalette[i][0])
         a = int((float(tc)/7)*255)
-        #a = float((int(integerPalette[i][0]) / 7)) * 255
         tempPalVals.append(format(a, '02x'))
-        #tempPalVals.append(hex(a)[2:])
-        #if a == 0:
-        #    tempPalVals.append('0')
-        #a = math.floor((int(integerPalette[i][1:-1]) / 7) * 255)
         tc = int(integerPalette[i][1])
         a = int((float(tc)/7)*255)
         tempPalVals.append(format(int(a), '02x'))
-        #tempPalVals.append(hex(a)[2:])
-        #if a == 0:
-        #    tempPalVals.append('0')
-        #a = math.floor((int(integerPalette[i][2:]) / 7) * 255)
         tc = int(integerPalette[i][2])
         a = int((float(tc)/7)*255)
         tempPalVals.append(format(int(a), '02x'))
-        #tempPalVals.append(hex(a)[2:])
-        #if a == 0:
-        #    tempPalVals.append('0')
-        #print(tempPalVals)
         displayPalette.append(tempPalVals)
         displayPalette[i] = ''.join(displayPalette[i])
         i += 1
     #print(displayPalette)
  #
-
-# To convert HTML color back to 3-bit RGB values
-def convert_hex_pal_to_binary():
-    return 0
-
 
 # some globals
 numSel = 0
@@ -131,35 +228,20 @@ app.bind("<ButtonRelease-1>", stop_draw)
 
 # Converts a 3-bit RGB string value (e.g. 111) to html hex (e.g. #242424)
 def single_intcol_to_hex(col):
-    #global currentColor
     if col[:-2] == 'tra':
         return '#000000'
-    #print(col)
-    #a = math.floor((int(col[:-2]) / 7) * 255)
     a = int(col[0])
     a = float(a)/7
     a = a*255
     b = format(int(a), '02x')
-    #print(b)
-    #b = hex(a)[2:]
-    #if b == '0':
-    #    b = '00'
-    #c = math.floor((int(col[1:-1]) / 7) * 255)
     c = int(col[1])
     c = float(c)/7
     c = c*255
     d = format(int(c), '02x')
-    #d = hex(c)[2:]
-    #if d == '0':
-    #    d = '00'
-    #e = math.floor((int(col[2:]) / 7) * 255)
     e = int(col[2])
     e = float(e)/7
     e = e*255
     f = format(int(e), '02x')
-    #f = hex(e)[2:]
-    #if f == '0':
-    #    f = '00'
     ret = '#'
     ret += b 
     ret += d 
@@ -170,23 +252,23 @@ def single_intcol_to_hex(col):
 # for screener, selectioncanvas will be a new class.
 # for spriter, is faster to just redraw.
 
-# Define the palette button class
 class PaletteButton(tk.Canvas):
     def __init__(self, *args, **kwargs):
         tk.Canvas.__init__(self, *args, **kwargs)
         self.lbl = 0
         self.lbl2 = 0
+        self.swapping = False
         self.selector=[]
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
         self.bind("<Button-1>", self.clicked)
-    
+
     def on_enter(self, event):
         self.delete(self.lbl)
         self.delete(self.lbl2)
         self.lbl2 = self.create_text(17, 17, text=self.myVal, fill='white')
         self.lbl = self.create_text(16, 16, text=self.myVal)
-    
+            
     def on_leave(self, enter):
         self.delete(self.lbl)
         self.delete(self.lbl2)
@@ -201,6 +283,8 @@ class PaletteButton(tk.Canvas):
             b += 1
 
     def clicked(self, event):
+        #global mbuttonup
+        #mbuttonup = False 
         unclick_all()
         self.selector.append(self.create_line(2, 2, scale, 2, width=3, fill='yellow'))
         self.selector.append(self.create_line(2, 2, 2, scale, width=3, fill='yellow'))
@@ -269,8 +353,6 @@ def updatePaletteDisplay():
     while i < 16:
         palette_display[i].configure(background=displayPalette[i])
         palette_display[i].setVal(intpal[i])
-        #if i == 0:
-        #    palette_display[i].myVal = 'trans'
         i += 1
     return 
 
@@ -279,7 +361,7 @@ def applyColorToSel():
     # 1) ensure input values are between 0-7 
     global currentColor
     oldcol = single_intcol_to_hex(currentColor)
-    if oldcol != intpal[0]:#'grey'intpal[0]:
+    if oldcol != intpal[0]:
         i = 0
         while i < 3:
             if float(pal_mod[i].get()) < 0:
@@ -351,14 +433,15 @@ def add_labels_andpalmod():
 def repaint_row(row):
     global currentColor
     i = 0
+    r = row * spriteSize
     while i < spriteSize:
         # TODO update 'grey' to transparent variable
         if mask.get() == 1:
-            if pixels_mask1[int((row*spriteSize)+i)] != 0: 
-                pixels_mask1[int((row*spriteSize)+i)] = currentPalNo
+            if pixels_mask1[r+i] != 0: 
+                pixels_mask1[r+i] = currentPalNo
         if mask.get() == 2:
-            if pixels_mask2[int((row*spriteSize)+i)] != 0:
-                pixels_mask2[int((row*spriteSize)+i)] = currentPalNo    
+            if pixels_mask2[r+i] != 0:
+                pixels_mask2[r+i] = currentPalNo    
         i += 1
 
 last_mask = -1
@@ -372,28 +455,29 @@ def color_pixel(ob):
     global last_color_used
     global last_mask
     global button_not_released
-    if last_pixel_colored == (y_px*spriteSize)+x_px and last_color_used == currentPalNo and last_mask == mask.get():
+    size = spriteSize*pixelSize
+    ysize = y_px * spriteSize
+    if (last_pixel_colored == (ysize+x_px)) and (last_color_used == currentPalNo) and (last_mask == mask.get()):
         return 
-    if ob.x < 0 or ob.x >= (spriteSize*pixelSize) or ob.y < 0 or ob.y >= (spriteSize*pixelSize):
+    if (ob.x < 0) or (ob.x >= size) or (ob.y < 0) or (ob.y >= size):
         return
-    last_pixel_colored = (y_px*spriteSize) + x_px 
+    last_pixel_colored = ysize + x_px 
     if button_not_released == False: 
         add_undo_point(icon_selected)
         button_not_released = True 
     if patternMode == False:
         if mask.get() == 1:
-            pixels_mask1[int((y_px*spriteSize)+x_px)] = currentPalNo
+            pixels_mask1[ysize+x_px] = currentPalNo
         if mask.get() == 2:
-            pixels_mask2[int((y_px*spriteSize)+x_px)] = currentPalNo
+            pixels_mask2[ysize+x_px] = currentPalNo
         if numSel != 0:# and currentColor != intpal[0]:#if numSel != 0:#if currentColor != 'trans':
             repaint_row(y_px)
         maskdata[page_ofs + (icon_selected*2)] = list(pixels_mask1)
         maskdata[page_ofs + (icon_selected*2)+1] = list(pixels_mask2)
     else:
-        tp = int((y_px*spriteSize)+x_px)
-        prevcol = pixels_mask1[tp]
-        pixels_mask1[tp] = currentPalNo 
-        patterndata[icon_selected] = list(pixels_mask1)
+        prevcol = pixels_mask1[ysize+x_px]
+        pixels_mask1[ysize+x_px] = currentPalNo 
+        patterndata[icon_selected] = pixels_mask1.copy()
         repaint_pattern_row(y_px, prevcol)
         #a = 0
     if last_color_used == currentPalNo:
@@ -413,15 +497,15 @@ def get_palno_from_rgb(rgb):
     return None
 
 def repaint_pattern_row(yrow, prevcol):
-    yr = int(yrow*8)
-    color1 = patterndata[icon_selected][yr]
+    row8 = yrow*8
+    color1 = patterndata[icon_selected][row8]
     color2 = None
     activecolor = currentPalNo#get_palno_from_rgb(currentColor) #single_intcol_to_hex(currentColor)
 
     threeflag = False 
     i = 0
     while i < 8:
-        thispx = patterndata[icon_selected][yr+i]
+        thispx = patterndata[icon_selected][row8+i]
         if color2 == None:
             if thispx != color1:
                 color2 = thispx 
@@ -432,11 +516,11 @@ def repaint_pattern_row(yrow, prevcol):
         # now search the row for every instance of prevcol and overwrite it with activecolor by changing patterndata[icon_selected].
         i = 0
         while i < 8:
-            if patterndata[icon_selected][yr+i] == prevcol:# and activecolor != None:
+            if patterndata[icon_selected][row8+i] == prevcol:# and activecolor != None:
                 if activecolor == None:
                     activecolor = 0
-                pixels_mask1[yr+i] = activecolor
-                patterndata[icon_selected][yr+i] = activecolor
+                pixels_mask1[row8+i] = activecolor
+                patterndata[icon_selected][row8+i] = activecolor
             i += 1
     
 def erase_pixel(ob):
@@ -480,8 +564,9 @@ def update_orlayer(px = -1):
     else:
         i = 0
         y = math.floor(px/spriteSize)
+        ysize = y*spriteSize
         while i < (spriteSize):
-            tpx = int((y*spriteSize)+i)
+            tpx = ysize+i
             if orpixels[tpx] != 0 and pixels_mask2[tpx] != 0:
                 orpixels[tpx] = orpixels[tpx] | pixels_mask2[tpx] 
             elif orpixels[tpx] == 0 and pixels_mask2[tpx] != 0:
@@ -516,8 +601,9 @@ def update_layermask_2(px = -1):
     else:
         i = 0
         y = math.floor(px/spriteSize)
+        ysize = y*spriteSize
         while i < spriteSize:
-            tpx = (y*spriteSize)+i
+            tpx = ysize+i
             topaint = single_intcol_to_hex(intpal[0])#'grey'
             cur_px = pixels_mask2[tpx]
             stip = 'gray75'
@@ -536,13 +622,14 @@ def update_layermask_1(px = -1):
     global palette_display
     if px == -1:
         while i < (spriteSize * spriteSize):
-            topaint = single_intcol_to_hex(intpal[0])#'grey'
             cur_px = pixels_mask1[i]
             stip = 'gray75'
             if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans'
                 stip = ''
                 intval = palette_display[cur_px].myVal
                 topaint = single_intcol_to_hex(intval)
+            else:
+                topaint = single_intcol_to_hex(intpal[0])#'grey'
             if patternMode == True:
                 stip = ''
             drawCanvas.itemconfig(pixels[i], fill=topaint, stipple=stip)
@@ -550,15 +637,17 @@ def update_layermask_1(px = -1):
     else:
         i = 0
         y = math.floor(px/spriteSize)
+        ysize = y*spriteSize
         while i < spriteSize:
-            tpx = (y*spriteSize)+i
-            topaint = single_intcol_to_hex(intpal[0])#'grey'
+            tpx = ysize+i
             cur_px = pixels_mask1[tpx]
             stip = 'gray75'
             if cur_px != 0:
                 stip = ''
                 intval = palette_display[cur_px].myVal
                 topaint = single_intcol_to_hex(intval)
+            else:
+                topaint = single_intcol_to_hex(intpal[0])#'grey'
             if patternMode == True:
                 stip = ''
             drawCanvas.itemconfig(pixels[tpx], fill=topaint, stipple=stip)
@@ -853,13 +942,14 @@ def update_icon_window(win_no=None):
             elif orpixels[i] == 0 and or2pixels[i] != 0:
                 orpixels[i] = or2pixels[i] 
             #topaint = 'grey'
-            topaint = single_intcol_to_hex(intpal[0])
             cur_px = orpixels[i]
             stip = 'gray25'
             if cur_px != 0:#palette_display[cur_px].myVal != intpal[0]:#'trans':
                 intval = palette_display[cur_px].myVal
                 topaint = single_intcol_to_hex(intval)
                 stip = ''
+            else:
+                topaint = single_intcol_to_hex(intpal[0])
             if win_no == 0:
                 iconCanvas.itemconfig(smallpixels1[i], fill=topaint, stipple=stip)
             elif win_no == 1:
@@ -1021,14 +1111,260 @@ def load_sprite_as():
     load_as(reset)
 
 ## Z80 ASSEMBLY EXPORT - THE GOOD SHIT ##   
-def export_asm_pattern():
+pattern_bin_file = None
+def export_pattern_bytes(triplicate):
+    #if triplicate is true, only export first table 3 times
+    global pattern_bin_file
+    pattern_bin_file = ''
+    pattern_bin_file = tk.filedialog.asksaveasfilename(title='Save pattern as binary')#, filetypes=( ("All files", "*.*")))
+    if pattern_bin_file == '' or type(pattern_bin_file)==tuple:
+        return
+    outdata = []
+    outdata_c = []
+    colors_array = []
+    out_check = []
+    p = 0
+    while p < 3:
+        i = 0
+        out_check.append(0)
+        while i < (256):
+            j = 0
+            while j < (spriteSize*spriteSize):
+                if patterndata[(p*256)+i][j] != 0:
+                    out_check[p] = 1
+                j += 1
+            i += 1
+        p += 1
+    #
+    pl = 0 
+    while pl < 3:
+        if out_check[pl] == 1 or triplicate:
+            tl = 0
+            while tl < 256:
+                rl = 0
+                thisbyteout = 0
+                while rl < 8:
+                    c2 = None 
+                    if not triplicate:
+                        c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                    else:
+                        c1 = patterndata[tl][0+(rl*8)]
+                    cl = 1 
+                    while cl < 8:
+                        if not triplicate:
+                            if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
+                                c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
+                            if c2 != None:
+                                cl = 8
+                        else:
+                            if patterndata[tl][cl+(rl*8)] != c1:
+                                c2 = patterndata[tl][cl+(rl*8)]
+                            if c2 != None:
+                                cl = 8
+                        cl += 1 #col loop
+                    if c2 == None:
+                        c2 = 0
+                    c1b = format(c1, '04b')
+                    c2b = format(c2, '04b')
+                    colors_array.append('{}{}'.format(c2b,c1b))
+                    reformatrow = []
+                    clp = 0 
+                    while clp < 8:
+                        if not triplicate:
+                            if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
+                                reformatrow.append('0')
+                            elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
+                                reformatrow.append('1')
+                        else:
+                            if patterndata[tl][clp+(rl*8)] == c1:
+                                reformatrow.append('0')
+                            elif patterndata[tl][clp+(rl*8)] == c2:
+                                reformatrow.append('1')
+                        clp += 1
+                    thisbyteout = ''.join(reformatrow)
+                    thisbyteout = int(thisbyteout,2)
+                    outdata.append(thisbyteout)
+                    rl += 1
+                tl += 1
+        pl += 1
+    pl = 0
+    while pl < 3:
+        if out_check[pl] == 1 or triplicate:
+            tl = 0
+            while tl < 256:
+                rl = 0
+                thisbyteout = 0
+                while rl < 8:
+                    thisbyteout = colors_array[0]
+                    colors_array.pop(0)
+                    outdata_c.append(int(thisbyteout,2))
+                    rl += 1
+                tl += 1
+        pl += 1
+
+    try:
+        cfile = pattern_bin_file.split('.')
+        cfile[0] = cfile[0] + '_colors'
+        cfile = ''.join(cfile)
+        f = open(pattern_bin_file, 'wb')
+        for s in outdata:
+            b = bytes([s])
+            f.write(b)
+        f.close()
+        f = open(cfile, 'wb')
+        for s in outdata_c:
+            b = bytes([s])
+            f.write(b)
+        messagebox.showinfo('Export OK', message='Binaries exported OK!')
+    except:
+        messagebox.showerror('Export failed...', message='Export failed. Maybe a bug!')
+    finally:
+        if(f):
+            f.close()
+
+
+def export_sprite_bytes():
+    binaryfile = '' 
+    binaryfile = tk.filedialog.asksaveasfilename(title='Export sprite data binary')
+    if binaryfile == '' or type(binaryfile)==tuple:
+        return
+    outdata = [] 
+    outcolor = []
+    out_check = 0
+    i = 0
+    while i < 32:
+        j = 0
+        while j < (spriteSize*spriteSize):
+            if maskdata[i][j] != 0:
+                out_check = i+1
+            j += 1
+        i += 1
+    # palette shit
+    i = 0 
+    while i < out_check:
+        y = 0
+        while y < 8:
+            outb = ''
+            x = 0
+            while x < 16:
+                md = maskdata[i][(y*16)+x]
+                if md > 0:
+                    if i % 2 == 0:
+                        outb = '{:02x}'.format(md)
+                    else:
+                        md += 64
+                        outb = '{:02x}'.format(md)
+                x += 1
+            y += 1
+            if outb == '':
+                outcolor.append(0)
+            else:
+                outcolor.append(int(outb,16))
+        y = 8
+        while y < 16:
+            outb = ''
+            x = 0
+            while x < 16:
+                md = maskdata[i][(y*16)+x]
+                if md > 0:
+                    if i % 2 == 0:
+                        outb = '{:02x}'.format(md)
+                    else:
+                        md += 64
+                        outb = '{:02x}'.format(md)
+                x += 1
+            y += 1
+            if outb == '':
+                outcolor.append(0)
+            else:
+                outcolor.append(int(outb,16))
+        i += 1
+    #now sprites
+    i = 0
+    while i < out_check:
+        y = 0
+        while y < 8:
+            outb = [] 
+            x = 0
+            while x < 8:
+                if maskdata[i][(y*16)+x] != 0:
+                    outb.append('1')
+                else: 
+                    outb.append('0')
+                x += 1
+            y += 1
+            curb = int(''.join(outb),2)
+            outdata.append(curb)
+        y = 8
+        while y < 16:
+            outb = []
+            x = 0
+            while x < 8:
+                if maskdata[i][(y*16)+x] != 0:
+                    outb.append('1')
+                else: 
+                    outb.append('0')
+                x += 1
+            y += 1
+            curb = int(''.join(outb),2)
+            outdata.append(curb)
+        y = 0
+        while y < 8:
+            outb = []
+            x = 8
+            while x < 16:
+                if maskdata[i][(y*16)+x] != 0:
+                    outb.append('1')
+                else: 
+                    outb.append('0')
+                x += 1
+            y += 1
+            curb = int(''.join(outb),2)
+            outdata.append(curb)
+        y = 8
+        while y < 16:
+            outb = []
+            x = 8
+            while x < 16:
+                if maskdata[i][(y*16)+x] != 0:
+                    outb.append('1')
+                else: 
+                    outb.append('0')
+                x += 1
+            y += 1
+            curb = int(''.join(outb),2)
+            outdata.append(curb)
+        i += 1
+    #print(outdata)
+    try:
+        f = open(binaryfile, 'wb')
+        for s in outdata:
+            b = bytes([s])
+            f.write(b)
+        f.close()
+        c = binaryfile.split('.')
+        c[0] = c[0] + '_colors'
+        c = ''.join(c)
+        f = open(c, 'wb')
+        for s in outcolor:
+            b = bytes([s])
+            f.write(b)
+        messagebox.showinfo('Export OK!', message='Mask and palette binaries\nexported successfully!')
+    except:
+        messagebox.showerror('Export failed...', message='Something went wrong.\nMaybe a bug!')
+    finally:
+        if(f):
+            f.close()
+
+def export_asm_pattern(triplicate):
+    # if triplicate is true, then just export pattern 1 three times
     global asmfile 
     asmfile = ''
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 pattern assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
     if asmfile == '' or type(asmfile) == tuple:
         return 
     if asmfile[-4:].upper() != '.Z80':
-            asmfile = asmfile + '.z80'
+        asmfile = asmfile + '.z80'
     outdata = []
     outdata_c = []
     colors_array = []
@@ -1052,7 +1388,7 @@ def export_asm_pattern():
     #
     pl = 0
     while pl < 3:
-        if out_check[pl] == 1:
+        if out_check[pl] == 1 or triplicate:
             outdata.append(";;;;;;;;;;;;;;;;;;")
             outdata.append("; Pattern table {}".format(pl+1))
             # determine palette values for color 0 and color 1
@@ -1066,11 +1402,18 @@ def export_asm_pattern():
                 while rl < 8:
                     #c1 = None 
                     c2 = None 
-                    c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                    if not triplicate:
+                        c1 = patterndata[(pl*256)+tl][0+(rl*8)]
+                    else:
+                        c1 = patterndata[tl][0+(rl*8)]
                     cl = 1 
                     while cl < 8:
-                        if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
-                            c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
+                        if not triplicate:
+                            if patterndata[(pl*256)+tl][cl+(rl*8)] != c1:
+                                c2 = patterndata[(pl*256)+tl][cl+(rl*8)]
+                        else:
+                            if patterndata[tl][cl+(rl*8)] != c1:
+                                c2 = patterndata[tl][cl+(rl*8)]
                         if c2 != None:
                             cl = 8
                         cl += 1 #col loop
@@ -1084,11 +1427,17 @@ def export_asm_pattern():
                     reformatrow = []
                     clp = 0 
                     while clp < 8:
-                        if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
-                            #is this pixel color 0?
-                            reformatrow.append('0')
-                        elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
-                            reformatrow.append('1')
+                        if not triplicate:
+                            if patterndata[(pl*256)+tl][clp+(rl*8)] == c1:
+                                #is this pixel color 0?
+                                reformatrow.append('0')
+                            elif patterndata[(pl*256)+tl][clp+(rl*8)] == c2:
+                                reformatrow.append('1')
+                        else:
+                            if patterndata[tl][clp+(rl*8)] == c1:
+                                reformatrow.append('0')
+                            elif patterndata[tl][clp+(rl*8)] == c2:
+                                reformatrow.append('1')
                         clp += 1
                     thisbyteout = ''.join(reformatrow)
                     thisbyteout = '$' + format(int(thisbyteout,2), '02x') + ', '
@@ -1104,7 +1453,7 @@ def export_asm_pattern():
     outdata_c.append("; VDP Location default @ $2000")
     pl = 0
     while pl < 3:
-        if out_check[pl] == 1:
+        if out_check[pl] == 1 or triplicate:
             outdata_c.append(";;;;;;;;;;;;;;;;;")
             outdata_c.append("; Table {} colors".format(pl+1))
             tl = 0
@@ -1154,10 +1503,6 @@ def export_asm_pattern():
 
 def export_asm_data():
     global patternMode
-    if patternMode == True:
-        messagebox.showwarning("Error","Saving not supported for tile mode.")
-        return 
-    
     global asmfile 
     asmfile = ''
     asmfile = tk.filedialog.asksaveasfilename(title='Save MSX2 sprite assembly data', filetypes=( ('Z80 assembly data', '*.z80'),('All files', '*.*') ))
@@ -1348,29 +1693,20 @@ def export_pal_data():
         # byte 1 = '0RRR0BBB'
         # byte 2 = '00000GGG'
         # RED:
-        if i != 0:
-            ob1 = "{0:b}".format(int(intpal[i][:-2])) 
-        else:
-            ob1 = '000'
+        ob1 = "{0:b}".format(int(intpal[i][:-2])) 
         if len(ob1) == 1:
             ob1 = '00' + ob1
         elif len(ob1) == 2:
             ob1 = '0' + ob1 
         # BLUE:
-        if i != 0:
-            ob2 = int(intpal[i][2:])
-            ob2 = "{0:b}".format(ob2)
-        else:
-            ob2 = '000'
+        ob2 = int(intpal[i][2:])
+        ob2 = "{0:b}".format(ob2)
         if len(ob2) == 1:
             ob2 = '00' + ob2
         elif len(ob2) == 2:
             ob2 = '0' + ob2
         # GREEN:
-        if i != 0:
-            ob3 = "{0:b}".format(int(intpal[i][1:-1]))
-        else:
-            ob3 = '000'
+        ob3 = "{0:b}".format(int(intpal[i][1:-1]))
         if len(ob3) == 1:
             ob3 = '00' + ob3
         elif len(ob3) == 2:
@@ -1399,7 +1735,8 @@ def export_pal_data():
     except:
         messagebox.showerror("Export failed", message="Unknown error exporting file. This might be a bug!")
     finally:
-        f.close()
+        if(f):
+            f.close()
 
 import tkinter.messagebox as messagebox
 
@@ -1407,10 +1744,30 @@ def loadm2p():
     global filename 
     global spriteSize
     spriteSize = 8
-    f = None 
+    f = None
+    z = None 
+    zipped = False 
+    inbuffer = 'm2p'
     try: 
-        f = open(filename, 'r')
-        data = f.readline()
+        if zipfile.is_zipfile(filename):
+            zipped = True 
+            z = zipfile.ZipFile(filename)
+            f = z.open(inbuffer, 'r')
+            data = f.readline().decode("utf-8")
+        else:
+            f = open(filename, 'r')
+            data = f.readline()
+        
+#         if zipfile.is_zipfile(filename):
+#             zipped = True
+#             z = zipfile.ZipFile(filename)
+#             f = z.open(inbuffer, 'r')
+#             data = f.readline().decode("utf-8")
+#         else:
+#             f = open(filename, 'r')
+#             data = f.readline()
+        #f = open(filename, 'r')
+        #data = f.readline()
         global palette_display
         global currentColor 
         palette_vals = data.split(',')
@@ -1422,11 +1779,13 @@ def loadm2p():
             currentColor = i 
             i += 1
         resetPalette(palette_vals)
-        currentColor = intpal[0]#'trans'
-        #patterndata
+        currentColor = intpal[0]
         j = 0
         while j < (3*256):
-            data = f.readline().split(',')
+            if zipped:
+                data = f.readline().decode("utf-8").split(',')
+            else:
+                data = f.readline().split(',')
             data.pop()
             data_int=[]
             i = 0
@@ -1446,21 +1805,32 @@ def loadm2p():
         refresh_display(True)
     except IOError:
         messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-    #except:
-    #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
+    except:
+        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
     finally:
         if(f):
             f.close()
+        if(z):
+            z.close()
 
 
 def loadm2s():
     global filename
     global spriteSize
     spriteSize = 16
-    f = None 
+    f = None
+    z = None 
+    inbuffer = 'm2s' 
+    zipped = False
     try:
-        f = open(filename, 'r')
-        data = f.readline()
+        if zipfile.is_zipfile(filename):
+            zipped = True
+            z = zipfile.ZipFile(filename)
+            f = z.open(inbuffer, 'r')
+            data = f.readline().decode("utf-8")
+        else:
+            f = open(filename, 'r')
+            data = f.readline()
         # reset palette data
         global palette_display
         global currentColor
@@ -1477,7 +1847,10 @@ def loadm2s():
         # load in mf'in maskdata
         j = 0
         while j < 32:
-            data = f.readline().split(',')
+            if zipped:
+                data = f.readline().decode("utf-8").split(',')
+            else:
+                data = f.readline().split(',')
             data.pop()
             data_int = []
             i = 0 
@@ -1494,11 +1867,13 @@ def loadm2s():
         refresh_display(True)
     except IOError:
         messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-    #except:
-    #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
+    except:
+        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
     finally:
         if(f):
             f.close()
+        if(z):
+            z.close()
 
 def resetPalette(newpal):
     global intpal 
@@ -1514,18 +1889,23 @@ def savem2p():
         return
     p = []
     f = None 
+    outbuffer = 'm2p'
     for n in palette_display:
         p.append(n.myVal)
     try:
         if filename[-4:].upper() != '.M2P':
             filename = filename + '.m2p'
-        f = open(filename, 'w')
+        #f = open(filename, 'w')
+        f = open(outbuffer, 'w')
         for item in p: 
             f.write('%s,' % item)
         for n in patterndata:
             f.write('\n')
             for item in n:
                 f.write('%s,' % item)
+        f.close()
+        with zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.write(outbuffer)
         messagebox.showinfo("Save OK", message="Save successful.")
         global saved 
         saved = True 
@@ -1538,39 +1918,40 @@ def savem2p():
         filename = ''
         messagebox.showerror("Unexpected error", message="Unknown error saving file. This might be a bug!!")
     finally:
-        if(f):
-            f.close()
+        os.remove('m2p')
     return
 
 def savem2s():
     global filename
     p = []
     f = None 
+    outbuffer = 'm2s'
     for n in palette_display:
         p.append(n.myVal)
     try:
         if filename[-4:].upper() != '.M2S':
             filename = filename + '.m2s'
-        f = open(filename, 'w')
+        f = open(outbuffer, 'w')
         for item in p: 
             f.write('%s,' % item)
         for n in maskdata:
             f.write('\n')
             for item in n:
                 f.write('%s,'%item)
+        f.close()
+        with zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.write(outbuffer)
         messagebox.showinfo("Save OK", message="Save successful.")
         global saved 
         saved = True 
     except IOError:
-        #global filename 
         filename = ''
         messagebox.showerror("I/O error", message="Output error saving file. Check drives and permissions and try again.")
     except:
         messagebox.showerror("Unexpected error", message="Unknown error saving file. This might be a bug!!")
     finally:
-        if(f):
-            f.close()
-
+        os.remove('m2s')
+        
 saved = False
 # define menus
 def client_exit():
@@ -1651,6 +2032,66 @@ def save_normal():
             savem2p()
     #return
 
+interface_mode = 'DRAWPIXEL'
+
+def pick_color(obj):
+    x = math.floor(obj.x/pixelSize)
+    y = math.floor(obj.y/pixelSize)
+    tl = (y*spriteSize)+x 
+    if mask.get() == 1:
+        c = pixels_mask1[tl]
+        palette_display[c].clicked(0)
+    else:
+        c = pixels_mask2[tl]
+        palette_display[c].clicked(0)
+    return
+
+def changemode_colorpicker(temp=False):
+    global interface_mode
+    if temp==False:
+        interface_mode = 'COLORPICKER'
+    drawpxbutton.configure(relief=tk.RAISED)
+    dropperbutton.configure(relief=tk.SUNKEN)
+    fillpxbutton.configure(relief=tk.RAISED)
+    drawCanvas.bind("<Button-1>", pick_color)
+    drawCanvas.unbind("<B1-Motion>")#, color_pixel)
+    drawCanvas.unbind("<Button-3>")#, erase_pixel)
+    drawCanvas.unbind("<B3-Motion>")#, erase_pixel)
+    drawCanvas.unbind("<ButtonRelease-1>")#, set_undo_release)
+    drawCanvas.unbind("<ButtonRelease-3>")#, set_undo_release)
+    return
+
+def changemode_fillpixel(temp=False):
+    global interface_mode
+    if temp==False:
+        interface_mode = 'FILLPIXEL'
+    drawpxbutton.configure(relief=tk.RAISED)
+    dropperbutton.configure(relief=tk.RAISED)  
+    fillpxbutton.configure(relief=tk.SUNKEN)
+    drawCanvas.bind("<Button-1>", perform_fill)
+    drawCanvas.bind("<B1-Motion>")
+    drawCanvas.bind("<Button-3>")
+    drawCanvas.bind("<B3-Motion>")
+    drawCanvas.bind("<ButtonRelease-1>")
+    drawCanvas.bind("<ButtonRelease-3>")
+
+def changemode_drawpixel(temp=False):
+    global interface_mode
+    if temp==False:
+        interface_mode = 'DRAWPIXEL'
+    drawpxbutton.configure(relief=tk.SUNKEN)
+    dropperbutton.configure(relief=tk.RAISED)   
+    fillpxbutton.configure(relief=tk.RAISED)
+    drawCanvas.bind("<Button-1>", color_pixel)
+    drawCanvas.bind("<B1-Motion>", color_pixel)
+    drawCanvas.bind("<Button-3>", erase_pixel)
+    drawCanvas.bind("<B3-Motion>", erase_pixel)
+    drawCanvas.bind("<ButtonRelease-1>", set_undo_release)
+    drawCanvas.bind("<ButtonRelease-3>", set_undo_release)
+    return
+
+
+
 def cut_data():
     global maskdata
     global mask
@@ -1662,6 +2103,8 @@ def cut_data():
 
     copybuffer = []
     
+    add_undo_point()
+
     if patternMode == False:
         mask_ofs = mask.get() - 1
 
@@ -1687,8 +2130,7 @@ def cut_data():
         else:
             pixels_mask2 = list(maskdata[maskdata_ofs])
     else:
-        add_undo_point()
-        copybuffer = list(patterndata[icon_selected])
+        copybuffer = patterndata[icon_selected].copy()
         patterndata[icon_selected] = []
 
         i = 0
@@ -1725,11 +2167,401 @@ def copy_data():
 
 redo_history = []
 
+def invert_pixels():
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    add_undo_point()
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+        maskdata_ofs = page_ofs + mask_ofs
+
+        if icon_selected == 1:
+            maskdata_ofs += 2
+        elif icon_selected == 2:
+            maskdata_ofs += 4
+        elif icon_selected == 3:
+            maskdata_ofs += 6
+
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedmaskdata = maskdata[maskdata_ofs].copy()
+        firstUsedColor = None
+        lastUsedColor = None
+        firstEmptyRows = []
+
+        while rowstart < rowend:
+            index = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize)
+            rowcolor = None
+
+            # Find row color
+            while index < end:
+                if copiedmaskdata[index] > 0:
+                    rowcolor = copiedmaskdata[index]
+                    lastUsedColor = rowcolor
+
+                    if firstUsedColor == None:
+                        firstUsedColor = rowcolor
+    
+                    break
+                index += 1
+
+            # Loop row again to perform invert
+            if rowcolor == None:
+                if lastUsedColor != None:
+                    rowcolor = lastUsedColor
+                else:
+                    firstEmptyRows.append(rowstart)
+            
+            if rowcolor != None:
+                index = 0 + (rowstart * spriteSize)
+
+                while index < end:
+                    if copiedmaskdata[index] == 0:
+                        copiedmaskdata[index] = rowcolor
+                    else:
+                        copiedmaskdata[index] = 0
+
+                    index += 1
+
+            rowstart += 1
+
+        if len(firstEmptyRows) > 0 and firstUsedColor != None:
+            for rowNum in firstEmptyRows:
+                index = 0 + (rowNum * spriteSize)
+                end = spriteSize + (rowNum * spriteSize)
+
+                while index < end:
+                    copiedmaskdata[index] = firstUsedColor
+                    index += 1
+
+        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedpatterndata = patterndata[icon_selected].copy()
+        firstUsedColor = None
+        lastUsedColor = None
+        firstEmptyRows = []
+
+        while rowstart < rowend:
+            index = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize)
+            rowcolor = None
+
+            # Find row color
+            while index < end:
+                if copiedpatterndata[index] > 0:
+                    rowcolor = copiedpatterndata[index]
+                    lastUsedColor = rowcolor
+
+                    if firstUsedColor == None:
+                        firstUsedColor = rowcolor
+    
+                    break
+                index += 1
+
+            # Loop row again to perform invert
+            if rowcolor == None:
+                if lastUsedColor != None:
+                    rowcolor = lastUsedColor
+                else:
+                    firstEmptyRows.append(rowstart)
+
+            if rowcolor != None:
+                index = 0 + (rowstart * spriteSize)
+
+                while index < end:
+                    if copiedpatterndata[index] == 0:
+                        copiedpatterndata[index] = rowcolor
+                    else:
+                        copiedpatterndata[index] = 0
+
+                    index += 1
+
+            rowstart += 1
+
+        if len(firstEmptyRows) > 0 and firstUsedColor != None:
+            for rowNum in firstEmptyRows:
+                index = 0 + (rowNum * spriteSize)
+                end = spriteSize + (rowNum * spriteSize)
+
+                while index < end:
+                    copiedpatterndata[index] = firstUsedColor
+                    index += 1
+
+        patterndata[icon_selected] = copiedpatterndata.copy()
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
+
+def flip_horizontal():
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    add_undo_point()
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+        maskdata_ofs = page_ofs + mask_ofs
+
+        if icon_selected == 1:
+            maskdata_ofs += 2
+        elif icon_selected == 2:
+            maskdata_ofs += 4
+        elif icon_selected == 3:
+            maskdata_ofs += 6
+
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedmaskdata = maskdata[maskdata_ofs].copy()
+
+        while rowstart < rowend:
+            start = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize) - 1
+
+            while start < end:
+                copiedmaskdata[start], copiedmaskdata[end] = copiedmaskdata[end], copiedmaskdata[start]
+                start += 1
+                end -= 1
+
+            rowstart += 1
+
+        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        rowstart = 0
+        rowend = spriteSize
+
+        copiedpatterndata = patterndata[icon_selected].copy()
+
+        while rowstart < rowend:
+            start = 0 + (rowstart * spriteSize)
+            end = spriteSize + (rowstart * spriteSize ) - 1
+
+            while start < end:
+                copiedpatterndata[start], copiedpatterndata[end] = copiedpatterndata[end], copiedpatterndata[start]
+                start += 1
+                end -= 1
+
+            rowstart += 1
+
+        patterndata[icon_selected] = copiedpatterndata.copy()
+
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
+
+def flip_vertical():
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    add_undo_point()
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+        maskdata_ofs = page_ofs + mask_ofs
+
+        if icon_selected == 1:
+            maskdata_ofs += 2
+        elif icon_selected == 2:
+            maskdata_ofs += 4
+        elif icon_selected == 3:
+            maskdata_ofs += 6
+
+        colstart = 0
+        colend = spriteSize
+
+        copiedmaskdata = maskdata[maskdata_ofs].copy()
+
+        while colstart < colend:
+            rowstart = 0
+            rowend = spriteSize - 1
+
+            while rowstart < rowend:
+                cellstart = colstart + (rowstart * spriteSize)
+                cellend = colstart + (rowend * spriteSize)
+
+                copiedmaskdata[cellstart], copiedmaskdata[cellend] = copiedmaskdata[cellend], copiedmaskdata[cellstart]
+
+                rowstart += 1
+                rowend -= 1
+
+            colstart += 1
+
+        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        colstart = 0
+        colend = spriteSize
+
+        copiedpatterndata = patterndata[icon_selected].copy()
+
+        while colstart < colend:
+            rowstart = 0
+            rowend = spriteSize - 1
+
+            while rowstart < rowend:
+                cellstart = colstart + (rowstart * spriteSize)
+                cellend = colstart + (rowend * spriteSize)
+
+                copiedpatterndata[cellstart], copiedpatterndata[cellend] = copiedpatterndata[cellend], copiedpatterndata[cellstart]
+
+                rowstart += 1
+                rowend -= 1
+
+            colstart += 1
+
+        patterndata[icon_selected] = copiedpatterndata.copy()
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
+
+def perform_fill(ob):
+    global last_color_used
+    global maskdata
+    global mask
+    global icon_selected
+    global page_ofs
+    global pixels_mask1
+    global pixels_mask2
+
+    x_px = math.floor(ob.x/pixelSize) 
+    y_px = math.floor(ob.y/pixelSize)
+
+    index = y_px*spriteSize+x_px
+
+    add_undo_point()
+
+    filled_rows = []
+
+    if patternMode == False:
+        mask_ofs = mask.get() - 1
+
+        if icon_selected == 0:
+            maskdata_ofs = 0+page_ofs+mask_ofs
+        elif icon_selected == 1:
+            maskdata_ofs = 2+page_ofs+mask_ofs
+        elif icon_selected == 2:
+            maskdata_ofs = 4+page_ofs+mask_ofs
+        elif icon_selected == 3:
+            maskdata_ofs = 6+page_ofs+mask_ofs
+
+        dataToFill = maskdata[maskdata_ofs].copy()
+        flood_fill(dataToFill, index, dataToFill[index], currentPalNo, filled_rows)
+
+        if len(filled_rows) > 0:
+            rows_to_update = []
+
+            for i in filled_rows:
+                if i not in rows_to_update:
+                    rows_to_update.append(i)
+
+            update_filled_rows(dataToFill, rows_to_update, currentPalNo)
+
+        maskdata[maskdata_ofs] = dataToFill.copy()
+
+        if mask_ofs == 0:
+            pixels_mask1 = maskdata[maskdata_ofs].copy()
+        else:
+            pixels_mask2 = maskdata[maskdata_ofs].copy()
+    else:
+        dataToFill = patterndata[icon_selected].copy()
+        flood_fill(dataToFill, index, dataToFill[index], currentPalNo, filled_rows)
+
+        if len(filled_rows) > 0:
+            rows_to_update = []
+
+            for i in filled_rows:
+                if i not in rows_to_update:
+                    rows_to_update.append(i)
+
+            update_filled_rows(dataToFill, rows_to_update, currentPalNo)
+
+        patterndata[icon_selected] = dataToFill.copy()
+        pixels_mask1 = patterndata[icon_selected].copy()
+
+    refresh_display(True)
+
+def update_filled_rows(array, rows, replacementColor):
+    for i in rows:
+        currentIndex = i * spriteSize
+        endIndex = currentIndex + spriteSize
+
+        while currentIndex < endIndex:
+            if array[currentIndex] > 0:
+                array[currentIndex] = replacementColor
+            currentIndex += 1
+
+def flood_fill(array, index, targetColor, replacementColor, filled_rows): 
+    if targetColor == replacementColor:
+        return
+
+    if index > len(array) - 1:
+        return
+
+    if array[index] != targetColor:
+        return
+
+    array[index] = replacementColor
+
+    # keep track of which rows had a fill performed in them
+    rowNum = math.floor(index / spriteSize)
+    filled_rows.append(rowNum) 
+
+    north = index - spriteSize
+    south = index + spriteSize
+    east = index + 1
+    west = index - 1
+
+    if north > 0:
+        flood_fill(array, north, targetColor, replacementColor, filled_rows)
+    
+    if south < spriteSize * spriteSize:
+        flood_fill(array, south, targetColor, replacementColor, filled_rows)
+
+    if west % spriteSize < spriteSize - 1:
+        flood_fill(array, west, targetColor, replacementColor, filled_rows)
+
+    if east % spriteSize > 0:
+        flood_fill(array, east, targetColor, replacementColor, filled_rows)
+
 def redo_last():
     global redo_history
     global maskdata 
     global patternMode 
     global patterndata 
+    #
     if len(redo_history) > 0:
         add_undo_point()
         if patternMode == False:
@@ -1762,11 +2594,10 @@ def SelectTarget(ic):
             pixels_mask1 = list(maskdata[ic])
             pixels_mask2 = list(maskdata[ic+1])
         else:
-            pixels_mask1 = list(maskdata[ic-1])
-            pixels_mask2 = list(maskdata[ic])
-        update_label_txt()
+            pixels_mask1 = maskdata[ic-1].copy()
+            pixels_mask2 = maskdata[ic].copy()
         icon_selected = int((ic%8)/2)
-        #print(icon_selected)
+        update_label_txt()
         draw_sprite_selector(icon_selected)
     else:
         #TODO:
@@ -1829,16 +2660,16 @@ def undo_last():
         if len(redo_history) > 100:
             redo_history.pop(0)
         maskdata = undo_history.pop()
-        CopyMaskToDisplay()  
-        SelectTarget(modified_icon_history[len(undo_history)])  
+        CopyMaskToDisplay() 
+#        SelectTarget(modified_icon_history.pop())
     else:
         redo_history.append(list(patterndata))
         if len(redo_history) > 100:
             redo_history.pop(0)
         patterndata = undo_history.pop()
         CopyMaskToDisplay()
-        SelectTarget(modified_icon_history[len(undo_history)])
-    
+#        SelectTarget(modified_icon_history.pop())
+    refresh_display(True)
 
 def CopyMaskToDisplay():
     global icon_selected
@@ -1871,8 +2702,9 @@ def paste_data():
     if not copybuffer:
         return
     
+    add_undo_point()
+
     if patternMode == False:
-        add_undo_point()
         mask_ofs = mask.get() - 1
 
         if icon_selected == 0:
@@ -1889,27 +2721,145 @@ def paste_data():
         else:
             pixels_mask2 = list(copybuffer)
     else:
-        add_undo_point()
-        patterndata[icon_selected] = list(copybuffer)
-        pixels_mask1 = list(copybuffer)
-
+        patterndata[icon_selected] = copybuffer.copy()
+        pixels_mask1 = copybuffer.copy()
     refresh_display(True)
+
+def import_palette():
+    global filename
+    #global spriteSize
+    #spriteSize = 16
+    filename = tk.filedialog.askopenfilename(title='Load MSX2 sprite/pattern file', filetypes=( ('MSX2 Spriter file', '*.m2s'),('MSX2 Spriter file', '*.m2p'),('All files', '*.*') ))
+    if filename == '':
+        return 
+    if type(filename) == tuple:
+        return
+    f = None 
+    try:
+        f = open(filename, 'r')
+        data = f.readline()
+        # reset palette data
+        global palette_display
+        global currentColor
+        palette_vals = data.split(',')
+        i = 0
+        while i < 16:
+            if palette_vals[i] == 'trans':
+                palette_vals[i] == '000'
+            palette_display[i].myVal = palette_vals[i]
+            currentColor = i 
+            i += 1
+        resetPalette(palette_vals)
+        currentColor = intpal[0]
+        #unclick_all()
+        refresh_display(True)
+        messagebox.showinfo(title='Import successful', message='Palette imported successfully!')
+    except IOError:
+        messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
+    except:
+        messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2S file.")
+    finally:
+        if(f):
+            f.close()
+
+def open_about():
+    messagebox.showinfo(title='About', message='MSX2 Spriter tool v1.29\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
+
+
+def export_asm(etype):
+    global patternMode
+    if patternMode:
+        export_pattern(etype)
+    else:
+        export_asm_data()
+
+def export_bytes(etype):
+    global patternMode 
+    if patternMode:
+        export_pattern(etype)
+    else:
+        export_sprite_bytes()
+
+def export_pal_bytes():
+    pal_bin = ''
+    pal_bin = tk.filedialog.asksaveasfilename(title='Export palette binary')
+    if pal_bin == '' or type(pal_bin) == tuple:
+        return
+    outdata = []
+    i = 0
+    while i < 16:
+        ob1 = intpal[i][0:1]
+        ob3 = intpal[i][2:3]
+        ob2 = intpal[i][1:2]
+        ob1 = '0' + format(int(ob1), '03b')
+        ob3 = '0' + format(int(ob3), '03b')
+        ob2 = '00000' + format(int(ob2), '03b')
+        b1 = ob1 + ob3 
+        #print(b1, ob2)
+        outdata.append(int(b1,2))
+        outdata.append(int(ob2,2))
+        i += 1
+    f = None 
+    try:
+        f = open(pal_bin, 'wb')
+        for s in outdata:
+            b = bytes([s])
+            f.write(b)
+        messagebox.showinfo("Export OK", message='Palette binary export successful!')
+    except:
+        messagebox.showerror('Export failed...', message='Palette export failed. Could be a bug!')
+    finally:
+        if(f):
+            f.close()
+
+def export_pattern(etype):
+    patterncount = 0
+    j = 0
+    while j < 3:
+        i = 0
+        while i < 256:
+            x = 0
+            while x < 64:
+                if patterndata[(j*256)+i][x] != 0:
+                    patterncount = j
+                    break 
+                x += 1
+            i += 1
+        j += 1
+    triplicate = False
+    if patterncount == 0:
+        triplicate = messagebox.askyesno('Triplicate data?', message='You only have data in the first table.\nWould you like to triplicate the pattern data\nfor the export?\n\n(Select No to export just the first table.)')
+    if etype == 'data':
+        export_asm_pattern(triplicate)
+    elif etype == 'bytes':
+        export_pattern_bytes(triplicate)
+    return
+    
 
 menuBar = tk.Menu(app)
 fileMenu = tk.Menu(menuBar, tearoff=0)
 fileMenu.add_command(label="New sprite file", command=new_file)
 fileMenu.add_command(label="New pattern file", command=new_pattern_file)
-fileMenu.add_command(label="Save", command=save_normal_sprite)
-fileMenu.add_command(label="Save As .M2S...", command=save_sprite_as)
+fileMenu.add_command(label="Save (Ctrl+S)", command=save_normal_sprite) #2
+fileMenu.add_command(label="Save As .M2S...", command=save_sprite_as) #3
 fileMenu.add_command(label="Load .M2S Sprite...", command=load_sprite_as)
 fileMenu.add_command(label="Load .M2P Pattern...", command=load_pattern_as)
 fileMenu.add_separator()
-fileMenu.add_command(label="Export z80 sprite data...", command=export_asm_data)
-fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data)
+#fileMenu.add_command(label="Export z80 sprite data...", command=export_asm_data) #7
+#fileMenu.add_command(label="Export z80 palette data...", command=export_pal_data)
+#fileMenu.add_separator()
+fileMenu.add_command(label='Import palette from...', command=import_palette)
 fileMenu.add_separator()
 fileMenu.add_command(label="Quit", command=client_exit)
 menuBar.add_cascade(label="File", menu=fileMenu)
+exportMenu = tk.Menu(menuBar, tearoff=0)
+exportMenu.add_command(label='Export file as z80 data...', command=lambda:export_asm('data'))
+exportMenu.add_command(label='Export palette as z80 data...', command=export_pal_data)#lambda:export_pal('data'))
+exportMenu.add_separator()
+exportMenu.add_command(label='Export file as raw bytes...', command=lambda:export_bytes('bytes'))
+exportMenu.add_command(label='Export palette as raw bytes...', command=export_pal_bytes)#lambda:export_pal('bytes'))
 editMenu = tk.Menu(menuBar, tearoff=0)
+helpMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
 editMenu.add_command(label='Copy (Ctrl+C)', command=copy_data)
 editMenu.add_command(label='Paste (Ctrl+V)', command=paste_data)
@@ -1917,15 +2867,46 @@ editMenu.add_separator()
 editMenu.add_command(label="Undo (Ctrl+Z)", command=undo_last)
 editMenu.add_command(label="Redo (Ctrl+Y)", command=redo_last)
 editMenu.add_separator()
+editMenu.add_command(label='Flip Horizontal', command=flip_horizontal)
+editMenu.add_command(label='Flip Vertical', command=flip_vertical)
+editMenu.add_command(label='Invert', command=invert_pixels)
+editMenu.add_separator()
 editMenu.add_command(label='Config RMB...', state=tk.DISABLED)
+helpMenu.add_command(label='About...', command=open_about)
 menuBar.add_cascade(label='Edit', menu=editMenu)
+menuBar.add_cascade(label='Export', menu=exportMenu)
+menuBar.add_cascade(label='Help', menu=helpMenu)
+toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
+savebutton = tk.Button(toolbar, image=save_icon, width=20, height=20, command=save_normal)
+drawpxbutton = tk.Button(toolbar, image=drawpx_icon, width=20, height=20, relief=tk.SUNKEN, command=changemode_drawpixel)
+cutbutton = tk.Button(toolbar, image=cut_icon, width=20, height=20, command=cut_data)
+copybutton = tk.Button(toolbar, image=copy_icon, width=20, height=20, command=copy_data)
+pastebutton = tk.Button(toolbar, image=paste_icon, width=20, height=20, command=paste_data)
+undobutton = tk.Button(toolbar, image=undo_icon, width=20, height=20, command=undo_last)
+redobutton = tk.Button(toolbar, image=redo_icon, width=20, height=20, command=redo_last)
+horizbutton = tk.Button(toolbar, image=horiz_icon, width=20, height=20, command=flip_horizontal)
+vertbutton = tk.Button(toolbar, image=vert_icon, width=20, height=20, command=flip_vertical)
+invbutton = tk.Button(toolbar, image=inv_icon, width=20, height=20, command=invert_pixels)
+dropperbutton = tk.Button(toolbar, image=dropper_icon, width=20, height=20, command=changemode_colorpicker)
+fillpxbutton = tk.Button(toolbar, image=fill_icon, width=20, height=20, command=changemode_fillpixel)
+
+savebutton.grid(row=0, column=0)
+drawpxbutton.grid(row=0, column=1, padx=(20,0))
+dropperbutton.grid(row=0, column=2)
+fillpxbutton.grid(row=0, column=3)
+cutbutton.grid(row=0, column=4,padx=(20,0))
+copybutton.grid(row=0, column=5)
+pastebutton.grid(row=0, column=6)
+undobutton.grid(row=0, column=7, padx=(20,0))
+redobutton.grid(row=0, column=8)
+horizbutton.grid(row=0, column=9, padx=(20,0))
+vertbutton.grid(row=0, column=10)
+invbutton.grid(row=0, column=11)
+
+toolbar.grid(row=0)
+
 app.config(menu=menuBar) 
 
-win = None
-bl = None 
-br = None 
-bu = None 
-bd = None
 
 def pattern_move_back():
     global pattern_x_ofs
@@ -2000,7 +2981,34 @@ def keyboard_monitor(obj):
             undo_last()
         elif obj.keysym == 'y':
             redo_last()
+        elif obj.keysym == 's':
+            save_normal()
             return 
+
+shiftheld = False
+
+def keydown_monitor(obj):
+    global shiftheld 
+    if shiftheld == False:
+        if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R':
+            shiftheld = True 
+            if interface_mode != 'COLORPICKER':
+                changemode_colorpicker(True)
+            # toggle to color picker mode by popping up px button
+            # and poping down dropper button
+            # rebind left AND right click 
+    return
+def keyup_monitor(obj):
+    #print(obj)
+    if obj.keysym == 'Shift_L' or obj.keysym == 'Shift_R' or obj.keycode==50 or obj.keycode==62:
+        global shiftheld
+        shiftheld = False 
+        if interface_mode == 'DRAWPIXEL':
+            changemode_drawpixel(True)
+        elif interface_mode == 'FILLPIXEL':
+            changemode_fillpixel(True)
+        
+    return
 
 # class undo_log(list):
 #     # how to use:
@@ -2048,10 +3056,183 @@ def add_undo_point(icon_s=-1):#, actualIcon=False):
         if len(modified_icon_history) > 100:
             modified_icon_history.pop(0)
 
+def rotate_left(l, n):
+    return l[n:] + l[:n]
+def rotate_right(l, n):
+    return l[-n:] + l[:-n]
+
+def shift_right():
+    global pixels_mask1
+    global pixels_mask2
+    global patternMode
+    global page_ofs 
+    global icon_selected
+    if mask.get() == 1:# or patternMode == True:
+        i = 0
+        while i < (spriteSize*spriteSize):
+            l = pixels_mask1[i:spriteSize+i]
+            l = rotate_right(l, 1)
+            pixels_mask1 = pixels_mask1[:i] + l + pixels_mask1[spriteSize+i:]
+            i += spriteSize
+        if patternMode == False:
+            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        else:
+            patterndata[icon_selected] = pixels_mask1.copy()
+    else:
+        i = 0
+        while i < (spriteSize*spriteSize):
+            l = pixels_mask2[i:spriteSize+i]
+            l = rotate_right(l, 1)
+            pixels_mask2 = pixels_mask2[:i] + l + pixels_mask2[spriteSize+i:]
+            i += spriteSize
+        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    refresh_display(True)
+     
+def shift_left():
+    global pixels_mask1
+    global pixels_mask2
+    global patternMode
+    global page_ofs 
+    global icon_selected
+    if mask.get() == 1:# or patternMode == True:
+        i = 0
+        while i < (spriteSize*spriteSize):
+            l = pixels_mask1[i:spriteSize+i]
+            l = rotate_left(l, 1)
+            pixels_mask1 = pixels_mask1[:i] + l + pixels_mask1[spriteSize+i:]
+            i += spriteSize
+        if patternMode == False:
+            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        else:
+            patterndata[icon_selected] = pixels_mask1.copy()
+    else:
+        i = 0
+        while i < (spriteSize*spriteSize):
+            l = pixels_mask2[i:spriteSize+i]
+            l = rotate_left(l, 1)
+            pixels_mask2 = pixels_mask2[:i] + l + pixels_mask2[spriteSize+i:]
+            i += spriteSize
+        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    refresh_display(True)
+
+def shift_down():
+    global pixels_mask1
+    global pixels_mask2
+    global patternMode
+    global page_ofs 
+    global icon_selected
+    if mask.get() == 1:# or patternMode == True:
+        pixels_mask1 = rotate_right(pixels_mask1, spriteSize)
+        if patternMode == False:
+            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        else:
+            patterndata[icon_selected] = pixels_mask1.copy()
+    else:
+        pixels_mask2 = rotate_right(pixels_mask2, spriteSize)
+        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    refresh_display(True) 
+def shift_up():
+    global pixels_mask1
+    global pixels_mask2
+    global patternMode
+    global page_ofs 
+    global icon_selected
+    if mask.get() == 1:
+        pixels_mask1 = rotate_left(pixels_mask1, spriteSize)
+        if patternMode == False:
+            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        else:
+            patterndata[icon_selected] = pixels_mask1.copy()
+    else:
+        pixels_mask2 = rotate_left(pixels_mask2, spriteSize)
+        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+    refresh_display(True) 
+
+
+grabbed_palno = -1
+target_palno = -1
+dragging_pal = False
+
+def grab_palette(obj):
+    global grabbed_palno
+    global dragging_pal
+    global target_palno
+    target_palno = -1
+    dragging_pal = False
+    x,y = app.winfo_pointerxy()
+    if app.winfo_containing(x, y) != None:
+        grabbed_palno = app.winfo_containing(x, y)
+        i = 0
+        while i < len(palette_display):
+            if palette_display[i] == grabbed_palno:
+                grabbed_palno = i
+                break
+            i += 1
+    
+pwin = None
+
+def drag_palette(obj):
+    global dragging_pal
+    global grabbed_palno
+    global palette_display
+    global pwin
+    
+    if grabbed_palno != -1 and type(grabbed_palno) == int:
+        if pwin == None:
+            pwin = tk.Tk()
+            pwin.overrideredirect(1)
+        else:
+            pwin.deiconify()
+        x,y = app.winfo_pointerxy()
+        pwin.geometry('%dx%d+%d+%d' % (30, 30, x+5, y+5))
+        pwin.configure(background=displayPalette[grabbed_palno])
+        dragging_pal = True
+
+if pwin:
+    pwin.mainloop()
+
+def swap_palette(obj):
+    global dragging_pal
+    global grabbed_palno
+    global target_palno
+    if dragging_pal == False:
+        return
+    x,y = app.winfo_pointerxy()
+    target_palno = app.winfo_containing(x, y)
+    if pwin:
+        pwin.withdraw()
+    if dragging_pal == True:
+        i = 0
+        while i < len(palette_display):
+            if palette_display[i] == target_palno:
+                target_palno = i
+                break
+            i += 1
+    if type(target_palno) != int:
+        return
+    buf = palette_display[target_palno].myVal
+    palette_display[target_palno].myVal = palette_display[grabbed_palno].myVal
+    palette_display[grabbed_palno].myVal = buf
+    palette_display[target_palno].clicked(0)
+    buf = intpal[target_palno]
+    intpal[target_palno] = intpal[grabbed_palno]
+    intpal[grabbed_palno] = buf
+    dragging_pal = False
+    grabbed_palno = -1
+    convert_int_pal_to_hex(intpal)
+    updatePaletteDisplay()
+    refresh_display(True)
+    
+lastmode = False 
 
 def initialize_new(patternMode, loading=False):
     global intpal 
-    intpal = list(defaultIntegerPalette) #.copy()
+    global lastmode
+    intpal = defaultIntegerPalette.copy()
     convert_int_pal_to_hex(intpal)
     global palette_display
     global pixelSize 
@@ -2084,6 +3265,10 @@ def initialize_new(patternMode, loading=False):
     global br 
     global buu 
     global bdd
+    global su
+    global sd 
+    global sr 
+    global sl
     global smallpatternpx
     global last_pixel_colored
     global undo_history
@@ -2096,8 +3281,8 @@ def initialize_new(patternMode, loading=False):
     # Set up the default window frame
     if win == None:
         win = tk.Frame(master=app, width=800, height=600)
-        win.grid(row=16, columnspan=16)
-    
+        win.grid(rowspan=16, columnspan=16)
+    mask.set(1)
     if patternMode == True:
         show_m1.set(True)
         show_m2.set(False)
@@ -2135,13 +3320,13 @@ def initialize_new(patternMode, loading=False):
     if patternMode == False:
         # add radials to swap between mask 1 and mask 2
         r1 = tk.Radiobutton(win, text='Mask 1', variable=mask, value=2, command=refresh_display)
-        r1.grid(row=14, column=4, columnspan=3)
+        r1.grid(row=15, column=5, columnspan=3)
         r0 = tk.Radiobutton(win, text='Mask 0', variable=mask, value=1, command=refresh_display)
-        r0.grid(row=14, column=1, columnspan=3)
+        r0.grid(row=15, column=2, columnspan=3)
         s1 = tk.Checkbutton(win, text='Show 1', variable=show_m2, command=refresh_display)
-        s1.grid(row=15, column=4, columnspan=3)
+        s1.grid(row=16, column=5, columnspan=3)
         s0 = tk.Checkbutton(win, text='Show 0', variable=show_m1, command=refresh_display)
-        s0.grid(row=15, column=1, columnspan=3)
+        s0.grid(row=16, column=2, columnspan=3)
         
     if patternMode == False:
         if l0:
@@ -2243,6 +3428,11 @@ def initialize_new(patternMode, loading=False):
         bd.destroy()
         buu.destroy()
         bdd.destroy()
+    if sr:
+        sr.destroy()
+        su.destroy()
+        sl.destroy()
+        sd.destroy()
     if patternMode == False:
         bl = tk.Button(win, text="←", command=page_back)
         bl.grid(row=11, column=11, columnspan=1)
@@ -2261,7 +3451,14 @@ def initialize_new(patternMode, loading=False):
         bd.grid(row=12, column=10)
         bdd = tk.Button(win, text='⇊', command=pattern_page_down)
         bdd.grid(row=12, column=11)
-    
+    sr = tk.Button(win, text='⇒', command=shift_right)
+    sr.grid(row=14, column=8, columnspan=2)
+    sl = tk.Button(win, text='⇐', command=shift_left)
+    sl.grid(row=14, column=6, columnspan=2)
+    su = tk.Button(win, text='⇑', command=shift_up)
+    su.grid(row=14, column=1, columnspan=2)
+    sd = tk.Button(win, text='⇓', command=shift_down)
+    sd.grid(row=14, column=3, columnspan=2)
     global filename 
     global asmfile 
     if loading==False:
@@ -2273,18 +3470,29 @@ def initialize_new(patternMode, loading=False):
     drawCanvas.bind("<Button-3>", erase_pixel)
     drawCanvas.bind("<B3-Motion>", erase_pixel)
     drawCanvas.bind("<ButtonRelease-1>", set_undo_release)
+    drawCanvas.bind("<ButtonRelease-3>", set_undo_release)
     
     if patternMode == True:
         fileMenu.entryconfigure(2, command=save_normal_pattern)
         fileMenu.entryconfigure(3, label='Save As .M2P...', command=save_pattern_as)
-        fileMenu.entryconfigure(7, label='Export z80 pattern data...', command=export_asm_pattern)
+        #fileMenu.entryconfigure(7, label='Export z80 pattern data...', command=export_asm_pattern)
     else: 
         fileMenu.entryconfigure(2, command=save_normal_sprite)
         fileMenu.entryconfigure(3, label='Save As .M2S...', command=save_sprite_as)
-        fileMenu.entryconfigure(7, label='Export z80 sprite data...', command=export_asm_data)
+        #fileMenu.entryconfigure(7, label='Export z80 sprite data...', command=export_asm_data)
     
+    palette_display[1].clicked(0)
+
     app.bind("<Key>", keyboard_monitor)
-    
+    app.bind("<KeyPress>", keydown_monitor, "+")
+    app.bind("<KeyRelease>", keyup_monitor, "+")
+    app.bind("<Button-1>", grab_palette)
+    app.bind("<B1-Motion>", drag_palette)
+    app.bind("<ButtonRelease-1>", swap_palette)
+    global copybuffer 
+    if lastmode != patternMode:
+        copybuffer = []
+    lastmode = patternMode
     return
 
 initialize_new(False)
