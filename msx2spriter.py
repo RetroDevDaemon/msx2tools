@@ -448,15 +448,15 @@ last_mask = -1
 button_not_released = False
 # Actually paints the pixel and changes the pal number in the mask array
 def color_pixel(ob):
-    x_px = math.floor(ob.x/pixelSize) 
-    y_px = math.floor(ob.y/pixelSize)
+    x_px = int(math.floor(ob.x/pixelSize))
+    y_px = int(math.floor(ob.y/pixelSize))
     global last_pixel_colored 
     global numSel
     global last_color_used
     global last_mask
     global button_not_released
-    size = spriteSize*pixelSize
-    ysize = y_px * spriteSize
+    size = int(spriteSize*pixelSize)
+    ysize = int(y_px * spriteSize)
     if (last_pixel_colored == (ysize+x_px)) and (last_color_used == currentPalNo) and (last_mask == mask.get()):
         return 
     if (ob.x < 0) or (ob.x >= size) or (ob.y < 0) or (ob.y >= size):
@@ -477,7 +477,7 @@ def color_pixel(ob):
     else:
         prevcol = pixels_mask1[ysize+x_px]
         pixels_mask1[ysize+x_px] = currentPalNo 
-        patterndata[icon_selected] = pixels_mask1.copy()
+        patterndata[icon_selected] = list(pixels_mask1)
         repaint_pattern_row(y_px, prevcol)
         #a = 0
     if last_color_used == currentPalNo:
@@ -563,8 +563,8 @@ def update_orlayer(px = -1):
             i += 1
     else:
         i = 0
-        y = math.floor(px/spriteSize)
-        ysize = y*spriteSize
+        y = int(math.floor(px/spriteSize))
+        ysize = int(y*spriteSize)
         while i < (spriteSize):
             tpx = ysize+i
             if orpixels[tpx] != 0 and pixels_mask2[tpx] != 0:
@@ -636,8 +636,8 @@ def update_layermask_1(px = -1):
             i += 1
     else:
         i = 0
-        y = math.floor(px/spriteSize)
-        ysize = y*spriteSize
+        y = int(math.floor(px/spriteSize))
+        ysize = int(y*spriteSize)
         while i < spriteSize:
             tpx = ysize+i
             cur_px = pixels_mask1[tpx]
@@ -858,7 +858,7 @@ def select_from_icon(obj):
         # PATTERN MODE!
         # copy current mask (pixels_mask1) into patterndata
         # then check position
-        ## and set pixels_mask1 as patterndata[x].copy
+        ## and set pixels_mask1 as patterndata[x] copy
         # use obj.x and obj.y 
         patterndata[icon_selected] = list(pixels_mask1)
         if obj.x < iconCanvas.winfo_width()-6 and obj.y < iconCanvas.winfo_height()-6\
@@ -2037,7 +2037,7 @@ interface_mode = 'DRAWPIXEL'
 def pick_color(obj):
     x = math.floor(obj.x/pixelSize)
     y = math.floor(obj.y/pixelSize)
-    tl = (y*spriteSize)+x 
+    tl = int((y*spriteSize)+x)
     if mask.get() == 1:
         c = pixels_mask1[tl]
         palette_display[c].clicked(0)
@@ -2130,7 +2130,7 @@ def cut_data():
         else:
             pixels_mask2 = list(maskdata[maskdata_ofs])
     else:
-        copybuffer = patterndata[icon_selected].copy()
+        copybuffer = list(patterndata[icon_selected])
         patterndata[icon_selected] = []
 
         i = 0
@@ -2191,7 +2191,7 @@ def invert_pixels():
         rowstart = 0
         rowend = spriteSize
 
-        copiedmaskdata = maskdata[maskdata_ofs].copy()
+        copiedmaskdata = list(maskdata[maskdata_ofs])
         firstUsedColor = None
         lastUsedColor = None
         firstEmptyRows = []
@@ -2242,17 +2242,17 @@ def invert_pixels():
                     copiedmaskdata[index] = firstUsedColor
                     index += 1
 
-        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+        maskdata[maskdata_ofs] = list(copiedmaskdata)
 
         if mask_ofs == 0:
-            pixels_mask1 = maskdata[maskdata_ofs].copy()
+            pixels_mask1 = list(maskdata[maskdata_ofs])
         else:
-            pixels_mask2 = maskdata[maskdata_ofs].copy()
+            pixels_mask2 = list(maskdata[maskdata_ofs])
     else:
         rowstart = 0
         rowend = spriteSize
 
-        copiedpatterndata = patterndata[icon_selected].copy()
+        copiedpatterndata = list(patterndata[icon_selected])
         firstUsedColor = None
         lastUsedColor = None
         firstEmptyRows = []
@@ -2303,8 +2303,8 @@ def invert_pixels():
                     copiedpatterndata[index] = firstUsedColor
                     index += 1
 
-        patterndata[icon_selected] = copiedpatterndata.copy()
-        pixels_mask1 = patterndata[icon_selected].copy()
+        patterndata[icon_selected] = list(copiedpatterndata)
+        pixels_mask1 = list(patterndata[icon_selected])
 
     refresh_display(True)
 
@@ -2332,7 +2332,7 @@ def flip_horizontal():
         rowstart = 0
         rowend = spriteSize
 
-        copiedmaskdata = maskdata[maskdata_ofs].copy()
+        copiedmaskdata = list(maskdata[maskdata_ofs])
 
         while rowstart < rowend:
             start = 0 + (rowstart * spriteSize)
@@ -2345,17 +2345,17 @@ def flip_horizontal():
 
             rowstart += 1
 
-        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+        maskdata[maskdata_ofs] = list(copiedmaskdata)
 
         if mask_ofs == 0:
-            pixels_mask1 = maskdata[maskdata_ofs].copy()
+            pixels_mask1 = list(maskdata[maskdata_ofs])
         else:
-            pixels_mask2 = maskdata[maskdata_ofs].copy()
+            pixels_mask2 = list(maskdata[maskdata_ofs])
     else:
         rowstart = 0
         rowend = spriteSize
 
-        copiedpatterndata = patterndata[icon_selected].copy()
+        copiedpatterndata = list(patterndata[icon_selected])
 
         while rowstart < rowend:
             start = 0 + (rowstart * spriteSize)
@@ -2368,9 +2368,9 @@ def flip_horizontal():
 
             rowstart += 1
 
-        patterndata[icon_selected] = copiedpatterndata.copy()
+        patterndata[icon_selected] = list(copiedpatterndata)
 
-        pixels_mask1 = patterndata[icon_selected].copy()
+        pixels_mask1 = list(patterndata[icon_selected])
 
     refresh_display(True)
 
@@ -2398,7 +2398,7 @@ def flip_vertical():
         colstart = 0
         colend = spriteSize
 
-        copiedmaskdata = maskdata[maskdata_ofs].copy()
+        copiedmaskdata = list(maskdata[maskdata_ofs])
 
         while colstart < colend:
             rowstart = 0
@@ -2415,17 +2415,17 @@ def flip_vertical():
 
             colstart += 1
 
-        maskdata[maskdata_ofs] = copiedmaskdata.copy()
+        maskdata[maskdata_ofs] = list(copiedmaskdata)
 
         if mask_ofs == 0:
-            pixels_mask1 = maskdata[maskdata_ofs].copy()
+            pixels_mask1 = list(maskdata[maskdata_ofs])
         else:
-            pixels_mask2 = maskdata[maskdata_ofs].copy()
+            pixels_mask2 = list(maskdata[maskdata_ofs])
     else:
         colstart = 0
         colend = spriteSize
 
-        copiedpatterndata = patterndata[icon_selected].copy()
+        copiedpatterndata = list(patterndata[icon_selected])
 
         while colstart < colend:
             rowstart = 0
@@ -2442,8 +2442,8 @@ def flip_vertical():
 
             colstart += 1
 
-        patterndata[icon_selected] = copiedpatterndata.copy()
-        pixels_mask1 = patterndata[icon_selected].copy()
+        patterndata[icon_selected] = list(copiedpatterndata)
+        pixels_mask1 = list(patterndata[icon_selected])
 
     refresh_display(True)
 
@@ -2456,10 +2456,10 @@ def perform_fill(ob):
     global pixels_mask1
     global pixels_mask2
 
-    x_px = math.floor(ob.x/pixelSize) 
-    y_px = math.floor(ob.y/pixelSize)
+    x_px = int(math.floor(ob.x/pixelSize))
+    y_px = int(math.floor(ob.y/pixelSize))
 
-    index = y_px*spriteSize+x_px
+    index = int(y_px*spriteSize+x_px)
 
     add_undo_point()
 
@@ -2477,7 +2477,7 @@ def perform_fill(ob):
         elif icon_selected == 3:
             maskdata_ofs = 6+page_ofs+mask_ofs
 
-        dataToFill = maskdata[maskdata_ofs].copy()
+        dataToFill = list(maskdata[maskdata_ofs])
         flood_fill(dataToFill, index, dataToFill[index], currentPalNo, filled_rows)
 
         if len(filled_rows) > 0:
@@ -2489,14 +2489,14 @@ def perform_fill(ob):
 
             update_filled_rows(dataToFill, rows_to_update, currentPalNo)
 
-        maskdata[maskdata_ofs] = dataToFill.copy()
+        maskdata[maskdata_ofs] = list(dataToFill)
 
         if mask_ofs == 0:
-            pixels_mask1 = maskdata[maskdata_ofs].copy()
+            pixels_mask1 = list(maskdata[maskdata_ofs])
         else:
-            pixels_mask2 = maskdata[maskdata_ofs].copy()
+            pixels_mask2 = list(maskdata[maskdata_ofs])
     else:
-        dataToFill = patterndata[icon_selected].copy()
+        dataToFill = list(patterndata[icon_selected])
         flood_fill(dataToFill, index, dataToFill[index], currentPalNo, filled_rows)
 
         if len(filled_rows) > 0:
@@ -2508,14 +2508,14 @@ def perform_fill(ob):
 
             update_filled_rows(dataToFill, rows_to_update, currentPalNo)
 
-        patterndata[icon_selected] = dataToFill.copy()
-        pixels_mask1 = patterndata[icon_selected].copy()
+        patterndata[icon_selected] = list(dataToFill)
+        pixels_mask1 = list(patterndata[icon_selected])
 
     refresh_display(True)
 
 def update_filled_rows(array, rows, replacementColor):
     for i in rows:
-        currentIndex = i * spriteSize
+        currentIndex = int(i * spriteSize)
         endIndex = currentIndex + spriteSize
 
         while currentIndex < endIndex:
@@ -2594,8 +2594,8 @@ def SelectTarget(ic):
             pixels_mask1 = list(maskdata[ic])
             pixels_mask2 = list(maskdata[ic+1])
         else:
-            pixels_mask1 = maskdata[ic-1].copy()
-            pixels_mask2 = maskdata[ic].copy()
+            pixels_mask1 = list(maskdata[ic-1])
+            pixels_mask2 = list(maskdata[ic])
         icon_selected = int((ic%8)/2)
         update_label_txt()
         draw_sprite_selector(icon_selected)
@@ -2721,8 +2721,8 @@ def paste_data():
         else:
             pixels_mask2 = list(copybuffer)
     else:
-        patterndata[icon_selected] = copybuffer.copy()
-        pixels_mask1 = copybuffer.copy()
+        patterndata[icon_selected] = list(copybuffer)
+        pixels_mask1 = list(copybuffer)
     refresh_display(True)
 
 def import_palette():
@@ -3075,9 +3075,9 @@ def shift_right():
             pixels_mask1 = pixels_mask1[:i] + l + pixels_mask1[spriteSize+i:]
             i += spriteSize
         if patternMode == False:
-            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+            maskdata[page_ofs + (icon_selected*2)] = list(pixels_mask1)
         else:
-            patterndata[icon_selected] = pixels_mask1.copy()
+            patterndata[icon_selected] = list(pixels_mask1)
     else:
         i = 0
         while i < (spriteSize*spriteSize):
@@ -3085,8 +3085,8 @@ def shift_right():
             l = rotate_right(l, 1)
             pixels_mask2 = pixels_mask2[:i] + l + pixels_mask2[spriteSize+i:]
             i += spriteSize
-        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
-        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+        maskdata[page_ofs + (icon_selected*2)] = list(pixels_mask1)
+        maskdata[page_ofs + (icon_selected*2)+1] = list(pixels_mask2)
     refresh_display(True)
      
 def shift_left():
@@ -3103,9 +3103,9 @@ def shift_left():
             pixels_mask1 = pixels_mask1[:i] + l + pixels_mask1[spriteSize+i:]
             i += spriteSize
         if patternMode == False:
-            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+            maskdata[page_ofs + (icon_selected*2)] = list(pixels_mask1)
         else:
-            patterndata[icon_selected] = pixels_mask1.copy()
+            patterndata[icon_selected] = list(pixels_mask1)
     else:
         i = 0
         while i < (spriteSize*spriteSize):
@@ -3113,8 +3113,8 @@ def shift_left():
             l = rotate_left(l, 1)
             pixels_mask2 = pixels_mask2[:i] + l + pixels_mask2[spriteSize+i:]
             i += spriteSize
-        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
-        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+        maskdata[page_ofs + (icon_selected*2)] = list(pixels_mask1)
+        maskdata[page_ofs + (icon_selected*2)+1] = list(pixels_mask2)
     refresh_display(True)
 
 def shift_down():
@@ -3126,13 +3126,13 @@ def shift_down():
     if mask.get() == 1:# or patternMode == True:
         pixels_mask1 = rotate_right(pixels_mask1, spriteSize)
         if patternMode == False:
-            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+            maskdata[page_ofs + (icon_selected*2)] = list(pixels_mask1)
         else:
-            patterndata[icon_selected] = pixels_mask1.copy()
+            patterndata[icon_selected] = list(pixels_mask1)
     else:
         pixels_mask2 = rotate_right(pixels_mask2, spriteSize)
-        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
-        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+        maskdata[page_ofs + (icon_selected*2)] = list(pixels_mask1)
+        maskdata[page_ofs + (icon_selected*2)+1] = list(pixels_mask2)
     refresh_display(True) 
 def shift_up():
     global pixels_mask1
@@ -3143,13 +3143,13 @@ def shift_up():
     if mask.get() == 1:
         pixels_mask1 = rotate_left(pixels_mask1, spriteSize)
         if patternMode == False:
-            maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
+            maskdata[page_ofs + (icon_selected*2)] = list(pixels_mask1)
         else:
-            patterndata[icon_selected] = pixels_mask1.copy()
+            patterndata[icon_selected] = list(pixels_mask1)
     else:
         pixels_mask2 = rotate_left(pixels_mask2, spriteSize)
-        maskdata[page_ofs + (icon_selected*2)] = pixels_mask1.copy()
-        maskdata[page_ofs + (icon_selected*2)+1] = pixels_mask2.copy()
+        maskdata[page_ofs + (icon_selected*2)] = list(pixels_mask1)
+        maskdata[page_ofs + (icon_selected*2)+1] = list(pixels_mask2)
     refresh_display(True) 
 
 
@@ -3232,7 +3232,7 @@ lastmode = False
 def initialize_new(patternMode, loading=False):
     global intpal 
     global lastmode
-    intpal = defaultIntegerPalette.copy()
+    intpal = list(defaultIntegerPalette)
     convert_int_pal_to_hex(intpal)
     global palette_display
     global pixelSize 
