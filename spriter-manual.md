@@ -1,4 +1,4 @@
-#MSX2 Spriter v1.33
+# MSX2 Spriter v1.33
 
 ## Features
 -Support for a full 32-mask, dual-layered sprite set at once<br>
@@ -16,8 +16,8 @@
 -Palette import and export<br>
 -Pattern support for full 768 tiles<br>
 -Optional triplicate for pattern export<br>
-<br>
-##Usage
+
+## Usage
 ![ss1](m2s9.png)
 The palette at the top of the screen is the default MSX2 palette. To modify these colors, simply select the color, input new RGB values in the edit boxes (values of 0-7), and select **Apply**. The **Reset** button will change the selected color back to the MSX2 system default. You can also <b>drag and drop</b> palette entries to rearrange them. This will automatically swap their associated colors for all current sprites.
 
@@ -54,7 +54,7 @@ As of 1.1, you can also create pattern sets for backgrounds!
 
 To switch to pattern mode, select **New pattern file** from the File menu. You will be greeted with a screen similar to the following:
 
-![ss2](m2s10.png)
+![ss10](m2s10.PNG)<br>
 
 Instructions for **Pattern mode**:<br>
 -As above, the left mouse button draws a color, the right mouse button draws transparent.<br>
