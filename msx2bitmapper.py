@@ -190,7 +190,7 @@ save_icon = tk.BitmapImage(data=save_icon_data)
 bucket_icon = tk.BitmapImage(data=bucket_icon_data)
 
 # init screen data
-def init_screen_data(mode='G4', expanded=False):
+def init_screen_data(mode='G4', expanded=False, interlace=False):
     global screen_data
     global graphics_mode_width
     global graphics_mode_height 
@@ -201,14 +201,24 @@ def init_screen_data(mode='G4', expanded=False):
     graphic_mode = mode 
     if (mode == 'G4') or (mode == 'G7'):
         graphics_mode_width = 256
-        y_ratio = 1
+        if not interlace:
+            y_ratio = 1
+        else:
+            y_ratio = 0.5
     elif (mode == 'G5') or (mode == 'G6'):
         graphics_mode_width = 512
-        y_ratio = 2
+        if not interlace:
+            y_ratio = 2
+        else:
+            y_ratio = 1
     if expanded == False:
         graphics_mode_height = graphics_mode_192 
+        if interlace:
+            graphics_mode_height = 384
     else:
         graphics_mode_height = graphics_mode_212
+        if interlace:
+            graphics_mode_height = 424
     
     screen_data = []
     i = 0
@@ -714,7 +724,7 @@ def scroll_drawwindow(o):
 
 max_scale = True
 
-def toggle_scale(scale=1):
+def toggle_scale(scale=1, interlace=False):
     #used in 'd' and 'drawCanvas'
     sx = app.winfo_screenwidth()
     sy = app.winfo_screenheight()
@@ -726,6 +736,9 @@ def toggle_scale(scale=1):
         ys = 30
         tscale = app_scale+1
     else:
+        if interlace:
+            ys = 30
+            tscale = app_scale+1
         ys = 50
     if max_scale == True:
         app_scale = 1
@@ -939,12 +952,12 @@ def client_exit():
         return
     
 
-def new_file(mode, expanded):
+def new_file(mode, expanded, interlace=False):
     global app_scale
-    init_screen_data(mode=mode, expanded=expanded)
+    init_screen_data(mode=mode, expanded=expanded, interlace=interlace)
     init_screen_pixels()
     app_scale -= 1
-    toggle_scale()
+    toggle_scale(interlace=interlace)
     global m2bfilename
     m2bfilename = ''
     return
@@ -1010,23 +1023,28 @@ def repaint_screen():
     loadings = drawCanvas.create_text(ofs[0]+42,ofs[1]+12, text="Refreshing...", fill='white', font=('Times New Roman',fsize))
     drawCanvas.update_idletasks()
     i = 0
+    painted = 0
     while i < len(screen_data):
+        if painted > 2000:
+            drawCanvas.update_idletasks()
+            painted = 0
         if graphic_mode != 'G7':
             screen_data[i] = int(screen_data[i])
             if hex_palette[screen_data[i]] != drawCanvas.itemcget(screen_pixels[i], 'fill'):
-                #print('waste')
+                painted += 1
                 drawCanvas.itemconfig(screen_pixels[i], fill=hex_palette[screen_data[i]])
         else:
             if screen_data[i] == '':
                 screen_data[i] = '#000'
             if screen_data[i] != drawCanvas.itemcget(screen_pixels[i], 'fill'):
+                painted += 1
                 drawCanvas.itemconfig(screen_pixels[i], fill=screen_data[i])
         i += 1
     drawCanvas.delete(loadingt)
     drawCanvas.delete(loadings)
 
 '''this recreates the entire canvas, essentially'''
-def refresh_entire_screen(exp, newdata):
+def refresh_entire_screen(exp, newdata, interlace=False):
     global graphic_mode
     global screen_data
     global graphics_mode_width
@@ -1035,16 +1053,33 @@ def refresh_entire_screen(exp, newdata):
     global graphics_mode_212 
     global y_ratio
     global graphic_mode
+    fsize = int(5*app_scale*y_ratio)
+    ofs = get_canvas_offset()
+    loadingt = drawCanvas.create_text(ofs[0]+40,ofs[1]+10, text='Refreshing...', fill='black', font=('Times New Roman',fsize))
+    loadings = drawCanvas.create_text(ofs[0]+42,ofs[1]+12, text="Refreshing...", fill='white', font=('Times New Roman',fsize))
+    drawCanvas.update_idletasks()
     if (graphic_mode == 'G4') or (graphic_mode == 'G7'):
         graphics_mode_width = 256
-        y_ratio = 1
+        if not interlace:
+            y_ratio = 1
+        else:
+            y_ratio = 0.5
     elif (graphic_mode == 'G5') or (graphic_mode == 'G6'):
         graphics_mode_width = 512
-        y_ratio = 2
+        if not interlace:
+            y_ratio = 2
+        else:
+            y_ratio = 1
     if exp == False:
-        graphics_mode_height = graphics_mode_192 
+        if not interlace:
+            graphics_mode_height = graphics_mode_192 
+        else:
+            graphics_mode_height = 384
     else:
-        graphics_mode_height = graphics_mode_212
+        if not interlace:
+            graphics_mode_height = graphics_mode_212
+        else:
+            graphics_mode_height = 424
     screen_data = list(newdata)
     init_screen_pixels()    # erases canvas and creates rectangles
     # now all we have to do is fill the rectangles!
@@ -1058,6 +1093,8 @@ def refresh_entire_screen(exp, newdata):
                 screen_data[i] = '#000'
             drawCanvas.itemconfig(screen_pixels[i], fill=screen_data[i])
         i += 1
+    drawCanvas.delete(loadingt)
+    drawCanvas.delete(loadings)
     return
 
 def load_m2b():
@@ -1065,6 +1102,7 @@ def load_m2b():
     m2bfilename = ''
     global graphic_mode
     global graphics_mode_height
+    global graphics_mode_width
     global screen_data
     global palette_display
     f = None 
@@ -1091,10 +1129,14 @@ def load_m2b():
         pw = pw[0:3]
         if (gm == 'G4') or (gm == 'G5') or (gm == 'G6') or (gm == 'G7'):
             graphic_mode = gm
-        if (pw == 212):
+        if (pw == 212) or (pw == 424):
             expanded = True 
         else:
             expanded = False
+        interlace = False
+        if int(pw) > 300:
+            interlace = True
+        #graphics_mode_width = int(pw)
         pl = pl.split(',')
         pl.pop()
         global hex_palette
@@ -1109,9 +1151,9 @@ def load_m2b():
             indata = f.readline().decode("utf-8")
         indata = indata.split(',')
         indata.pop()
-        refresh_entire_screen(expanded, indata)
-    except:
-        tk.messagebox.showerror('Error loading', message='File could not be loaded.')
+        refresh_entire_screen(expanded, indata, interlace)
+    #except:
+    #    tk.messagebox.showerror('Error loading', message='File could not be loaded.')
     finally:
         if (f):
             f.close()
@@ -1434,18 +1476,23 @@ def export_z80():
     global graphics_mode_height
     outdata.append('; Graphic mode: ' + graphic_mode)
     outdata.append('; Vertical res: ' + str(graphics_mode_height))
-    if graphics_mode_height == 212:
+    if graphics_mode_height == 212 or graphics_mode_height == 424:
         outdata.append(';  (Be sure to set bit 7 of R#9!)')
+    if graphics_mode_height > 300:
+        outdata.append(';  Interlaced image, page 0')
     if (graphic_mode == 'G4') or (graphic_mode == 'G5'):
-        if graphics_mode_height == 212:
+        if graphics_mode_height == 212 or graphics_mode_height == 424:
             outdata.append('; Size in hex: $7000')
         else:
             outdata.append('; Size in hex: $6000')
     else:
-        if graphics_mode_height == 212:
+        if graphics_mode_height == 212 or graphics_mode_height == 424:
             outdata.append('; Size in hex: $D400')
         else:
             outdata.append("; Size in hex: $C000")
+    interlaced = False 
+    if graphics_mode_height > 300:
+        interlaced = True 
     if (graphic_mode == 'G4') or (graphic_mode == 'G6'):
         ### G4 SPECS
         # 0x7000 length in hex (27,136 bytes) for 256x212
@@ -1455,6 +1502,7 @@ def export_z80():
         # 0xD400 in hex (54,272 bytes) for 512x212
         # as G4, each pixel is 4 bits, but width is double res.
         # e.g. $42, $1b = 4, 2, 1, 11
+
         y = 0
         while y < graphics_mode_height:
             x = 0
@@ -1470,7 +1518,23 @@ def export_z80():
                 thisrowout += thisbyteout
                 x += 1
             outdata.append(thisrowout)
-            y += 1
+            if not interlaced:
+                y += 1
+            else:
+                y += 2
+                if y == graphics_mode_height:
+                    outdata.append(';  Interlaced image, page 1')
+                    if graphics_mode_height == 212 or graphics_mode_height == 424:
+                        if graphic_mode == 'G4':
+                            outdata.append('; Size in hex: $7000')
+                        else:
+                            outdata.append('; Size in hex: $D400')
+                    else:
+                        if graphic_mode == 'G4':
+                            outdata.append('; Size in hex: $6000')
+                        else:
+                            outdata.append("; Size in hex: $C000")
+                    y = 1
     elif (graphic_mode == 'G5'):
         ### G5 SPECS
         # 0x7000 in hex (27,136 bytes) for 512x212
@@ -1500,7 +1564,17 @@ def export_z80():
                 thisbyteout += '$' + fullbyte + ', '
                 thisrowout += thisbyteout 
             outdata.append(thisrowout)
-            y += 1
+            if not interlaced:
+                y += 1
+            else:
+                y += 2
+                if y == graphics_mode_height:
+                    outdata.append(';  Interlaced image, page 1')
+                    if graphics_mode_height == 212 or graphics_mode_height == 424:
+                        outdata.append('; Size in hex: $7000')
+                    else:
+                        outdata.append('; Size in hex: $6000')
+                    y = 1
     elif (graphic_mode == 'G7'):
         ### G7 SPECS
         # 0xD400 in hex (54,272 bytes) for 256x212
@@ -1528,7 +1602,17 @@ def export_z80():
                 thisrowout += fullbyte 
                 x += 1
             outdata.append(thisrowout)
-            y += 1
+            if not interlaced:
+                y += 1
+            else:
+                y += 2
+                if y == graphics_mode_height:
+                    outdata.append(';  Interlaced image, page 1')
+                    if graphics_mode_height == 212 or graphics_mode_height == 424:
+                        outdata.append('; Size in hex: $D400')
+                    else:
+                        outdata.append('; Size in hex: $C000')
+                    y = 1
     try:
         if asmfile[-4:].upper() != '.Z80':
             asmfile = asmfile + '.z80'
@@ -1552,6 +1636,9 @@ def export_bytes():
     outdata = []
     global graphic_mode 
     global graphics_mode_height 
+    interlaced = False
+    if graphics_mode_height > 300:
+        interlaced = True
     if (graphic_mode == 'G4') or (graphic_mode == 'G6'):
         y = 0
         while y < graphics_mode_height:
@@ -1567,7 +1654,12 @@ def export_bytes():
                 thisbyteout = int(strby,16)
                 x += 1
                 outdata.append(thisbyteout)
-            y += 1
+            if not interlaced:
+                y += 1
+            else:
+                y += 2
+                if y == graphics_mode_height:
+                    y = 1
     elif (graphic_mode == 'G5'):
         y = 0
         while y < graphics_mode_height:
@@ -1590,7 +1682,12 @@ def export_bytes():
                 fullbyte = px_a + px_b + px_c + px_d 
                 fullbyte = int(fullbyte,2)
                 outdata.append(fullbyte)
-            y += 1 
+            if not interlaced:
+                y += 1 
+            else:
+                y += 2
+                if y == graphics_mode_height:
+                    y = 1
     elif (graphic_mode == 'G7'):
         y = 0
         while y < graphics_mode_height:
@@ -1611,7 +1708,12 @@ def export_bytes():
                 fullbyte = int(fullbyte,2)
                 outdata.append(fullbyte)
                 x += 1
-            y += 1
+            if not interlaced:
+                y += 1
+            else:
+                y += 2
+                if y == graphics_mode_height:
+                    y = 1
     try:
         f = open(rawfile, 'wb')
         for s in outdata:
@@ -1651,6 +1753,9 @@ def draw_pixel_atindex(p, size=1):
         size = 9
     pxsize.delete(0,tk.END)
     pxsize.insert(0,size)
+    global draw_mode
+    if draw_mode == 'FILL':
+        size = 1
     x = p % graphics_mode_width
     y = math.floor(p / graphics_mode_width)
     #print(x, y)
@@ -1744,7 +1849,7 @@ def paint_fill(o):
     global drawCanvas 
     global app_scale 
     global zoom_scale
-
+    set_undo_point()
     if graphic_mode != 'G7':
         replacementColor = selected_palette_no
     else:
@@ -1769,18 +1874,23 @@ def paint_fill(o):
 
 def flood_fill(array, index, targetColor, replacementColor):
     global graphics_mode_width
-
+    global drawCanvas
     if index > len(array) - 1:
         return
 
     queue = []
     queue.append(index)
 
+    filled_count = 0
+
     while len(queue) > 0:
         current_node = queue.pop()
-
+        if filled_count > 2000:
+            drawCanvas.update_idletasks()
+            filled_count = 0
         if array[current_node] == targetColor:
             draw_pixel_atindex(current_node)
+            filled_count += 1
             east = current_node + 1
             west = current_node - 1
             north = current_node - graphics_mode_width
@@ -1789,7 +1899,7 @@ def flood_fill(array, index, targetColor, replacementColor):
             if north > 0 and array[north] == targetColor:
                 queue.append(north)
 
-            if south < graphics_mode_width * graphics_mode_width and array[south] == targetColor:
+            if south < graphics_mode_width * graphics_mode_height and array[south] == targetColor:
                 queue.append(south)
 
             if west % graphics_mode_width < graphics_mode_width - 1 and array[west] == targetColor:
@@ -2233,48 +2343,64 @@ class make_new(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('New bitmap')
-        self.b_4_192 = tk.Button(self, text='GRAPHIC 4 (192)', command=lambda:self.new('G4', False))#.grid(row=0,column=0)
-        self.b_4_192.grid(row=2, column=0)
-        self.b_4_212 = tk.Button(self, text='GRAPHIC 4 (212)', command=lambda:self.new('G4', True))#.grid(row=0,column=1)
-        self.b_4_212.grid(row=2, column=2)
-        self.b_5_192 = tk.Button(self, text='GRAPHIC 5 (192)', command=lambda:self.new('G5', False))#.grid(row=1,column=0)
-        self.b_5_192.grid(row=4, column=0)
-        self.b_5_212 = tk.Button(self, text='GRAPHIC 5 (212)', command=lambda:self.new('G5', True))#.grid(row=1,column=1)
-        self.b_5_212.grid(row=4, column=2)
-        self.b_6_192 = tk.Button(self, text='GRAPHIC 6 (192)', command=lambda:self.new('G6', False))#.grid(row=2,column=0)
-        self.b_6_192.grid(row=6, column=0)
-        self.b_6_212 = tk.Button(self, text='GRAPHIC 6 (212)', command=lambda:self.new('G6', True))#.grid(row=2,column=1)
-        self.b_6_212.grid(row=6, column=2)
-        self.b_7_192 = tk.Button(self, text='GRAPHIC 7 (192)', command=lambda:self.new('G7', False))#.grid(row=3,column=0)
-        self.b_7_192.grid(row=8, column=0)
-        self.b_7_212 = tk.Button(self, text='GRAPHIC 7 (212)', command=lambda:self.new('G7', True))#.grid(row=3,column=1)
-        self.b_7_212.grid(row=8, column=2)
-        self.lb_b4a = tk.Label(master=self, text='SCREEN-5, 256x192\n16 colors')
-        self.lb_b4a.grid(row=3, column=0)
-        self.lb_b4b = tk.Label(master=self, text='SCREEN-5, 256x212\n16 colors')
-        self.lb_b4b.grid(row=3, column=2)
-        self.lb_b5a = tk.Label(master=self, text='SCREEN-6, 512x192\n4 colors')
-        self.lb_b5a.grid(row=5, column=0)
-        self.lb_b5b = tk.Label(master=self, text='SCREEN-6, 512x212\n4 colors')
-        self.lb_b5b.grid(row=5, column=2)
-        self.lb_b6a = tk.Label(master=self, text='SCREEN-7, 512x192\n16 colors')
-        self.lb_b6a.grid(row=7, column=0)
-        self.lb_b6b = tk.Label(master=self, text='SCREEN-7, 512x212\n16 colors')
-        self.lb_b6b.grid(row=7, column=2)
-        self.lb_b7a = tk.Label(master=self, text='SCREEN-8, 256x192\n256 colors')
-        self.lb_b7a.grid(row=9, column=0)
-        self.lb_b7b = tk.Label(master=self, text='SCREEN-8, 256x212\n256 colors')
-        self.lb_b7b.grid(row=9, column=2)
-        self.lbl = tk.Label(master=self, text='Select a graphics mode!')
+
+        modes = [
+            ("GRAPHIC 4\n256px, 16 clr", 'G4'),
+            ("GRAPHIC 5\n512px, 4 clr", 'G5'),
+            ("GRAPHIC 6\n512px, 16 clr", 'G6'),
+            ("GRAPHIC 7\n256px, 256 clr", 'G7')
+        ]
+        self.modevar = tk.StringVar(self)
+        self.modevar.set('G4')
+        i = 0 
+        for txt, mod in modes:
+            b = tk.Radiobutton(self, text=txt, variable=self.modevar, value=mod)
+            b.grid(row=2 + i)
+            if i == 0:
+                b.select()
+            i += 1
+        
+        resolutions = [ 
+            ("192",192),
+            ("212",212),
+            ("384 (Interlaced)", 384),
+            ("424 (Interlaced)", 424)
+        ]
+        self.resvar = tk.IntVar(self)
+        self.resvar.set(192)
+        i = 0
+        for txt, val in resolutions:
+            b = tk.Radiobutton(self, text=txt, variable=self.resvar, value=val)
+            b.grid(row=2+i, column=1)
+            if i == 0:
+                b.select()
+            i += 1
+        self.newbutton = tk.Button(self, text="Create New", command=lambda:self.new(self.modevar, self.resvar))
+        self.newbutton.grid(row=7, columnspan=4)
+
+        self.lbl = tk.Label(master=self, text='Select a bitmap type!')
+        self.lbl_a = tk.Label(master=self, text='Graphics mode:')
         self.lbl.grid(row=0,columnspan=4)
+        self.lbl_a.grid(row=1,column=0)
+        self.lbl_b = tk.Label(master=self, text='Vertical resolution:')
+        self.lbl_b.grid(row=1,column=1)
 
     def destroy(self):
         self.withdraw()
 
-    def new(self, mode, expanded):
+    def new(self, md, exp):#, md, exp):
         global palette_display
         palette_display[0].clicked(0)
-        new_file(mode, expanded)
+        interlace = False 
+        mode = self.modevar.get()
+        expanded = self.resvar.get()
+        if expanded > 300:
+            interlace = True
+        if expanded == 212 or expanded == 424:
+            expanded = True 
+        if expanded == 192 or expanded == 384:
+            expanded = False 
+        new_file(mode, expanded, interlace)
         global undo_history 
         global redo_history
         undo_history = []
