@@ -1876,6 +1876,7 @@ def paint_fill(o):
 
 def flood_fill(array, index, targetColor, replacementColor):
     global graphics_mode_width
+    global graphics_mode_height
     global drawCanvas
     if index > len(array) - 1:
         return
@@ -1886,6 +1887,8 @@ def flood_fill(array, index, targetColor, replacementColor):
     filled_count = 0
 
     while len(queue) > 0:
+        if len(queue) > (graphics_mode_width * graphics_mode_height):
+            break
         current_node = queue.pop()
         if filled_count > 2000:
             drawCanvas.update_idletasks()
