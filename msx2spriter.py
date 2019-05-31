@@ -2265,7 +2265,8 @@ def invert_pixels():
                         break 
                 index += 1
             if rowcolor_b == None:
-                rowcolor_b = 0 # but what if they're both zero?
+                rowcolor_b = 0
+                
                 # if copiedpatterndata[index] > 0: # if its not transparent
                 #     if copiedpatterndata[index] != rowcolor_a:
                 #         rowcolor_a = copiedpatterndata[index]  # set as row color a
@@ -2282,6 +2283,7 @@ def invert_pixels():
             #        rowcolor_a = lastUsedColor
             #    else:
             #        firstEmptyRows.append(rowstart)
+
             if rowcolor_b == 0 and rowcolor_a == 0:
                 rowcolor_a = firstUsedColor
             if rowcolor_a == None:
