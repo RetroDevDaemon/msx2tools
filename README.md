@@ -29,4 +29,5 @@ The icons for the toolbar were actually made using the tool, and inverting the b
 Feel free to contribute, clean up, or give me a shout-out :)<br>
 <br>
 (c)2019 Ben Ferguson<br>
+Made with assistance from jlbeard83
 All tools created in Python3 
