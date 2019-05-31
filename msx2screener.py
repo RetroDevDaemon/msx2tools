@@ -607,8 +607,8 @@ def import_m2p():
             loaded_tiles = True 
         except IOError:
             messagebox.showerror("I/O error", message="Failed to load file. Check drives and permissions and try again.")
-        #except:
-        #    messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
+        except:
+            messagebox.showerror("Unexpected error", message="Unknown error loading file. Ensure the file is a proper M2P file.")
         finally:
             if(f):
                 f.close()
@@ -842,7 +842,7 @@ def save_as():
     save_m2c()
 
 def open_about():
-    messagebox.showinfo(title='About', message='MSX2 Screener tool v1.2\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
+    messagebox.showinfo(title='About', message='MSX2 Screener tool v1.22\n(c)2019 Ben Ferguson\nAll rights reserved n such.(Created in Python!)\n\nInfo link: https://github.com/bferguson3/msx2spriter')
 
 topleft_sel = -1
 

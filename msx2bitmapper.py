@@ -1152,8 +1152,8 @@ def load_m2b():
         indata = indata.split(',')
         indata.pop()
         refresh_entire_screen(expanded, indata, interlace)
-    #except:
-    #    tk.messagebox.showerror('Error loading', message='File could not be loaded.')
+    except:
+        tk.messagebox.showerror('Error loading', message='File could not be loaded.')
     finally:
         if (f):
             f.close()
@@ -1850,6 +1850,7 @@ def paint_fill(o):
     global app_scale 
     global zoom_scale
     set_undo_point()
+    drawCanvas.unbind("<Button-1>")#, paint_fill)
     if graphic_mode != 'G7':
         replacementColor = selected_palette_no
     else:
@@ -1870,6 +1871,7 @@ def paint_fill(o):
     targetColor = screen_data[index]
 
     flood_fill(screen_data, index, targetColor, replacementColor)
+    drawCanvas.bind("<Button-1>", paint_fill)
 
 
 def flood_fill(array, index, targetColor, replacementColor):

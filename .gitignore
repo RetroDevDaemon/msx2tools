@@ -9,3 +9,7 @@ dist/
 *.spec
 *.M2B
 inverter.py
+*.exe 
+*.ico
+*.zip
+readme-old.md
