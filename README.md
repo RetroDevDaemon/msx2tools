@@ -8,12 +8,16 @@ MSX2 Tools is a set of open-source graphical tools for use specifically with the
 <br>
 They can be used as-is with a single Python script file if you have Python installed (probably the best method), or by downloading the binaries and running them as executables. As long as you have Python 3.7 or above installed, they should work as-is without issue. 
 <br>
-[MSX2 Spriter](./spriter-manual.md) - Tool for creating sprites AND background/text patterns<br>
-[MSX2 Screener](./screener-manual.md) - Tool for creating screen maps used in SCREEN2/3 graphic modes utilizing patterns made using the Spriter tool<br>
-[MSX2 Bitmapper](./bitmapper-manual.md) - Tool for creating G4-G7 (SCREEN 5-8) bitmaps<br>
-<br>
-Follow the links above for their respective manuals.<br>
-<br>
+### [MSX2 Spriter Manual](./spriter-manual.md)
+Tool for creating sprites AND background/text patterns
+### [MSX2 Screener Manual](./screener-manual.md)
+Tool for creating screen maps used in SCREEN2/3 graphic modes utilizing patterns made using the Spriter tool
+### [MSX2 Bitmapper Manual](./bitmapper-manual.md)
+Tool for creating G4-G7 (SCREEN 5-8) bitmaps
+
+<br><br>
+Follow the links above for all the details.<br>
+
 ### Other Notes
 
 The code is extremely ugly. I am not a professional coder by any means and this is mostly for personal use. I'm releasing it publically so maybe someone else will get some use out of it. 
