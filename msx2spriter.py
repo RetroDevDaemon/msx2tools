@@ -2733,10 +2733,17 @@ def import_palette():
         return 
     if type(filename) == tuple:
         return
-    f = None 
+    f = None
+    z = None 
     try:
-        f = open(filename, 'r')
-        data = f.readline()
+        if zipfile.is_zipfile(filename):
+            z = zipfile.ZipFile(filename) 
+            i = z.infolist()
+            f = z.open(i[0],'r')
+            data = f.readline().decode('utf-8')
+        else:
+            f = open(filename, 'r')
+            data = f.readline()
         # reset palette data
         global palette_display
         global currentColor
@@ -2750,7 +2757,6 @@ def import_palette():
             i += 1
         resetPalette(palette_vals)
         currentColor = intpal[0]
-        #unclick_all()
         refresh_display(True)
         messagebox.showinfo(title='Import successful', message='Palette imported successfully!')
     except IOError:
