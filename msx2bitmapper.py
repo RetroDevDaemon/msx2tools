@@ -246,6 +246,8 @@ def init_canvas_grid():
         fill = ''
     else:
         fill = '#333'
+    if zoom_scale < 4:
+        fill = ''
     while i < l:
         p = drawCanvas.create_line(i*w, 0, i*w, y2, fill=fill)
         grid_lines.append(p)
@@ -271,7 +273,7 @@ def update_canvas_grid():
     i = 0
     while i < l:
         drawCanvas.coords(grid_lines[i], i*w, 0, i*w, y2)
-        if (app_scale + zoom_scale <= 4):
+        if (app_scale + zoom_scale <= 4) or (zoom_scale < 4):
             drawCanvas.itemconfig(grid_lines[i], fill='')
         else:
             drawCanvas.itemconfig(grid_lines[i], fill='#333')
@@ -282,7 +284,7 @@ def update_canvas_grid():
     i = 0
     while i < l:
         drawCanvas.coords(grid_lines[i+graphics_mode_width], 0, i*h, x2, i*h)
-        if (app_scale + zoom_scale <= 4):
+        if (app_scale + zoom_scale <= 4) or (zoom_scale < 4):
             drawCanvas.itemconfig(grid_lines[i+graphics_mode_width], fill='')
         else:
             drawCanvas.itemconfig(grid_lines[i+graphics_mode_width], fill='#333')
@@ -1740,11 +1742,12 @@ def draw_pixel_atindex(p, size=1):
         return
     if p < 0:
         return 
-    drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
-    if graphic_mode != 'G7':
-        screen_data[p] = selected_palette_no
-    else:
-        screen_data[p] = hex_palette[selected_palette_no]
+    if screen_data[p] != selected_palette_no or screen_data[p] != hex_palette[selected_palette_no]:
+        drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+        if graphic_mode != 'G7':
+            screen_data[p] = selected_palette_no
+        else:
+            screen_data[p] = hex_palette[selected_palette_no]
     global pxsize
     size = int(pxsize.get())
     if size < 1:
@@ -1798,6 +1801,9 @@ def paint_square_brush(size, tp_origin_y, tp_origin_x):
             if tp > len(screen_pixels):
                 ix += 1
                 continue
+            if screen_data[tp] == selected_palette_no or screen_data[tp] == hex_palette[selected_palette_no]:
+                ix += 1
+                continue
             drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
             if graphic_mode != 'G7':
                 screen_data[tp] = selected_palette_no
@@ -1835,6 +1841,9 @@ def paint_diamond_brush(size, tp_origin_y, tp_origin_x):
                 continue
             tp = int(((tp_origin_y+iy)*graphics_mode_width) + (tp_origin_x+ix) )
             if tp > len(screen_pixels):
+                ix += 1
+                continue
+            if screen_data[tp] == selected_palette_no or screen_data[tp] == hex_palette[selected_palette_no]:
                 ix += 1
                 continue
             drawCanvas.itemconfig(screen_pixels[tp], fill=hex_palette[selected_palette_no])
@@ -2084,7 +2093,12 @@ def paint_circle(o, shouldFill = False):
 
                         # prevent drawing off bounds
                         if p >= 0 and p < len(screen_pixels):
-                            drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+                            if screen_data[p] != selected_palette_no or screen_data[p] != hex_palette[selected_palette_no]:
+                                drawCanvas.itemconfig(screen_pixels[p], fill=hex_palette[selected_palette_no])
+                                if graphic_mode != 'G7':
+                                    screen_data[p] = selected_palette_no
+                                else:
+                                    screen_data[p] = hex_palette[selected_palette_no]
 
                 x_pos += 1
 
@@ -2150,7 +2164,8 @@ def paint_rect(o, shouldFill = False):
     paint_line(p3, undo=False) # left 
     line_startpos = (p3.x+ofs[0], p3.y+ofs[1])
     paint_line(p4, undo=False) # bottom
-
+    global pxsize
+    size = int(pxsize.get())
     if shouldFill: 
         x_start = p1.x
         x_end = p2.x
@@ -2163,7 +2178,9 @@ def paint_rect(o, shouldFill = False):
         while x_start < x_end:
             line_startpos = (x_start, p1.y)
             paint_line(xypos(x_start, p3.y))
-            x_start += 1
+            if x_start % 4 == 0:
+                drawCanvas.update_idletasks()
+            x_start += size*2
 
     drawCanvas.delete(drawing_rect) 
 
