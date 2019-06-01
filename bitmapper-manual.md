@@ -11,7 +11,7 @@
 -Box selection and cut/copy/paste<br>
 -1-9 px brush size<br>
 -Square and diamond shape brushes<br>
--Line, circle, and square shape drawing<br>
+-Line, circle, and square shape and filled-shape drawing<br>
 -Flood-fill and color swap<br>
 -100-step undo and redo<br>
 -File formats: native compressed (gzip), export support for both z80 assembler and raw bytes
@@ -22,7 +22,7 @@
 On start, the app will load a G4 mode bitmap with 192 vertical resolution. In order, the icons in the toolbar are:<br>
 Save, Draw, Line, Circle, Square, (brush size), Fill, Select, Cut, Copy, Paste, Undo, Redo, Scale window, and four zoom levels.<br><br>
 To change a color in the palette, right click the color, and select the new palette color. In all but G7 modes, you have access to the full 512 color MSX2 palette, and that palette value will automatically swapped if already painted to the canvas. In G7 mode, blues are halved, and colors will not be swapped on the canvas.<br><br>
-In most draw modes, right click and drag will move the canvas if at a zoom level higher than 1x. Left click will draw (or fill), and when in shape mode, left click and drag will expand the shape.<br>
+In pixel draw and line draw mode, right click and drag will move the canvas if at a zoom level higher than 1x. Left click will draw (or fill), and when in shape mode, left click and drag will expand the shape. When drawing a square or circle, you can use RMB instead to create a filled version. These are also slow, but animate their progress if particularly large.<br>
 Keyboard shortcuts are:<br>
 Ctrl+S: Save<br>
 Ctrl+Z: Undo<br>
@@ -33,7 +33,7 @@ Ctrl+C: Copy <br>
 Ctrl+V: Paste <br>
 <br>
 When in selection mode, drag to box-select the desired area, then use cut or copy. A single click elsehwere on the canvas will automatically show the pastable area (a drag will create a new selection but will otherwise have no affect on the clipboard).<br>
-<b>Fill mode</b> is slow! It's generally faster, if you are swapping an entire color, to simply do this on the palette. Fill is animated so you can see your progress, as is Undo.
+<b>Fill mode</b> is slow! It's generally faster, if you are swapping an entire color, to simply do this on the palette. Fill is animated so you can see your progress, as is Undo. 
 <br>
 <br>
 The window will default to 2x pixel size (minimum). Depending on the resolution of your monitor, clicking the scale button will increase the pixel size by 1 until filling your screen, then clicking it again will reset it to 2x. This has been tested at 720p and 1080p, but you might see artifacts or weird empty space at 1440p and above. The pixel grid is also generally only viewable at 4x 8x zoom, but this depends on your screen resolution/scale as well.<br><br>
