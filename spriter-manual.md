@@ -1,6 +1,7 @@
-# MSX2 Spriter v1.33
+# MSX2 Spriter v1.4
 
 ## Features
+-Hackneyed MSX1/Mode 1 sprite support (masks-only export)<br>
 -Support for a full 32-mask, dual-layered sprite set at once<br>
 -Single/double mask view toggle<br>
 -Automatic color correction and OR coloring for sprite masks; automatic color correction for patterns<br>
