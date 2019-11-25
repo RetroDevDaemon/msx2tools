@@ -1,6 +1,7 @@
-# MSX2 Screener v1.22
+# MSX2 Screener v1.3
 
 ## Features
+-RLE compression for raw bytes export<br>
 -Native compressed format<br>
 -Export in z80 code and raw bytes<br>
 -RLE encryption for raw byte export<br>
