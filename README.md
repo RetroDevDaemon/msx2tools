@@ -7,6 +7,7 @@ Spriter:<br>
 + Added toggle to export first pattern table only<br>
 + Added option to duplicate patterns to empty tables<br>
 + Removed duplicate option on export<br>
+
 Screener:<br>
 + Added optional RLE encryption to raw byte export<br>
 
