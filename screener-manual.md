@@ -3,6 +3,7 @@
 ## Features
 -Native compressed format<br>
 -Export in z80 code and raw bytes<br>
+-RLE encryption for raw byte export<br>
 -Support for hot-swapping pattern files<br>
 -100-step undo and redo<br>
 -Selection and cut/copy/paste<br>
@@ -26,4 +27,4 @@ Instructions for **Screener tool**:<br>
 -When creating a new screen file, all tiles will be filled in by default with tile '0'. It is recommended this tile is fully transparent (color 0).<br>
 -You can freely change screen files and pattern files. Import a new M2P to change the current screen's pattern graphics, or load/create a new M2C and the tool will ask if you want to change your current pattern set.<br>
 -Exporting is nice and easy - 768 bytes, one per tile, each valued 0-255. Formatting is the same as described above.<br>
-
+-RLE Encryption scheme converts multiples of the same tile in a row to a TileNo,TileNo,Repeats byte sequence. E.g. $ff, $ff, $ff, $ff, $ff, $ff, $aa, $ff will be converted into $ff, $ff, $06, $aa, $ff.

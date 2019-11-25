@@ -48,6 +48,8 @@ The color data is included as bytes above the sprite mask data so an entire set 
 
 (The exporter will only export masks and pattern tables that are NOT empty, but these are annotated in the z80 export. Raw bytes export will export the entire sequence, including blank masks, up until the last non-empty mask.)
 
+There is a toggle in the Export menu to only export the sprite masks, omitting the color data. This is useful for Sprite Mode 1 where color masks are not used. 
+
 To export the universal palette, use the **Export z80 palette data...** (or raw bytes) option. As above, it will export assembler data byte format in sequence to be loaded into register #16. 
 
 As of 1.1, you can also create pattern sets for backgrounds!
@@ -63,6 +65,8 @@ Instructions for **Pattern mode**:<br>
 -Use the arrow buttons to scroll the visible patterns up, down, left and right.<br>
 -As above, click the pattern you wish to edit. Only one pattern can be edited at a time.<br>
 -When exporting patterns as z80 data, **two** files will be exported - filename.z80 and filename_colors.z80. The _colors file must be loaded at a different area of memory, so it is exported seperately. Text inside of the files reminds you that the default VDP locations for pattern generator is $0000 and colors is $2000. The files themselves are also annotated per-row so you know which tile goes where.<br>
+-There is a toggle in the Export menu to only export Table 1 (to save space).<br>
+-When saving an M2S file, if there is no pattern data in Tables 2 and 3, the app will ask you if you would like to duplicate Table 1. This is mostly as an aid to prevent tedious copy and paste and make it easier to use with the Screener tool.<br>
 
 
 ### MSX2 Mode-2 Sprite Limitations

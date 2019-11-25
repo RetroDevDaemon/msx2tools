@@ -5,7 +5,10 @@
 #
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.22: Added raw bytes export.
+# v1.3: -Added RLE encryption to bytes export.
+#      Scheme: FF FF FF FF FF AA FF
+#        becomes
+#              FF FF 05 AA FF
 # 
 #
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
@@ -737,7 +740,34 @@ def load_m2c():
             z.close()
     # now that tiles are confirmed, open m2c dialog
 
+#rle = False
+
+def RLEEncrypt(data):
+    out = []
+    i = 0
+    while i < len(data):
+        count = 1
+        char = data[i]
+        i += 1
+        if i >= len(data):
+            break
+        while char == data[i]:
+            count += 1
+            i += 1
+            if i >= len(data):
+                break
+        if count > 1:
+            out.append(char)
+            out.append(char)
+            out.append(count)
+        else:
+            out.append(char)
+            
+    return out 
+
 def export_bytes():
+    #global rle
+    rle = messagebox.askquestion('Encrypt?', 'Export screen data using RLE encryption?\n\nRLE encryption will change e.g.:\n0xffffffff\n   to \n0x04ff', icon='warning', type='yesno')
     bin_file = ''
     bin_file = tk.filedialog.asksaveasfilename(title='Export as raw binary')
     if bin_file == '' or type(bin_file)==tuple:
@@ -747,6 +777,9 @@ def export_bytes():
     while i < 768:
         outdata.append(screentiles[i])
         i += 1
+    if rle == 'yes':
+        #print(rle)
+        outdata = RLEEncrypt(outdata)
     f = None 
     try:
         f = open(bin_file, 'wb')

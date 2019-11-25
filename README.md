@@ -1,6 +1,7 @@
 # MSX2 Tools
 
 ## Release Notes:
+Spr 1.4/Scr 1.3/Bmp 1.0: Public release 1.1<br>
 Spr 1.33/Scr 1.22/Bmp 1.0: Initial public release.<br>
 <br>
 ## Whussis?

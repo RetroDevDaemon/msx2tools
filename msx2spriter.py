@@ -5,7 +5,9 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.33: Added triplicate option to pattern mode.
+# v1.4: -Added triplicate option to M2P save.
+#       -Added toggle to export mask only for sprites.
+#       -Added toggle to only export Table 1 for patterns.
 #           
 # Assembles z80 byte data for GRAPHIC3 (screen 4)
 #  / sprite M2 and pattern graphics for use with compilers.
@@ -153,6 +155,8 @@ iconcanvascolumn = 8
 last_pixel_colored = -1
 copybuffer = None
 last_color_used = -1
+mode_one_option = False
+patterncount = 0
 
 # MSX2 default 16-color palette, in integer strings
 defaultIntegerPalette = [
@@ -1113,7 +1117,12 @@ def export_pattern_bytes(triplicate):
     colors_array = []
     out_check = []
     p = 0
-    while p < 3:
+    global mode_one_option
+    if mode_one_option == True:
+        maxp = 1
+    else:
+        maxp = 3
+    while p < maxp:
         i = 0
         out_check.append(0)
         while i < (256):
@@ -1229,45 +1238,49 @@ def export_sprite_bytes():
             j += 1
         i += 1
     # palette shit
-    i = 0 
-    while i < out_check:
-        y = 0
-        while y < 8:
-            outb = ''
-            x = 0
-            while x < 16:
-                md = maskdata[i][(y*16)+x]
-                if md > 0:
-                    if i % 2 == 0:
-                        outb = '{:02x}'.format(md)
-                    else:
-                        md += 64
-                        outb = '{:02x}'.format(md)
-                x += 1
-            y += 1
-            if outb == '':
-                outcolor.append(0)
-            else:
-                outcolor.append(int(outb,16))
-        y = 8
-        while y < 16:
-            outb = ''
-            x = 0
-            while x < 16:
-                md = maskdata[i][(y*16)+x]
-                if md > 0:
-                    if i % 2 == 0:
-                        outb = '{:02x}'.format(md)
-                    else:
-                        md += 64
-                        outb = '{:02x}'.format(md)
-                x += 1
-            y += 1
-            if outb == '':
-                outcolor.append(0)
-            else:
-                outcolor.append(int(outb,16))
-        i += 1
+    ## only do palette if option is selected
+    global mode_one_option
+    if mode_one_option == False:
+        i = 0 
+        while i < out_check:
+            y = 0
+            while y < 8:
+                outb = ''
+                x = 0
+                while x < 16:
+                    md = maskdata[i][(y*16)+x]
+                    if md > 0:
+                        if i % 2 == 0:
+                            outb = '{:02x}'.format(md)
+                        else:
+                            md += 64
+                            outb = '{:02x}'.format(md)
+                    x += 1
+                y += 1
+                if outb == '':
+                    outcolor.append(0)
+                else:
+                    outcolor.append(int(outb,16))
+            y = 8
+            while y < 16:
+                outb = ''
+                x = 0
+                while x < 16:
+                    md = maskdata[i][(y*16)+x]
+                    if md > 0:
+                        if i % 2 == 0:
+                            outb = '{:02x}'.format(md)
+                        else:
+                            md += 64
+                            outb = '{:02x}'.format(md)
+                    x += 1
+                y += 1
+                if outb == '':
+                    outcolor.append(0)
+                else:
+                    outcolor.append(int(outb,16))
+            i += 1
+    ## end optional block##
     #now sprites
     i = 0
     while i < out_check:
@@ -1361,8 +1374,13 @@ def export_asm_pattern(triplicate):
     outdata.append("; Pattern generator data")
     outdata.append("; VDP location default @ $0000")
     out_check = []
-    p = 0
-    while p < 3:
+    p = 0    
+    global mode_one_option
+    if mode_one_option == True:
+        maxp = 1
+    else:
+        maxp = 3
+    while p < maxp:
         i = 0
         out_check.append(0)
         while i < (256):
@@ -1513,60 +1531,61 @@ def export_asm_data():
             j += 1
         i += 1
     # Gotta do palette shit first 
-    i = 0
-    while i < 32:
-        if out_check[i] == 1:
-            outdata.append('; Color mask {}'.format(i))
-            # top
-            y = 0
-            curline = []
-            curline.append(' DB ')
-            while y < 8:
-                outb = ''
-                x = 0
-                while x < 16:
-                    # convert maskdata[i][(y*16)+x] to hex
-                    md = maskdata[i][(y*16)+x]
-                    if md > 0:
-                        if i % 2 == 0:
-                            outb = '{:02x}'.format(md)
-                        else:
-                            md += 64
-                            outb = '{:02x}'.format(md)
-                    x += 1
-                y += 1
-                if outb == '':
-                    curline.append(' $00,')
-                else:
-                    curline.append(' ${},'.format(outb))
-            curline = ''.join(curline)[:-1]
-            outdata.append(curline)
-            # bottom
-            y = 8
-            curline = []
-            curline.append(' DB ')
-            while y < 16:
-                outb = ''
-                x = 0
-                while x < 16:
-                    # convert maskdata[i][(y*16)+x] to hex
-                    md = maskdata[i][(y*16)+x]
-                    if md > 0:
-                        if i % 2 == 0:
-                            outb = '{:02x}'.format(md)
-                        else:
-                            md += 64
-                            outb = '{:02x}'.format(md)
-                    x += 1
-                y += 1
-                if outb == '':
-                    curline.append(' $00,')
-                else:
-                    curline.append(' ${},'.format(outb))
-            curline = ''.join(curline)[:-1]
-            outdata.append(curline)
-
-        i += 1
+    if mode_one_option == False:
+        i = 0
+        while i < 32:
+            if out_check[i] == 1:
+                outdata.append('; Color mask {}'.format(i))
+                # top
+                y = 0
+                curline = []
+                curline.append(' DB ')
+                while y < 8:
+                    outb = ''
+                    x = 0
+                    while x < 16:
+                        # convert maskdata[i][(y*16)+x] to hex
+                        md = maskdata[i][(y*16)+x]
+                        if md > 0:
+                            if i % 2 == 0:
+                                outb = '{:02x}'.format(md)
+                            else:
+                                md += 64
+                                outb = '{:02x}'.format(md)
+                        x += 1
+                    y += 1
+                    if outb == '':
+                        curline.append(' $00,')
+                    else:
+                        curline.append(' ${},'.format(outb))
+                curline = ''.join(curline)[:-1]
+                outdata.append(curline)
+                # bottom
+                y = 8
+                curline = []
+                curline.append(' DB ')
+                while y < 16:
+                    outb = ''
+                    x = 0
+                    while x < 16:
+                        # convert maskdata[i][(y*16)+x] to hex
+                        md = maskdata[i][(y*16)+x]
+                        if md > 0:
+                            if i % 2 == 0:
+                                outb = '{:02x}'.format(md)
+                            else:
+                                md += 64
+                                outb = '{:02x}'.format(md)
+                        x += 1
+                    y += 1
+                    if outb == '':
+                        curline.append(' $00,')
+                    else:
+                        curline.append(' ${},'.format(outb))
+                curline = ''.join(curline)[:-1]
+                outdata.append(curline)
+            i += 1
+        # end mode 2
     # NOW do sprite stuff
     i = 0
     while i < 32:
@@ -1880,6 +1899,22 @@ def savem2p():
     outbuffer = 'm2p'
     for n in palette_display:
         p.append(n.myVal)
+    # check if there is only data in first table
+    count_pattern_tables()
+    global patterncount
+    totalp = 0
+    pattrip = False
+    if patterncount > 0:
+        totalp = 768
+    else:
+        totalp = 768
+        pattrip = messagebox.askquestion("Triplicate?", "Only Table 1 has pattern data.\nReplicate into Tables 2 and 3?", icon='warning', type='yesno')
+        if pattrip.lower() == 'yes':
+            s = 0
+            while s < 256:
+                patterndata[s+256] = patterndata[s].copy()
+                patterndata[s+512] = patterndata[s].copy()
+                s += 1
     try:
         if filename[-4:].upper() != '.M2P':
             filename = filename + '.m2p'
@@ -1887,10 +1922,16 @@ def savem2p():
         f = open(outbuffer, 'w')
         for item in p: 
             f.write('%s,' % item)
-        for n in patterndata:
+        s = 0
+        while s < totalp:
             f.write('\n')
-            for item in n:
+            for item in patterndata[s]:
                 f.write('%s,' % item)
+            s = s + 1
+        #for n in patterndata:
+        #    f.write('\n')
+        #    for item in n:
+        #        f.write('%s,' % item)
         f.close()
         with zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED) as z:
             z.write(outbuffer)
@@ -2587,6 +2628,26 @@ undo_history = []
 modified_icon_history = []
 
 
+def toggle_mask_export():
+    global mode_one_option
+    if mode_one_option == False:
+        mode_one_option = True 
+        exportMenu.entryconfigure(6, label='[X] Export masks only')
+    else:
+        mode_one_option = False
+        exportMenu.entryconfigure(6, label='[  ] Export masks only')
+
+def toggle_table_export():
+    global mode_one_option
+    if mode_one_option == False:
+        mode_one_option = True 
+        exportMenu.entryconfigure(6, label='[X] Export Table 1 only')
+    else:
+        mode_one_option = False
+        exportMenu.entryconfigure(6, label='[  ] Export Table 1 only')
+
+    
+
 def SelectTarget(ic):
     global page_ofs
     global pixels_mask1
@@ -2824,7 +2885,8 @@ def export_pal_bytes():
         if(f):
             f.close()
 
-def export_pattern(etype):
+def count_pattern_tables():
+    global patterncount
     patterncount = 0
     j = 0
     while j < 3:
@@ -2838,9 +2900,12 @@ def export_pattern(etype):
                 x += 1
             i += 1
         j += 1
+
+def export_pattern(etype):
+    count_pattern_tables()
     triplicate = False
-    if patterncount == 0:
-        triplicate = messagebox.askyesno('Triplicate data?', message='You only have data in the first table.\nWould you like to triplicate the pattern data\nfor the export?\n\n(Select No to export just the first table.)')
+    #if patterncount == 0:
+    #    triplicate = messagebox.askyesno('Triplicate data?', message='You only have data in the first table.\nWould you like to triplicate the pattern data\nfor the export?\n\n(Select No to export just the first table.)')
     if etype == 'data':
         export_asm_pattern(triplicate)
     elif etype == 'bytes':
@@ -2870,6 +2935,8 @@ exportMenu.add_command(label='Export palette as z80 data...', command=export_pal
 exportMenu.add_separator()
 exportMenu.add_command(label='Export file as raw bytes...', command=lambda:export_bytes('bytes'))
 exportMenu.add_command(label='Export palette as raw bytes...', command=export_pal_bytes)#lambda:export_pal('bytes'))
+exportMenu.add_separator() 
+exportMenu.add_command(label='[  ] Export masks only', command=toggle_mask_export)
 editMenu = tk.Menu(menuBar, tearoff=0)
 helpMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
@@ -2918,7 +2985,6 @@ invbutton.grid(row=0, column=11)
 toolbar.grid(row=0)
 
 app.config(menu=menuBar) 
-
 
 def pattern_move_back():
     global pattern_x_ofs
@@ -3281,6 +3347,8 @@ def initialize_new(patternMode, loading=False):
     global last_pixel_colored
     global undo_history
     global redo_history
+    global mode_one_option 
+    mode_one_option = False 
     undo_history = []
     redo_history = []
     last_pixel_colored = -1
@@ -3482,11 +3550,12 @@ def initialize_new(patternMode, loading=False):
         fileMenu.entryconfigure(2, command=save_normal_pattern)
         fileMenu.entryconfigure(3, label='Save As .M2P...', command=save_pattern_as)
         #fileMenu.entryconfigure(7, label='Export z80 pattern data...', command=export_asm_pattern)
+        exportMenu.entryconfigure(6, label='[  ] Export Table 1 only', command=toggle_table_export)
     else: 
         fileMenu.entryconfigure(2, command=save_normal_sprite)
         fileMenu.entryconfigure(3, label='Save As .M2S...', command=save_sprite_as)
         #fileMenu.entryconfigure(7, label='Export z80 sprite data...', command=export_asm_data)
-    
+        exportMenu.entryconfigure(6, label='[  ] Export masks only', command=toggle_mask_export)
     palette_display[1].clicked(0)
 
     app.bind("<Key>", keyboard_monitor)
