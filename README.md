@@ -2,6 +2,14 @@
 
 ## Release Notes:
 Spr 1.4/Scr 1.3/Bmp 1.0: Public release 1.1<br>
+Spriter:<br>
++ Added toggle to export sprite masks only<br>
++ Added toggle to export first pattern table only<br>
++ Added option to duplicate patterns to empty tables<br>
++ Removed duplicate option on export<br>
+Screener:<br>
++ Added optional RLE encryption to raw byte export<br>
+
 Spr 1.33/Scr 1.22/Bmp 1.0: Initial public release.<br>
 <br>
 ## Whussis?
