@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #########################################################
 # MSX2 Screener
 #
@@ -744,30 +746,48 @@ def load_m2c():
 
 def RLEEncrypt(data):
     out = []
-    i = 0
-    while i < len(data):
-        count = 1
-        char = data[i]
-        i += 1
-        if i >= len(data):
+    char = data[0]
+    i = 1
+    count = 1
+    totalcount = 0
+
+    while i <= len(data):
+        if i == len(data):
+            out.append(bytes([char]))
+            totalcount += 1
             break
-        while char == data[i]:
-            count += 1
-            i += 1
-            if i >= len(data):
-                break
-        if count > 1:
-            out.append(char)
-            out.append(char)
-            out.append(count)
+        if char == data[i]:
+            if count < 255:
+                count += 1
+                i += 1 
+                continue 
+            else:
+                totalcount += count 
+                out.append(bytes([char]))
+                out.append(bytes([char]))
+                out.append(bytes([count]))
+                count = 1 
+                i += 1 
+                continue 
         else:
-            out.append(char)
-            
+            totalcount += count 
+            if count > 1:
+                out.append(bytes([char]))
+                out.append(bytes([char]))
+                out.append(bytes([count]))
+            else:
+                out.append(bytes([char]))
+            char = data[i] 
+            count = 1
+            i += 1
+            continue 
+    mbs = str(totalcount) + ' bytes compressed to ' + str(len(out))
+    messagebox.showinfo('Results', mbs)
     return out 
 
 def export_bytes():
     #global rle
-    rle = messagebox.askquestion('Encrypt?', 'Export screen data using RLE encryption?\n\nRLE encryption will change e.g.:\n0xffffffff\n   to \n0x04ff', icon='warning', type='yesno')
+    rle = messagebox.askquestion('Encrypt?', 'Export screen data using RLE encryption?\n\nRLE encryption will change e.g.:\nff ff ff ff a0\n   to \nff ff 04 a0', icon='warning', type='yesno')
     bin_file = ''
     bin_file = tk.filedialog.asksaveasfilename(title='Export as raw binary')
     if bin_file == '' or type(bin_file)==tuple:
@@ -784,11 +804,11 @@ def export_bytes():
     try:
         f = open(bin_file, 'wb')
         for s in outdata:
-            b = bytes([s])
-            f.write(b)
+            #b = bytes([s])
+            f.write(s)
         messagebox.showinfo('Export OK', message='Screen binary export successful!')
-    except:
-        messagebox.showerror('Export failed...', message='Something went wrong. Maybe a bug!')
+    #except:
+    #    messagebox.showerror('Export failed...', message='Something went wrong. Maybe a bug!')
     finally:
         if(f):
             f.close()
