@@ -1,6 +1,20 @@
 # MSX2 Tools
 
 ## Release Notes:
+Spr 1.5/Scr 1.4/Bmp 1.1: Public release 1.2<br>
+Spriter:<br>
+- <b>Broke single pattern export</b>
++ Minor bug fixes<br>
+
+Screener:<br>
+- <b>Broke z80 export</b>
++ Minor bug fixes<br>
+
+Bitmapper:<br>
++ Added Reduce Color Map feature (for pattern mode, modes G4+G6)<br>
++ Added G4 export into patterns - both raw bytes and M2P<br>
++ Added selection export to raw bytes in all modes<br>
+
 Spr 1.4/Scr 1.3/Bmp 1.0: Public release 1.1<br>
 Spriter:<br>
 + Added toggle to export sprite masks only<br>
