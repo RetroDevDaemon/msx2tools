@@ -2492,11 +2492,11 @@ def pattern_rawexport():
         tk.messagebox.showwarning('No good!', "This doesn't work on interlaced images!")
         return
     pmap = get_patternbytes()
-    asmpalfile = ''
-    asmpalfile = tk.filedialog.asksaveasfilename(title='Save raw bytes')
-    if asmpalfile == '' or type(asmpalfile)==tuple:
+    lfile = ''
+    lfile = tk.filedialog.asksaveasfilename(title='Save raw bytes')
+    if lfile == '' or type(lfile)==tuple:
         return 
-    f = open (asmpalfile, 'wb')
+    f = open (lfile, 'wb')
     for b in pmap:
         f.write(b)
     f.close()
@@ -2516,17 +2516,17 @@ def pattern_m2pexport():
     out = []
     out.append('000,000,161,373,117,237,511,267,711,733,661,664,141,625,555,777,\n')
     out.append(pmap)
-    asmpalfile = ''
-    asmpalfile = tk.filedialog.asksaveasfilename(title='Save M2P pattern file', filetypes=( ('MSXTools M2P file', '*.m2p'), ('MSXTools M2P file', '*.M2p'), ('MSXTools M2P file', '*.M2P'), ('All files', '*.*')))
-    if asmpalfile == '' or type(asmpalfile)==tuple:
+    ile = ''
+    ile = tk.filedialog.asksaveasfilename(title='Save M2P pattern file', filetypes=( ('MSXTools M2P file', '*.m2p'), ('MSXTools M2P file', '*.M2p'), ('MSXTools M2P file', '*.M2P'), ('All files', '*.*')))
+    if ile == '' or type(ile)==tuple:
         return 
-    if asmpalfile[-4:].upper() != '.M2P':
-        asmpalfile = asmpalfile + '.m2p'
+    if ile[-4:].upper() != '.M2P':
+        ile = ile + '.m2p'
     f = open('m2p','w')
     for c in out:
         f.write(c)
     f.close()
-    with zipfile.ZipFile(asmpalfile, 'w', zipfile.ZIP_DEFLATED) as z:
+    with zipfile.ZipFile(ile, 'w', zipfile.ZIP_DEFLATED) as z:
         z.write('m2p') 
     os.remove('m2p')
     tk.messagebox.showwarning('OK','M2P exported successfully!')
