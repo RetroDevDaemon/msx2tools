@@ -1,4 +1,10 @@
-# MSX2 Bitmapper v1.0
+# MSX2 Bitmapper v1.1
+
+## Release notes
+1.1<br>
+-Added pattern-mode export for GRAPHIC-1 and GRAPHIC-2 modes<br>
+-Added color map reduction for pattern mode compatibility<br>
+-Added selection-only export for all graphic modes<br>
 
 ## Features
 -Support for all four 9938 VDP bitmap modes - G4-G7 (aka SCREEN 5-8)<br>
@@ -33,7 +39,9 @@ Ctrl+C: Copy <br>
 Ctrl+V: Paste <br>
 <br>
 When in selection mode, drag to box-select the desired area, then use cut or copy. A single click elsehwere on the canvas will automatically show the pastable area (a drag will create a new selection but will otherwise have no affect on the clipboard).<br>
-<b>Fill mode</b> is slow! It's generally faster, if you are swapping an entire color, to simply do this on the palette. Fill is animated so you can see your progress, as is Undo. 
+When in selection mode you can also use <b>selection export</b>. This will export the raw bytes only of whatever is currently selected in any graphic mode. This is useful if your game uses a lot of bitmaps of varying sizes.<br>
+<b>Fill mode</b> is slow! It's generally faster, if you are swapping an entire color, to simply do this on the palette. Fill is animated so you can see your progress, as is Undo. <br>
+<b>Pattern export</b> is also possible. At the moment this only works on GRAPHIC-4 bitmaps. This exports the entire image into a series of 768 patterns, either in raw byte form or in M2P form for use with the Spriter tool. Doing this will automatically perform <b>color map reduction</b>, which reduces the color map to G1 and G2 compatible pattern colors. This may cause artificing if your bitmap uses lots of color in detail, but generally works pretty well. This can also be done manually in mode G6. Data from G6 can either copied to a new G4 mode image or exported by selection.
 <br>
 <br>
 The window will default to 2x pixel size (minimum). Depending on the resolution of your monitor, clicking the scale button will increase the pixel size by 1 until filling your screen, then clicking it again will reset it to 2x. This has been tested at 720p and 1080p, but you might see artifacts or weird empty space at 1440p and above. The pixel grid is also generally only viewable at 4x 8x zoom, but this depends on your screen resolution/scale as well.<br><br>

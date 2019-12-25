@@ -13,3 +13,5 @@ inverter.py
 *.ico
 *.zip
 readme-old.md
+deleteme/
+test.bin

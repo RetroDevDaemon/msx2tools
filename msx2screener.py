@@ -600,7 +600,10 @@ def import_m2p():
                     #tdat = data.split(',')
                     p = 0
                     while p < 64:
-                        data[p] = int(data[p])
+                        if data[p] != '':
+                            data[p] = int(data[p])
+                        #else:
+                        #    p -= 1
                         p += 1
                     tile_data[(n*256)+s] = data
                     s += 1
@@ -754,7 +757,10 @@ def RLEEncrypt(data):
     while i <= len(data):
         if i == len(data):
             out.append(bytes([char]))
-            totalcount += 1
+            totalcount += count
+            if count > 1:
+                out.append(bytes([char]))
+                out.append(bytes([count]))
             break
         if char == data[i]:
             if count < 255:
@@ -766,7 +772,7 @@ def RLEEncrypt(data):
                 out.append(bytes([char]))
                 out.append(bytes([char]))
                 out.append(bytes([count]))
-                count = 1 
+                count = 1
                 i += 1 
                 continue 
         else:
@@ -781,7 +787,7 @@ def RLEEncrypt(data):
             count = 1
             i += 1
             continue 
-    mbs = str(totalcount) + ' bytes compressed to ' + str(len(out))
+    mbs = str(totalcount) + ' bytes compressed to ' + str(len(out)) + '\n ' + str(math.floor(len(out)/totalcount)) + '%!'
     messagebox.showinfo('Results', mbs)
     return out 
 
@@ -807,8 +813,8 @@ def export_bytes():
             #b = bytes([s])
             f.write(s)
         messagebox.showinfo('Export OK', message='Screen binary export successful!')
-    #except:
-    #    messagebox.showerror('Export failed...', message='Something went wrong. Maybe a bug!')
+    except:
+        messagebox.showerror('Export failed...', message='Something went wrong. Maybe a bug!')
     finally:
         if(f):
             f.close()

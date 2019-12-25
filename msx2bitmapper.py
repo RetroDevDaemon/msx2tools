@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #########################################################
 # MSX2 Bitmapper
 #
@@ -5,13 +6,16 @@
 #  (w/contributions from jlbeard83)
 # Use Python 3! (Coded in 3.7.1)
 # 
-# v1.0: Initial release
+# v1.1: Added pattern mode export
 #           
 # Assembles z80 byte data for GRAPHIC4-7 (SCREEN5-8)
 #  bitmap graphics for use with compilers.
+#  Also supports export to pattern mode (GRAPHIC1-2).
 # Easy point-and-click interface.
 # 
 ##########################################################
+
+# to-do: add support for any res
 
 import tkinter as tk 
 import sys 
@@ -36,6 +40,8 @@ y_ratio = (3/4)
 graphic_mode = 'G4'
 draw_mode = 'PX'
 selector_rect = None
+image_x = 0
+image_y = 0
 # 'LINE', 'CIRCLE', 'SQUARE', 'SELECT'
 
 ###### BIT MAP DATA #######
@@ -190,7 +196,7 @@ save_icon = tk.BitmapImage(data=save_icon_data)
 bucket_icon = tk.BitmapImage(data=bucket_icon_data)
 
 # init screen data
-def init_screen_data(mode='G4', expanded=False, interlace=False):
+def init_screen_data(mode='G4', expanded=False, interlace=False, cx=0, cy=0):
     global screen_data
     global graphics_mode_width
     global graphics_mode_height 
@@ -199,6 +205,7 @@ def init_screen_data(mode='G4', expanded=False, interlace=False):
     global y_ratio
     global graphic_mode
     graphic_mode = mode 
+
     if (mode == 'G4') or (mode == 'G7'):
         graphics_mode_width = 256
         if not interlace:
@@ -220,14 +227,26 @@ def init_screen_data(mode='G4', expanded=False, interlace=False):
         if interlace:
             graphics_mode_height = 424
     
+    custom = False
+    if cx != 0 and cy != 0:
+        custom = True
+
     screen_data = []
     i = 0
-    while i < (graphics_mode_width*graphics_mode_height):
-        if mode != 'G7':
-            screen_data.append(0)
-        else:
-            screen_data.append('#000')
-        i += 1
+    if custom:
+        while i < (cx*cy):
+            if mode != 'G7':
+                screen_data.append(0)
+            else:
+                screen_data.append('#000')
+            i += 1
+    else:
+        while i < (graphics_mode_width*graphics_mode_height):
+            if mode != 'G7':
+                screen_data.append(0)
+            else:
+                screen_data.append('#000')
+            i += 1
 
 grid_lines=[]
 
@@ -239,8 +258,18 @@ def init_canvas_grid():
     grid_lines=[]
     w = (app_scale*zoom_scale)
     h = (app_scale*zoom_scale)*y_ratio 
-    y2 = (app_scale*zoom_scale*graphics_mode_height)*y_ratio
-    l = graphics_mode_width
+    global image_x 
+    global image_y 
+    if image_y != 0:
+        myh = image_y 
+    else:
+        myh = graphics_mode_height 
+    if image_x != 0:
+        myw = image_x 
+    else:
+        myw = graphics_mode_width
+    y2 = (app_scale*zoom_scale*myh)*y_ratio
+    l = myw
     i = 0
     if (app_scale + zoom_scale) <= 4:
         fill = ''
@@ -252,8 +281,8 @@ def init_canvas_grid():
         p = drawCanvas.create_line(i*w, 0, i*w, y2, fill=fill)
         grid_lines.append(p)
         i += 1
-    l = graphics_mode_height 
-    x2 = (app_scale*zoom_scale*graphics_mode_width)
+    l = myh 
+    x2 = (app_scale*zoom_scale*myw)
     i = 0
     while i < l:
         p = drawCanvas.create_line(0, i*h, x2, i*h, fill=fill)
@@ -266,10 +295,20 @@ def update_canvas_grid():
     global app_scale 
     global zoom_scale 
     global grid_lines 
+    global image_x 
+    global image_y 
+    if image_x != 0:
+        myw = image_x 
+    else:
+        myw = graphics_mode_width 
+    if image_y != 0:
+        myh = image_y 
+    else:
+        myh = graphics_mode_height
     w = (app_scale*zoom_scale)
     h = (app_scale*zoom_scale)*y_ratio
-    y2 = (app_scale*zoom_scale*graphics_mode_height)*y_ratio
-    l = graphics_mode_width 
+    y2 = (app_scale*zoom_scale*myh)*y_ratio
+    l = myw 
     i = 0
     while i < l:
         drawCanvas.coords(grid_lines[i], i*w, 0, i*w, y2)
@@ -279,15 +318,15 @@ def update_canvas_grid():
             drawCanvas.itemconfig(grid_lines[i], fill='#333')
         i += 1
     #i = 0
-    l = graphics_mode_height 
-    x2 = (app_scale*zoom_scale*graphics_mode_width)
+    l = myh
+    x2 = (app_scale*zoom_scale*myw)
     i = 0
     while i < l:
-        drawCanvas.coords(grid_lines[i+graphics_mode_width], 0, i*h, x2, i*h)
+        drawCanvas.coords(grid_lines[i+myw], 0, i*h, x2, i*h)
         if (app_scale + zoom_scale <= 4) or (zoom_scale < 4):
-            drawCanvas.itemconfig(grid_lines[i+graphics_mode_width], fill='')
+            drawCanvas.itemconfig(grid_lines[i+myw], fill='')
         else:
-            drawCanvas.itemconfig(grid_lines[i+graphics_mode_width], fill='#333')
+            drawCanvas.itemconfig(grid_lines[i+myw], fill='#333')
         i += 1
     return
 
@@ -599,7 +638,7 @@ def rescale_palette():
         i += 1
     palette_display[selected_palette_no].clicked(0)
 
-def init_screen_pixels():
+def init_screen_pixels(custom_x=0):
     global screen_pixels
     global drawCanvas
     global app_scale 
@@ -614,11 +653,16 @@ def init_screen_pixels():
     i = 0
     w = (app_scale*zoom_scale)
     h = (app_scale*zoom_scale)*y_ratio
+    ourwidth = 0
+    if custom_x != 0:
+        ourwidth = custom_x 
+    else:
+        ourwidth = graphics_mode_width
     while i < l:
         # draw every pixel to the canvas, and append its reference to the array.
-        xp = i % graphics_mode_width
+        xp = i % ourwidth
         xp = xp * app_scale * zoom_scale
-        yp = math.floor(i/graphics_mode_width)
+        yp = math.floor(i/ourwidth)
         yp = yp * app_scale * zoom_scale * y_ratio
         # x pos is (l % graphics_mode_width)*
         p = drawCanvas.create_rectangle(xp, yp, xp+w, yp+h, outline='')
@@ -954,10 +998,10 @@ def client_exit():
         return
     
 
-def new_file(mode, expanded, interlace=False):
+def new_file(mode, expanded, interlace=False, custom_x=0, custom_y=0):
     global app_scale
-    init_screen_data(mode=mode, expanded=expanded, interlace=interlace)
-    init_screen_pixels()
+    init_screen_data(mode=mode, expanded=expanded, interlace=interlace, cx=custom_x, cy=custom_y)
+    init_screen_pixels(custom_x)
     app_scale -= 1
     toggle_scale(interlace=interlace)
     global m2bfilename
@@ -1008,7 +1052,6 @@ def save_bitmap():
     except:
         tk.messagebox.showerror('Error', message='Error while saving file.')
     finally:
-        #f.close()
         os.remove('m2b')
 
 '''unlike refresh_entire_screen, this will only change pixels to reflect whats already in screen_data'''
@@ -2345,6 +2388,149 @@ def redo_last():
     repaint_screen()
     return 
 
+def reduce_color_map():
+    global graphic_mode 
+    if graphic_mode == 'G5' or graphic_mode == 'G7':
+        tk.messagebox.showwarning('No good!', 'This function only works on G4 and G6 mode bitmaps.')
+        return 
+    a = tk.messagebox.askyesno('Are you sure?','This could reduce image detail. Proceed?')
+    if a != True:
+        return 
+    i = 0
+    while i < len(screen_data):
+        c1 = screen_data[i]
+        n = 1
+        while screen_data[i+n] == c1 and n < 7:
+            n += 1
+        c2 = screen_data[i+n]
+        if c1 != 0 and c2 != 0:
+            n = 0
+            while n < 7:
+                if screen_data[i+n] == 0:
+                    c2 = 0
+                n += 1
+        z=c1
+        o=c2
+        n = 0
+        while n < 8:
+            if screen_data[i+n] != z:
+                screen_data[i+n] = o
+            n += 1
+        i += 8
+    repaint_screen()
+
+def get_patternbytes():
+    reduce_color_map()
+    global graphics_mode_width
+    pmap = []
+    i = 0
+    while i < len(screen_data):#-(8*graphics_mode_width):
+        y = 0
+        while y < 8: # 
+            n = 0
+            ob = []
+            while n < 8:
+                if screen_data[i+n+(y*graphics_mode_width)] == 0:
+                    ob.append('0')
+                else:
+                    ob.append('1')
+                n += 1
+            obs = ''.join(ob)
+            ob = int(obs, 2)
+            b = bytes([ob])
+            pmap.append(b)
+            y += 1
+        i += 8
+        if (i % graphics_mode_width) == 0:
+            i += (7 * graphics_mode_width)
+    if graphics_mode_height == 192:
+        a = 0
+        while a < 32:
+            b = 0
+            while b < 8:
+                pmap.append(bytes([0]))
+                b += 1
+            a += 1
+    return pmap
+
+def get_patternmap():
+    reduce_color_map()
+    global graphics_mode_width
+    pmap = []
+    i = 0
+    while i < len(screen_data):#-(8*graphics_mode_width):
+        y = 0
+        while y < 8: # 
+            n = 0
+            while n < 8:
+                pmap.append(str(screen_data[i+n+(y*graphics_mode_width)]) + ',')
+                n += 1
+            y += 1
+        i += 8
+        pmap.append('\n')
+        if (i % graphics_mode_width) == 0:
+            i += (7 * graphics_mode_width)
+    #print(pmap)
+    if graphics_mode_height == 192:
+        a = 0
+        while a < 32:
+            b = 0
+            while b < 64:
+                pmap.append('0,')
+                b += 1
+            pmap.append('\n')
+            a += 1
+    pmap = "".join(pmap)
+    return pmap
+
+def pattern_rawexport():
+    if graphic_mode != 'G4':
+        tk.messagebox.showwarning('No good!', "This only works on G4 bitmaps.\n\nIf you're in G6, try copying what you want to export as patterns to the clipboard, and pasting it in a new G4 mode file.")
+        return
+    global graphics_mode_height
+    if graphics_mode_height > 300:
+        tk.messagebox.showwarning('No good!', "This doesn't work on interlaced images!")
+        return
+    pmap = get_patternbytes()
+    asmpalfile = ''
+    asmpalfile = tk.filedialog.asksaveasfilename(title='Save raw bytes')
+    if asmpalfile == '' or type(asmpalfile)==tuple:
+        return 
+    f = open (asmpalfile, 'wb')
+    for b in pmap:
+        f.write(b)
+    f.close()
+    tk.messagebox.showinfo('OK', 'Bitmap exported as pattern generator bytes successfully!')
+    return
+
+def pattern_m2pexport():
+    global graphic_mode 
+    if graphic_mode != 'G4':
+        tk.messagebox.showwarning('No good!', "This only works on G4 bitmaps.\n\nIf you're in G6, try copying what you want to export as patterns to the clipboard, and pasting it in a new G4 mode file.")
+        return
+    global graphics_mode_height
+    if graphics_mode_height > 300:
+        tk.messagebox.showwarning('No good!', "This doesn't work on interlaced images!")
+        return 
+    pmap = get_patternmap()
+    out = []
+    out.append('000,000,161,373,117,237,511,267,711,733,661,664,141,625,555,777,\n')
+    out.append(pmap)
+    asmpalfile = ''
+    asmpalfile = tk.filedialog.asksaveasfilename(title='Save M2P pattern file', filetypes=( ('MSXTools M2P file', '*.m2p'), ('MSXTools M2P file', '*.M2p'), ('MSXTools M2P file', '*.M2P'), ('All files', '*.*')))
+    if asmpalfile == '' or type(asmpalfile)==tuple:
+        return 
+    if asmpalfile[-4:].upper() != '.M2P':
+        asmpalfile = asmpalfile + '.m2p'
+    f = open('m2p','w')
+    for c in out:
+        f.write(c)
+    f.close()
+    with zipfile.ZipFile(asmpalfile, 'w', zipfile.ZIP_DEFLATED) as z:
+        z.write('m2p') 
+    os.remove('m2p')
+    tk.messagebox.showwarning('OK','M2P exported successfully!')
+
 
 def keyboard_monitor(obj):
     if obj.state & 4 == 4:
@@ -2399,7 +2585,7 @@ class make_new(tk.Tk):
                 b.select()
             i += 1
         self.newbutton = tk.Button(self, text="Create New", command=lambda:self.new(self.modevar, self.resvar))
-        self.newbutton.grid(row=7, columnspan=4)
+        self.newbutton.grid(row=8, columnspan=4)
 
         self.lbl = tk.Label(master=self, text='Select a bitmap type!')
         self.lbl_a = tk.Label(master=self, text='Graphics mode:')
@@ -2407,6 +2593,13 @@ class make_new(tk.Tk):
         self.lbl_a.grid(row=1,column=0)
         self.lbl_b = tk.Label(master=self, text='Vertical resolution:')
         self.lbl_b.grid(row=1,column=1)
+
+        #self.lbl_c = tk.Label(master=self, text='Custom:')
+        #self.lbl_c.grid(row=7,column=0)
+        #self.custom_w = tk.Entry(master=self, width=4)
+        #self.custom_w.grid(row=7,column=1)
+        #self.custom_h = tk.Entry(master=self, width=4)
+        #self.custom_h.grid(row=7,column=2)
 
     def destroy(self):
         self.withdraw()
@@ -2417,12 +2610,23 @@ class make_new(tk.Tk):
         interlace = False 
         mode = self.modevar.get()
         expanded = self.resvar.get()
+        #cres = False
+        #if self.custom_w.get() != "" and self.custom_h.get() != "":
+        #    expanded = int(self.custom_h.get())
+        #    cres = True
         if expanded > 300:
             interlace = True
-        if expanded == 212 or expanded == 424:
+        if (expanded > 192 and interlace==False) or (expanded > 424 and interlace==True):
             expanded = True 
-        if expanded == 192 or expanded == 384:
+        else:
             expanded = False 
+        #if cres:
+        #    cx = int(self.custom_w.get())
+        #    cy = int(self.custom_h.get())
+        #global image_x
+        #global image_y 
+        #image_x = cx 
+        #image_y = cy 
         new_file(mode, expanded, interlace)
         reset_palette_display()
         global undo_history 
@@ -2440,6 +2644,92 @@ def reset_palette_display():
     while i < 16:
         palette_display[i].setVal(hex_palette[i])
         i += 1
+
+def export_selection():
+    global copy_buffer 
+    global copy_w 
+    global copy_h
+    global graphic_mode
+    copy_data()
+    if copy_buffer == []:
+        tk.messagebox.showwarning('Nothing to export!', 'Nothing in the clipboard to export.')
+        return 
+    if graphic_mode == 'G4' or graphic_mode == 'G6':
+        if copy_w % 2 != 0:
+            copy_w += 1
+            tk.messagebox.showwarning('Selection size changed','Selection width not multiple of 2, padded by 1 pixel.')
+            copy_data()
+    if graphic_mode == 'G5' and copy_w % 4 != 0:
+        ct = 0
+        while copy_w % 4 != 0:
+            ct += 1
+            copy_w += 1
+        tk.messagebox.showwarning('Selection size changed','Selection width not multiple of 4, padded by ' + ct + ' pixels.')
+        copy_data()
+    if graphic_mode == 'G4' or graphic_mode == 'G6': # 4 bits per pixel
+
+        o = []
+        n = 0
+        while n < copy_h:
+            i = 0
+            while i < copy_w-1:
+                a="{:04b}".format(copy_buffer[i+(n*copy_w)])
+                b="{:04b}".format(copy_buffer[i+1+(n*copy_w)])
+                ob = a + b 
+                o.append(ob)
+                i += 2
+            n += 1
+    elif graphic_mode == 'G5': # 2 bits per pixel
+        o = []
+        n = 0
+        while n < copy_h:
+            i = 0
+            while i < copy_w-3:
+                a="{:02b}".format(copy_buffer[i+(n*copy_w)])
+                b="{:02b}".format(copy_buffer[i+1+(n*copy_w)])
+                c="{:02b}".format(copy_buffer[i+2+(n*copy_w)])
+                d="{:02b}".format(copy_buffer[i+3+(n*copy_w)])
+                ob = a + b + c + d 
+                o.append(ob) 
+                i += 4
+            n += 1
+    elif graphic_mode == 'G7': # 1 byte per pixel, color mapped
+        o = []
+        y = 0
+        while y < copy_h:
+            x = 0 
+            while x < copy_w:
+                px = copy_buffer[(y*copy_w)+x]
+                px_a = px[1]
+                px_b = px[2]
+                px_c = px[3] 
+                px_a = round(int(px_a,16)*(7/15))
+                px_b = round(int(px_b,16)*(7/15))
+                px_c = int(px_c,16)*(7/15)
+                px_c = round(px_c * (3/7))
+                px_a = format(px_a, '03b')
+                px_b = format(px_b, '03b')
+                px_c = format(px_c, '02b')
+                fullbyte = px_a + px_b + px_c 
+                #fullbyte = int(fullbyte,2)
+                o.append(fullbyte)
+                x += 1
+            y += 1
+    ob = []
+    for b in o:
+        b2 = int(b, 2)
+        ob.append(bytes([b2]))
+    asmpalfile = ''
+    asmpalfile = tk.filedialog.asksaveasfilename(title='Save raw bytes')
+    if asmpalfile == '' or type(asmpalfile)==tuple:
+        return 
+    f = open (asmpalfile, 'wb')
+    for b in ob:
+        f.write(b)
+    f.close()
+    tk.messagebox.showinfo('OK', 'Selection exported as raw bytes successfully!')
+    #f = open('test.txt','wb')
+    
 
 newwin = None
 if newwin:
@@ -2492,6 +2782,9 @@ fileMenu.add_command(label='Export as z80 assembly...', command=export_z80)
 fileMenu.add_command(label='Export as raw bytes...', command=export_bytes)
 fileMenu.add_command(label='Export palette as z80...', command=export_pal_data)
 fileMenu.add_separator()
+fileMenu.add_command(label='Export as patterns (Bytes)...', command=pattern_rawexport)
+fileMenu.add_command(label='Export as patterns (M2P)...', command=pattern_m2pexport)
+fileMenu.add_separator()
 fileMenu.add_command(label='Quit', command=client_exit)
 editMenu = tk.Menu(menuBar, tearoff=0)
 editMenu.add_command(label='Cut (Ctrl+X)', command=cut_data)
@@ -2503,6 +2796,9 @@ editMenu.add_command(label='Pixel brush: Diamond', command=px_diamond)
 editMenu.add_separator()
 editMenu.add_command(label='Undo (Ctrl+Z)', command=undo_last)
 editMenu.add_command(label='Redo (Ctrl+Y)', command=redo_last)
+editMenu.add_command(label='Export selection...', command=export_selection)
+editMenu.add_separator()
+editMenu.add_command(label='Reduce color map', command=reduce_color_map)
 helpMenu = tk.Menu(menuBar, tearoff=0)
 helpMenu.add_command(label='About', command=show_about)
 toolbar = tk.Frame(win, width=600, height=30, relief=tk.RAISED)
